@@ -1,35 +1,37 @@
-<module version="4" type="JAVA_MODULE">
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
   <component name="FacetManager">
-    <facet name="Scala" type="scala">
+    <facet type="scala" name="Scala">
       <configuration>
-        <option name="compilerLibraryLevel" value="Project"></option>
-        <option name="compilerLibraryName" value="scala-2.9.1"></option>
+        <option name="compilerLibraryLevel" value="Project" />
+        <option name="compilerLibraryName" value="scala-2.9.1" />
       </configuration>
     </facet>
   </component>
   <component name="NewModuleRootManager" inherit-compiler-output="false">
-    <output url="file://$MODULE_DIR$/../target/scala-2.9.1/classes"></output>
-    <output-test url="file://$MODULE_DIR$/../target/scala-2.9.1/test-classes"></output-test>
-    <exclude-output></exclude-output>
-    <content url="file:///home/stefan/Bitcoin-Graph-Explorer">
-      <sourceFolder url="file://$MODULE_DIR$/../src/main/scala" isTestSource="false"></sourceFolder>
-      <sourceFolder url="file://$MODULE_DIR$/../src/main/java" isTestSource="false"></sourceFolder>
-      <sourceFolder url="file://$MODULE_DIR$/../src/main/resources" isTestSource="false"></sourceFolder>
-      <sourceFolder url="file://$MODULE_DIR$/../src/test/scala" isTestSource="true"></sourceFolder>
-      <sourceFolder url="file://$MODULE_DIR$/../src/test/java" isTestSource="true"></sourceFolder>
-      <sourceFolder url="file://$MODULE_DIR$/../src/test/resources" isTestSource="true"></sourceFolder>
-      <excludeFolder url="file://$MODULE_DIR$/../target"></excludeFolder>
+    <output url="file://$MODULE_DIR$/../target/scala-2.9.1/classes" />
+    <output-test url="file://$MODULE_DIR$/../target/scala-2.9.1/test-classes" />
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/..">
+      <sourceFolder url="file://$MODULE_DIR$/../src/main/scala" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../src/main/java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../src/main/resources" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../src/test/scala" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/../src/test/java" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/../src/test/resources" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/../target" />
     </content>
-    <orderEntry type="inheritedJdk"></orderEntry>
-    <orderEntry type="sourceFolder" forTests="false"></orderEntry>
-    <orderEntry level="project" name="org.scala-lang_scala-library_2.9.1" type="library"></orderEntry>
-    <orderEntry level="project" name="org.scalatest_scalatest_2.9.1_1.6.1" type="library"></orderEntry>
-    <orderEntry level="project" name="ch.qos.logback_logback-classic_0.9.26" type="library"></orderEntry>
-    <orderEntry level="project" name="ch.qos.logback_logback-core_0.9.26" type="library"></orderEntry>
-    <orderEntry level="project" name="com.google_bitcoinj_0.3-SNAPSHOT" type="library"></orderEntry>
-    <orderEntry level="project" name="org.slf4j_slf4j-api_1.6.2" type="library"></orderEntry>
-    <orderEntry level="project" name="org.bouncycastle_bcprov-jdk15_1.46" type="library"></orderEntry>
-    <orderEntry type="library" name="org.scala-tools.testing_specs_2.9.0_1.6.8" level="project" scope="TEST"></orderEntry>
-    <orderEntry type="library" name="org.scala-lang_scala-compiler_2.9.1" level="project" scope="TEST"></orderEntry>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="org.scala-lang_scala-library_2.9.1" level="project" />
+    <orderEntry type="library" name="org.scalatest_scalatest_2.9.1_1.6.1" level="project" />
+    <orderEntry type="library" name="ch.qos.logback_logback-classic_0.9.26" level="project" />
+    <orderEntry type="library" name="ch.qos.logback_logback-core_0.9.26" level="project" />
+    <orderEntry type="library" name="com.google_bitcoinj_0.3-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="org.slf4j_slf4j-api_1.6.2" level="project" />
+    <orderEntry type="library" name="org.bouncycastle_bcprov-jdk15_1.46" level="project" />
+    <orderEntry type="library" scope="TEST" name="org.scala-tools.testing_specs_2.9.0_1.6.8" level="project" />
+    <orderEntry type="library" scope="TEST" name="org.scala-lang_scala-compiler_2.9.1" level="project" />
   </component>
 </module>
+

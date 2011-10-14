@@ -1,9 +1,11 @@
 <component name="libraryTable">
   <library name="com.google_bitcoinj_0.3-SNAPSHOT">
     <CLASSES>
-      <root url="jar://$USER_HOME$/.ivy2/cache/com.google/bitcoinj/jars/bitcoinj-0.3-SNAPSHOT.jar!/"></root>
+      <root url="jar://$USER_HOME$/.ivy2/cache/com.google/bitcoinj/jars/bitcoinj-0.3-SNAPSHOT.jar!/" />
     </CLASSES>
-    <JAVADOC> </JAVADOC>
-    <SOURCES> </SOURCES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="file://$USER_HOME$/bitcoinj-sources" />
+    </SOURCES>
   </library>
 </component>
