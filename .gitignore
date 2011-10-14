@@ -1,2 +1,4 @@
 target/
 project/boot/
+project/target/
+project/plugins/
