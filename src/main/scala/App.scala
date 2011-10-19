@@ -25,6 +25,8 @@ object BlockChainDownloader {
   }
 }
 
+
+
 object Main extends App
 {
   BlockChainDownloader()
