@@ -106,7 +106,7 @@ class PublicPeerGroup {
   }
 
   /**Starts the background thread that makes connections. */
-  def start: Unit = {
+  def start(): Unit = {
     this.connectThread = new Thread(new PeerExecutionRunnable, "Peer group thread")
     running = true
     this.connectThread.start

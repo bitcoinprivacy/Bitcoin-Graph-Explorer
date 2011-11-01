@@ -1,34 +1,52 @@
+import annotation.tailrec
 import com.google.bitcoin.core._
 import com.google.bitcoin.discovery.DnsDiscovery
 import com.google.bitcoin.store.BoundedOverheadBlockStore
 import java.io.File
 
-
-object BlockChainDownloader {
+object Main extends App {
 
   val params = NetworkParameters.testNet
   val wallet = new Wallet(params)
   val blockStore = new BoundedOverheadBlockStore(params, new File("bitcoin.blockchain"));
-  val chain  = new BlockChain(params, wallet, blockStore)
-  val peers = new PeerGroup(blockStore,params,chain)
+  val chain = new BlockChain(params, wallet, blockStore)
+  val peers = new PublicPeerGroup(blockStore, params, chain)
   val listener: DownloadListener = new DownloadListener
 
-// Load the block chain, if there is one stored locally.
-  def apply()
-  {
-    println("Reading block store from disk");
+  object BlockChainDownloader {
 
-    peers.addPeerDiscovery(new DnsDiscovery(params))
-    peers.start()
 
-    peers.startBlockChainDownload(listener)
+    // Load the block chain, if there is one stored locally.
+    def apply() {
+      println("Reading block store from disk");
+
+      peers.addPeerDiscovery(new DnsDiscovery(params))
+      peers.start()
+
+      peers.startBlockChainDownload(listener)
+    }
   }
-}
+
+  object Graph {
+
+    var latestknownhash = params.genesisBlock.getHash
 
 
+    @tailrec def invertedToDoListOfHashes(block: StoredBlock, list: List[Sha256Hash]): List[Sha256Hash] = {
+      val hash = block.getHeader.getHash
+      if (hash == latestknownhash) list
+      else invertedToDoListOfHashes(block.getPrev(blockStore), hash :: list)
+    }
 
-object Main extends App
-{
+    def update() { // updates the Graph to reflect the known blockchain
+
+      val toDo = invertedToDoListOfHashes(chain.getChainHead, List())
+
+    }
+
+  }
+
   BlockChainDownloader()
+  Graph.update()
 
 }
