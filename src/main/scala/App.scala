@@ -1,8 +1,9 @@
 import annotation.tailrec
 import com.google.bitcoin.core._
-import com.google.bitcoin.discovery.DnsDiscovery
+import com.google.bitcoin.discovery.{IrcDiscovery, SeedPeers, DnsDiscovery}
 import com.google.bitcoin.store.BoundedOverheadBlockStore
 import java.io.File
+import java.net.InetSocketAddress
 
 object Main extends App {
 
@@ -10,8 +11,7 @@ object Main extends App {
   val wallet = new Wallet(params)
   val blockStore = new BoundedOverheadBlockStore(params, new File("bitcoin.blockchain"));
   val chain = new BlockChain(params, wallet, blockStore)
-  val peers = new PublicPeerGroup(blockStore, params, chain)
-  val listener: DownloadListener = new DownloadListener
+  val peer = new Peer(params,new PeerAddress(new InetSocketAddress("localhost",8333)),chain)
 
   object BlockChainDownloader {
 
@@ -20,10 +20,10 @@ object Main extends App {
     def apply() {
       println("Reading block store from disk");
 
-      peers.addPeerDiscovery(new DnsDiscovery(params))
-      peers.start()
+      peer.connect()
+      peer.run()
 
-      peers.startBlockChainDownload(listener)
+      peer.startBlockChainDownload()
     }
   }
 
