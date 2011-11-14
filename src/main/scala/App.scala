@@ -6,7 +6,7 @@ import java.io.File
 
 object Main extends App {
 
-  val params = NetworkParameters.testNet
+  val params = NetworkParameters.prodNet
   val wallet = new Wallet(params)
   val blockStore = new BoundedOverheadBlockStore(params, new File("bitcoin.blockchain"));
   val chain = new BlockChain(params, wallet, blockStore)
@@ -30,9 +30,10 @@ object Main extends App {
   object Graph {
 
     var latestknownhash = params.genesisBlock.getHash
-
+    var toDo = List[Sha256Hash]()
 
     @tailrec def invertedToDoListOfHashes(block: StoredBlock, list: List[Sha256Hash]): List[Sha256Hash] = {
+      if (block==null) return list  // catch null-case from BitcoinJ
       val hash = block.getHeader.getHash
       if (hash == latestknownhash) list
       else invertedToDoListOfHashes(block.getPrev(blockStore), hash :: list)
@@ -40,7 +41,7 @@ object Main extends App {
 
     def update() { // updates the Graph to reflect the known blockchain
 
-      val toDo = invertedToDoListOfHashes(chain.getChainHead, List())
+     toDo = invertedToDoListOfHashes(chain.getChainHead, List())
 
     }
 
@@ -48,5 +49,6 @@ object Main extends App {
 
   BlockChainDownloader()
   Graph.update()
+  println("update ready")
 
 }
