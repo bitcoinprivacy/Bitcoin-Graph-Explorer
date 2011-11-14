@@ -7,7 +7,7 @@ import java.net.InetSocketAddress
 
 object Main extends App {
 
-  val params = NetworkParameters.testNet
+  val params = NetworkParameters.prodNet
   val wallet = new Wallet(params)
   val blockStore = new BoundedOverheadBlockStore(params, new File("bitcoin.blockchain"));
   val chain = new BlockChain(params, wallet, blockStore)
@@ -21,7 +21,9 @@ object Main extends App {
       println("Reading block store from disk");
 
       peer.connect()
+      println ("connected")
       peer.run()
+      println("running")
 
       peer.startBlockChainDownload()
     }

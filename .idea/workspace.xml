@@ -65,7 +65,7 @@
       <file leaf-file-name="App.scala" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/scala/App.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="17" column="95" selection-start="624" selection-end="624" vertical-scroll-proportion="0.730659">
+            <state line="19" column="61" selection-start="703" selection-end="703" vertical-scroll-proportion="0.8166189">
               <folding />
             </state>
           </provider>
@@ -204,7 +204,7 @@
       <sortByType />
     </navigator>
     <panes>
-      <pane id="Favorites" />
+      <pane id="PackagesPane" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -317,8 +317,8 @@
           </PATH>
         </subPane>
       </pane>
+      <pane id="Favorites" />
       <pane id="Scope" />
-      <pane id="PackagesPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -594,18 +594,39 @@
         <state line="471" column="36" selection-start="23478" selection-end="23478" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
+    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/discovery/SeedPeers.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="30" column="13" selection-start="1243" selection-end="1243" vertical-scroll-proportion="0.3323782" />
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/PeerAddress.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="80" column="26" selection-start="2788" selection-end="2788" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="jar:///usr/lib/jvm/java-1.6.0/jre/lib/rt.jar!/java/net/InetSocketAddress.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="5" column="13" selection-start="146" selection-end="146" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="jar:///usr/lib/jvm/java-1.6.0/jre/lib/rt.jar!/java/net/InetAddress.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="5" column="13" selection-start="146" selection-end="146" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
     <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/PeerGroup.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="24" column="20" selection-start="857" selection-end="860" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
+        <state line="24" column="20" selection-start="857" selection-end="860" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/PublicPeerGroup.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="204" column="119" selection-start="6708" selection-end="6708" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
+        <state line="204" column="119" selection-start="6708" selection-end="6708" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/Peer.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="332" column="17" selection-start="13886" selection-end="13886" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
     <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/discovery/PeerDiscovery.java">
@@ -623,44 +644,9 @@
         <state line="31" column="17" selection-start="1239" selection-end="1239" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/discovery/SeedPeers.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="30" column="13" selection-start="1243" selection-end="1243" vertical-scroll-proportion="0.3323782">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar:///usr/lib/jvm/java-1.6.0/jre/lib/rt.jar!/java/net/InetAddress.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="5" column="13" selection-start="146" selection-end="146" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar:///usr/lib/jvm/java-1.6.0/jre/lib/rt.jar!/java/net/InetSocketAddress.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="5" column="13" selection-start="146" selection-end="146" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/PeerAddress.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="80" column="26" selection-start="2788" selection-end="2788" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/Peer.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="332" column="17" selection-start="13886" selection-end="13886" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/App.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="17" column="95" selection-start="624" selection-end="624" vertical-scroll-proportion="0.730659">
+        <state line="19" column="61" selection-start="703" selection-end="703" vertical-scroll-proportion="0.8166189">
           <folding />
         </state>
       </provider>
