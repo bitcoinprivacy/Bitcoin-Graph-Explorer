@@ -3,3 +3,4 @@ project/boot/
 project/target/
 project/plugins/
 bitcoin.blockchain
+.idea/

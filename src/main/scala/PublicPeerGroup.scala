@@ -34,7 +34,7 @@ class PublicPeerGroup {
   private var running: Boolean = false
   private var peerPool: ThreadPoolExecutor = null
   private var peers: Set[Peer] = null
-  private var downloadPeer: Peer = null
+  var downloadPeer: Peer = null
   private var downloadListener: PeerEventListener = null
   private var peerEventListeners: Set[PeerEventListener] = null
   private var peerDiscoverers: Set[PeerDiscovery] = null

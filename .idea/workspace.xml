@@ -2,7 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="9928c65f-7f46-489a-9631-83dd8a725770" name="Default" comment="fixed">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/build.sbt" afterPath="$PROJECT_DIR$/build.sbt" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea_modules/default-6166c3.iml" afterPath="$PROJECT_DIR$/.idea_modules/default-6166c3.iml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/App.scala" afterPath="$PROJECT_DIR$/src/main/scala/App.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/PublicPeerGroup.scala" afterPath="$PROJECT_DIR$/src/main/scala/PublicPeerGroup.scala" />
     </list>
     <ignored path="Bitcoin-Graph-Explorer.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -64,7 +68,34 @@
       <file leaf-file-name="App.scala" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/scala/App.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="32" column="38" selection-start="954" selection-end="954" vertical-scroll-proportion="0.14040114">
+            <state line="45" column="8" selection-start="1437" selection-end="1437" vertical-scroll-proportion="0.6561605">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="TransactionOutput.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/TransactionOutput.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="207" column="21" selection-start="7864" selection-end="7864" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Transaction.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/Transaction.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="143" column="18" selection-start="6604" selection-end="6604" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="TransactionInput.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/TransactionInput.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="212" column="23" selection-start="8901" selection-end="8901" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -73,16 +104,7 @@
       <file leaf-file-name="StoredBlock.java" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/StoredBlock.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="106" column="23" selection-start="3994" selection-end="3994" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Block.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/Block.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="178" column="117" selection-start="5907" selection-end="5907" vertical-scroll-proportion="0.0">
+            <state line="113" column="16" selection-start="4233" selection-end="4233" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -91,7 +113,7 @@
       <file leaf-file-name="BlockChain.java" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/BlockChain.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="471" column="36" selection-start="23478" selection-end="23478" vertical-scroll-proportion="0.0">
+            <state line="470" column="36" selection-start="23433" selection-end="23433" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -100,7 +122,16 @@
       <file leaf-file-name="PeerGroup.java" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/PeerGroup.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="24" column="20" selection-start="857" selection-end="860" vertical-scroll-proportion="0.0">
+            <state line="492" column="18" selection-start="20222" selection-end="20226" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="PeerGroup.class" pinned="false" current="false" current-in-tab="false">
+        <entry file="jar://$USER_HOME$/.ivy2/cache/com.google/bitcoinj/jars/bitcoinj-0.3-SNAPSHOT.jar!/com/google/bitcoin/core/PeerGroup.class">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="56" column="30" selection-start="3157" selection-end="3157" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -109,7 +140,7 @@
       <file leaf-file-name="PublicPeerGroup.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/scala/PublicPeerGroup.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="204" column="119" selection-start="6708" selection-end="6708" vertical-scroll-proportion="0.0">
+            <state line="36" column="2" selection-start="1247" selection-end="1247" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -118,34 +149,7 @@
       <file leaf-file-name="Peer.java" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/Peer.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="332" column="17" selection-start="13886" selection-end="13886" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="PeerDiscovery.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/discovery/PeerDiscovery.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="24" column="17" selection-start="880" selection-end="880" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="BoundedOverheadBlockStore.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/store/BoundedOverheadBlockStore.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="22" column="15" selection-start="759" selection-end="759" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="BlockStore.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/store/BlockStore.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="31" column="17" selection-start="1239" selection-end="1239" vertical-scroll-proportion="0.0">
+            <state line="274" column="33" selection-start="11901" selection-end="11901" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -188,7 +192,7 @@
     <ConfirmationsSetting value="0" id="Remove" />
   </component>
   <component name="ProjectReloadState">
-    <option name="STATE" value="0" />
+    <option name="STATE" value="2" />
   </component>
   <component name="ProjectView">
     <navigator currentView="ProjectPane" proportions="" version="1" splitterProportion="0.5">
@@ -204,7 +208,6 @@
     </navigator>
     <panes>
       <pane id="Favorites" />
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -365,7 +368,97 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="BlockChain" />
+              <option name="myItemId" value="TransactionOutput" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ClassTreeNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="Bitcoin-Graph-Explorer" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="External Libraries" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ExternalLibrariesNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="com.google_bitcoinj_0.3-SNAPSHOT" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.NamedLibraryElementNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="bitcoinj-0.3-SNAPSHOT.jar" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="bitcoin" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="core" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="TransactionInput" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ClassTreeNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="Bitcoin-Graph-Explorer" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="External Libraries" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ExternalLibrariesNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="com.google_bitcoinj_0.3-SNAPSHOT" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.NamedLibraryElementNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="bitcoinj-0.3-SNAPSHOT.jar" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="bitcoin" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="core" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="Transaction" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ClassTreeNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="Bitcoin-Graph-Explorer" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="External Libraries" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ExternalLibrariesNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="com.google_bitcoinj_0.3-SNAPSHOT" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.NamedLibraryElementNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="bitcoinj-0.3-SNAPSHOT.jar" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="bitcoin" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="core" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="Block" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ClassTreeNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -379,41 +472,20 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Bitcoin-Graph-Explorer" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Bitcoin-Graph-Explorer" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="main" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="scala" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
         </subPane>
       </pane>
+      <pane id="Scope" />
       <pane id="PackagesPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
-    <property name="project.structure.last.edited" value="Project" />
+    <property name="project.structure.last.edited" value="Libraries" />
     <property name="GoToFile.includeJavaFiles" value="false" />
     <property name="project.structure.proportion" value="0.0" />
     <property name="options.splitter.main.proportions" value="0.3" />
     <property name="MemberChooser.sorted" value="false" />
     <property name="options.lastSelected" value="preferences.lookFeel" />
-    <property name="project.structure.side.proportion" value="0.0" />
+    <property name="project.structure.side.proportion" value="0.2" />
     <property name="MemberChooser.copyJavadoc" value="false" />
     <property name="GoToClass.toSaveIncludeLibraries" value="false" />
     <property name="MemberChooser.showClasses" value="true" />
@@ -654,57 +726,6 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="jar://$USER_HOME$/.ivy2/cache/com.google/bitcoinj/jars/bitcoinj-0.3-SNAPSHOT.jar!/com/google/bitcoin/store/BoundedOverheadBlockStore.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="17" column="11" selection-start="932" selection-end="932" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/discovery/DnsDiscovery.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="35" column="13" selection-start="1266" selection-end="1266" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/StoredBlock.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="106" column="23" selection-start="3994" selection-end="3994" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/Block.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="178" column="117" selection-start="5907" selection-end="5907" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/BlockChain.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="471" column="36" selection-start="23478" selection-end="23478" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/PeerGroup.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="24" column="20" selection-start="857" selection-end="860" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/scala/PublicPeerGroup.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="204" column="119" selection-start="6708" selection-end="6708" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/Peer.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="332" column="17" selection-start="13886" selection-end="13886" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/discovery/PeerDiscovery.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="24" column="17" selection-start="880" selection-end="880" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/store/BoundedOverheadBlockStore.java">
       <provider selected="true" editor-type-id="text-editor">
         <state line="22" column="15" selection-start="759" selection-end="759" vertical-scroll-proportion="0.0" />
@@ -715,9 +736,100 @@
         <state line="31" column="17" selection-start="1239" selection-end="1239" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
+    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/Block.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="190" column="117" selection-start="7293" selection-end="7293" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar:///usr/lib/jvm/java-1.6.0/jre/lib/rt.jar!/java/lang/Runtime.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="5" column="13" selection-start="147" selection-end="147" vertical-scroll-proportion="-0.35714287">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$USER_HOME$/.ivy2/cache/org.neo4j/neo4j-kernel/bundles/neo4j-kernel-1.0.jar!/org/neo4j/graphdb/GraphDatabaseService.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="16" column="67" selection-start="474" selection-end="474" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/StoredBlock.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="113" column="16" selection-start="4233" selection-end="4233" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/BlockChain.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="470" column="36" selection-start="23433" selection-end="23433" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/PeerGroup.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="492" column="18" selection-start="20222" selection-end="20226" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$USER_HOME$/.ivy2/cache/com.google/bitcoinj/jars/bitcoinj-0.3-SNAPSHOT.jar!/com/google/bitcoin/core/PeerGroup.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="56" column="30" selection-start="3157" selection-end="3157" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/PublicPeerGroup.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="36" column="2" selection-start="1247" selection-end="1247" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/Peer.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="274" column="33" selection-start="11901" selection-end="11901" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$USER_HOME$/.ivy2/cache/com.google/bitcoinj/jars/bitcoinj-0.3-SNAPSHOT.jar!/com/google/bitcoin/core/TransactionInput.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="44" column="47" selection-start="2535" selection-end="2535" vertical-scroll-proportion="0.04464286">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/TransactionInput.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="212" column="23" selection-start="8901" selection-end="8901" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/Transaction.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="143" column="18" selection-start="6604" selection-end="6604" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/TransactionOutput.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="207" column="21" selection-start="7864" selection-end="7864" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/App.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="32" column="38" selection-start="954" selection-end="954" vertical-scroll-proportion="0.14040114">
+        <state line="45" column="8" selection-start="1437" selection-end="1437" vertical-scroll-proportion="0.6561605">
           <folding />
         </state>
       </provider>
@@ -762,6 +874,7 @@
       </state>
       <state key="JdkListConfigurable.UI">
         <settings>
+          <last-edited>1.6</last-edited>
           <splitter-proportions>
             <option name="proportions">
               <list>
@@ -786,7 +899,7 @@
       </state>
       <state key="ProjectLibrariesConfigurable.UI">
         <settings>
-          <last-edited>ch.qos.logback_logback-classic_0.9.26</last-edited>
+          <last-edited>org.neo4j_neo4j-shell_1.0</last-edited>
           <splitter-proportions>
             <option name="proportions">
               <list>
