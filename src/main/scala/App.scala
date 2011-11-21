@@ -70,34 +70,42 @@ object Main extends App {
       // updates the Graph to reflect the known blockchain
 
       toDo = invertedToDoListOfHashes(chain.getChainHead, List())
-      while (peers.downloadPeer==null)        // this is very ugly
-        Thread.sleep(1000)
-      println("we have a peer")
-      for (hash <- toDo; trans: Transaction <- peers.downloadPeer.getBlock(hash).get.getTransactions) {
-        // waits for every block!
-        val hashString = trans.getHashAsString
-        if (nodeindex.get("TransactionHash", hashString).getSingle == null) {
-          println("Transaction " + hashString + " already exists in neodb")
-          return
-        }
-        execInNeo4j {
-          neo => // transaction network
-            val node = neo.createNode()
-            node("TransactionHash") = hashString
-            if (!trans.isCoinBase) // record parent transactions if there is such a thing
-              for (input <- trans.getInputs)
-                nodeindex.get("TransactionHash", input.getParentTransaction.getHashAsString).getSingle --> "getSpentBy" --> node
-        }
 
-      } //parallelize/unblock? watch out for transaction dependencies!
-      // what if peer doesn't answer etc.? catch exceptions!
+      for (hash <- toDo) {
+
+        while (peers.downloadPeer == null) // this is very ugly
+          Thread.sleep(1000)
+        for (trans: Transaction <- peers.downloadPeer.getBlock(hash).get.getTransactions)
+        {
+          // waits for every block!
+          val hashString = trans.getHashAsString
+          if (nodeindex.get("TransactionHash", hashString).getSingle == null)
+          {
+            println("Transaction " + hashString + " already exists in neodb")
+            return
+          }
+          execInNeo4j
+          {
+            neo => // transaction network
+              val node = neo.createNode()
+              node("TransactionHash") = hashString
+              if (!trans.isCoinBase) // record parent transactions if there is such a thing
+                for (input <- trans.getInputs)
+                  nodeindex.get("TransactionHash", input.getParentTransaction.getHashAsString).getSingle --> "getSpentBy" --> node
+          }
+        } //parallelize/unblock? watch out for transaction dependencies!
+        // what if peer doesn't answer etc.? catch exceptions!
+      }
+
 
     }
 
   }
 
   BlockChainDownloader()
-  Graph.update()
-  println("update ready:" + Graph.toDo)
-
+  while (true)
+  {
+    Graph.update()
+    println("update ready:" + Graph.toDo)
+  }
 }
