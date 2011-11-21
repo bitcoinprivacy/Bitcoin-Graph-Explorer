@@ -30,14 +30,15 @@ object Main extends App {
     }
   }
 
-  object Graph {
+  import org.neo4j.graphdb._
+  import org.neo4j.kernel.EmbeddedGraphDatabase
+  import org.neo4j.scala._
+  import com.google.bitcoin.core.Transaction
 
-    import org.neo4j.graphdb._
-    import org.neo4j.kernel.EmbeddedGraphDatabase
-    import org.neo4j.scala.Neo4jWrapper._
-    import com.google.bitcoin.core.Transaction
+  // because otherwise shadowed by neo4j
 
-    // because otherwise shadows by neo4j
+  object Graph extends Neo4jWrapper {
+
 
     val config = new HashMap[String, String]; // turn on auto-indexing
     config.put(Config.NODE_KEYS_INDEXABLE, "TransactionHash");
@@ -69,6 +70,9 @@ object Main extends App {
       // updates the Graph to reflect the known blockchain
 
       toDo = invertedToDoListOfHashes(chain.getChainHead, List())
+      while (peers.downloadPeer==null)        // this is very ugly
+        Thread.sleep(1000)
+      println("we have a peer")
       for (hash <- toDo; trans: Transaction <- peers.downloadPeer.getBlock(hash).get.getTransactions) {
         // waits for every block!
         val hashString = trans.getHashAsString
@@ -82,7 +86,7 @@ object Main extends App {
             node("TransactionHash") = hashString
             if (!trans.isCoinBase) // record parent transactions if there is such a thing
               for (input <- trans.getInputs)
-                nodeindex.get("TransactionHash", input.getParentTransaction.getHashAsString) --> "getSpentBy" --> node
+                nodeindex.get("TransactionHash", input.getParentTransaction.getHashAsString).getSingle --> "getSpentBy" --> node
         }
 
       } //parallelize/unblock? watch out for transaction dependencies!

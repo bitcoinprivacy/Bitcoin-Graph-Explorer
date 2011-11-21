@@ -20,3 +20,5 @@ libraryDependencies ++= Seq(
 resolvers += "bitcoinj" at "http://nexus.bitcoinj.org/content/repositories/snapshots"
 
 resolvers += "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
+
+fork in run := true
