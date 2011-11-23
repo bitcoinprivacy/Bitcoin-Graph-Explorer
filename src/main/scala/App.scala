@@ -102,6 +102,13 @@ object Main extends App {
 
   }
 
+  // todo: new Strategy
+  // hook up a PeerEventListener (DownloadListener?) to PeerGroup (no more PublicPeerGroup needed)
+  // this gets called everytime a new block is linked to the chain with the block (todo: Check if this block is not castrated before we get to it)
+  // persist everything, including blockhash
+  // so on rerun with existing blockchain, check if we know of all the blocks mentioned already (otherwise, just reload)
+  // todo: check what happens on fork
+
   BlockChainDownloader()
   while (true)
   {
