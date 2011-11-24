@@ -1,11 +1,11 @@
-import annotation.tailrec
+package BitcoinGraphExplorer
+
+
 import com.google.bitcoin.core._
 import com.google.bitcoin.discovery.DnsDiscovery
 import com.google.bitcoin.store.BoundedOverheadBlockStore
 import java.io.File
-import java.util.HashMap
-import org.neo4j.kernel.Config
-import collection.JavaConversions._
+
 
 object Main extends App {
 
@@ -13,106 +13,29 @@ object Main extends App {
   val wallet = new Wallet(params)
   val blockStore = new BoundedOverheadBlockStore(params, new File("bitcoin.blockchain"));
   val chain = new BlockChain(params, wallet, blockStore)
-  val peers = new PublicPeerGroup(blockStore, params, chain)
-  val listener: DownloadListener = new DownloadListener
+  val peers = new PeerGroup(blockStore, params, chain)
+  val listener: DownloadListener = new Graph.NeoDownLoadListener(params)
 
-  object BlockChainDownloader {
+  println("Reading block store from disk");
 
+  peers.addPeerDiscovery(new DnsDiscovery(params))
 
-    // Load the block chain, if there is one stored locally.
-    def apply() {
-      println("Reading block store from disk");
+  peers.start()
 
-      peers.addPeerDiscovery(new DnsDiscovery(params))
-      peers.start()
+  peers.startBlockChainDownload(listener)
 
-      peers.startBlockChainDownload(listener)
-    }
-  }
+  // hook up a DownloadListener to PeerGroup
+  // this gets called every time a new block is linked to the chain with the block (this block is not castrated before we get to it)
 
-  import org.neo4j.graphdb._
-  import org.neo4j.kernel.EmbeddedGraphDatabase
-  import org.neo4j.scala._
-  import com.google.bitcoin.core.Transaction
+  // there is a possible problem here: we only get called if the received block can be immediately attached to the chain.
+  // otherwise, it is added to blockChain.unconnectedBlocks, and only potentially removed from there when another block is
+  // successfully added (which we get noticed of). This might still work in practice, but should be tested:
+  // whenever we hear of a block, we should already know its predecessor. If we don't, we have missed something.
+  // Even if this never happens, we might still be one block behind the blockchain.
 
-  // because otherwise shadowed by neo4j
-
-  object Graph extends Neo4jWrapper {
-
-
-    val config = new HashMap[String, String]; // turn on auto-indexing
-    config.put(Config.NODE_KEYS_INDEXABLE, "TransactionHash");
-    // config.put( Config.RELATIONSHIP_KEYS_INDEXABLE, "HasOutputs" );
-    config.put(Config.NODE_AUTO_INDEXING, "true");
-    config.put(Config.RELATIONSHIP_AUTO_INDEXING, "true");
-
-    implicit val neo: GraphDatabaseService = new EmbeddedGraphDatabase("neodb", config)
-
-    Runtime.getRuntime.addShutdownHook(new Thread() {
-      override def run() {
-        neo.shutdown
-      }
-    })
-
-    val nodeindex = neo.index.getNodeAutoIndexer.getAutoIndex
-
-    var latestknownhash = params.genesisBlock.getHash
-    var toDo = List[Sha256Hash]()
-
-    @tailrec def invertedToDoListOfHashes(block: StoredBlock, list: List[Sha256Hash]): List[Sha256Hash] = {
-      if (block == null) return list // catch null-case from BitcoinJ
-      val hash = block.getHeader.getHash
-      if (hash == latestknownhash) list
-      else invertedToDoListOfHashes(block.getPrev(blockStore), hash :: list)
-    }
-
-    def update() {
-      // updates the Graph to reflect the known blockchain
-
-      toDo = invertedToDoListOfHashes(chain.getChainHead, List())
-
-      for (hash <- toDo) {
-
-        while (peers.downloadPeer == null) // this is very ugly
-          Thread.sleep(1000)
-        for (trans: Transaction <- peers.downloadPeer.getBlock(hash).get.getTransactions)
-        {
-          // waits for every block!
-          val hashString = trans.getHashAsString
-          if (nodeindex.get("TransactionHash", hashString).getSingle == null)
-          {
-            println("Transaction " + hashString + " already exists in neodb")
-            return
-          }
-          execInNeo4j
-          {
-            neo => // transaction network
-              val node = neo.createNode()
-              node("TransactionHash") = hashString
-              if (!trans.isCoinBase) // record parent transactions if there is such a thing
-                for (input <- trans.getInputs)
-                  nodeindex.get("TransactionHash", input.getParentTransaction.getHashAsString).getSingle --> "getSpentBy" --> node
-          }
-        } //parallelize/unblock? watch out for transaction dependencies!
-        // what if peer doesn't answer etc.? catch exceptions!
-      }
-
-
-    }
-
-  }
-
-  // todo: new Strategy
-  // hook up a PeerEventListener (DownloadListener?) to PeerGroup (no more PublicPeerGroup needed)
-  // this gets called everytime a new block is linked to the chain with the block (todo: Check if this block is not castrated before we get to it)
   // persist everything, including blockhash
-  // so on rerun with existing blockchain, check if we know of all the blocks mentioned already (otherwise, just reload)
+  // do not persist current BestChain status, because this might change. query this dynamically (todo: check if this is viable)
+  // todo: on re-run with existing blockchain, check if we know of all the blocks mentioned already (otherwise, just reload)
   // todo: check what happens on fork
 
-  BlockChainDownloader()
-  while (true)
-  {
-    Graph.update()
-    println("update ready:" + Graph.toDo)
-  }
 }

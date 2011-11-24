@@ -21,4 +21,4 @@ resolvers += "bitcoinj" at "http://nexus.bitcoinj.org/content/repositories/snaps
 
 resolvers += "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
 
-fork in run := true
+// fork in run := true
