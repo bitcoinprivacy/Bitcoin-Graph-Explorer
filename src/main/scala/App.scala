@@ -33,6 +33,10 @@ object Main extends App {
   // whenever we hear of a block, we should already know its predecessor. If we don't, we have missed something.
   // Even if this never happens, we might still be one block behind the blockchain.
 
+  // Okay, it does happen. But only at the end of a catch-up download, it seems. Projected solution:
+  // todo: manually tell peer to reload missing (for us) blocks
+
+
   // persist everything, including blockhash
   // do not persist current BestChain status, because this might change. query this dynamically (todo: check if this is viable)
   // todo: on re-run with existing blockchain, check if we know of all the blocks mentioned already (otherwise, just reload)

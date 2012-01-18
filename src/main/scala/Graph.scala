@@ -46,10 +46,7 @@ object Graph extends Neo4jWrapper {
 
         // block network
           val blockHashString = block.getHashAsString
-          if (nodeindex.get("BlockHash", blockHashString).getSingle != null)
-            println("Block " + blockHashString + " already exists in neodb")
-          val blocknode = neo.createNode()
-          blocknode("BlockHash") = blockHashString
+          val blocknode = createIfNotPresent("BlockHash",blockHashString)
 
           val prevHashString = block.getPrevBlockHash.toString
           val prevnode = nodeindex.get("BlockHash", prevHashString).getSingle
@@ -64,21 +61,38 @@ object Graph extends Neo4jWrapper {
             }
 
           // transaction network
-          for (trans: Transaction <- block.getTransactions) {
+          for (trans: Transaction <- block.getTransactions.par) {
             val transHashString = trans.getHashAsString
-            if (nodeindex.get("TransactionHash", transHashString).getSingle != null)
-              println("Transaction " + transHashString + " already exists in neodb")
-            val node = neo.createNode()
-            node("TransactionHash") = transHashString
+            val node = createIfNotPresent("TransactionHash",transHashString)
             node --> "isRecordedIn" --> blocknode
             if (!trans.isCoinBase) // record parent transactions if there is such a thing
-              for (input <- trans.getInputs)
+              for (input <- trans.getInputs.par) {
                 nodeindex.get("TransactionHash", input.getParentTransaction.getHashAsString).getSingle --> "getSpentBy" --> node
+
+                val from = createIfNotPresent("Address",input.getFromAddress)
+
+              }
+
+          // address network
+
+
           }
       }
 
       super.onBlocksDownloaded(peer: Peer, block: Block, blocksLeft: Int) // to keep the nice statistics
     }
+
+    def createIfNotPresent (key,value) = {
+      var node = nodeindex.get(key, value).getSingle
+      if ( node != null)
+        println(key + " " + value + " already exists in neodb")
+      else {
+        node = neo.createNode()
+        node(key) = value
+       }
+      node
+    }
+
   }
 
 }
