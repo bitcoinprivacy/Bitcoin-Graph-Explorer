@@ -9,12 +9,12 @@ package BitcoinGraphExplorer
  */
 
 import java.util.HashMap
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.{Config, EmbeddedGraphDatabase}
 import org.neo4j.scala._
 import collection.JavaConversions._
 
 import com.google.bitcoin.core._
+import org.neo4j.graphdb.{DynamicRelationshipType, GraphDatabaseService}
 
 // beware: Transaction might be shadowed by neo4j
 
@@ -65,16 +65,21 @@ object Graph extends Neo4jWrapper {
             val transHashString = trans.getHashAsString
             val node = createIfNotPresent("TransactionHash",transHashString)
             node --> "isRecordedIn" --> blocknode
+         
             if (!trans.isCoinBase) // record parent transactions if there is such a thing
               for (input <- trans.getInputs.par) {
                 nodeindex.get("TransactionHash", input.getParentTransaction.getHashAsString).getSingle --> "getSpentBy" --> node
 
+                // address network
                 val from = createIfNotPresent("Address",input.getFromAddress)
-
+                from --> "isInputInTransaction" --> node
               }
 
-          // address network
-
+            for (output <- trans.getOutputs.par) {
+              val to = createIfNotPresent("Address", output.getScriptPubKey.getToAddress)
+              val rel = to.createRelationshipTo(node, DynamicRelationshipType.withName("receivesInTransaction"))
+              rel.setProperty("value", output.getValue)
+            }
 
           }
       }
@@ -82,7 +87,7 @@ object Graph extends Neo4jWrapper {
       super.onBlocksDownloaded(peer: Peer, block: Block, blocksLeft: Int) // to keep the nice statistics
     }
 
-    def createIfNotPresent (key,value) = {
+    def createIfNotPresent (key:String,value:Any) = {
       var node = nodeindex.get(key, value).getSingle
       if ( node != null)
         println(key + " " + value + " already exists in neodb")
