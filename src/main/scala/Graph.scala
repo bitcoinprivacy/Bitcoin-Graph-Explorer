@@ -14,20 +14,15 @@ import org.neo4j.scala._
 import collection.JavaConversions._
 
 import com.google.bitcoin.core._
-import org.neo4j.graphdb.{DynamicRelationshipType, GraphDatabaseService}
+import org.neo4j.graphdb.index.IndexManager
+import org.neo4j.graphdb.{Direction, DynamicRelationshipType, GraphDatabaseService}
 
 // beware: Transaction might be shadowed by neo4j
 
 object Graph extends Neo4jWrapper {
 
 
-  val config = new HashMap[String, String]; // turn on auto-indexing
-  config.put(Config.NODE_KEYS_INDEXABLE, "TransactionHash,BlockHash");
-  //config.put( Config.RELATIONSHIP_KEYS_INDEXABLE, "HasOutputs" );
-  config.put(Config.NODE_AUTO_INDEXING, "true");
-  config.put(Config.RELATIONSHIP_AUTO_INDEXING, "true");
-
-  implicit val neo: GraphDatabaseService = new EmbeddedGraphDatabase("neodb", config)
+  implicit val neo: GraphDatabaseService = new EmbeddedGraphDatabase("neodb")
 
   Runtime.getRuntime.addShutdownHook(new Thread() {
     override def run() {
@@ -35,7 +30,11 @@ object Graph extends Neo4jWrapper {
     }
   })
 
-  val nodeindex = neo.index.getNodeAutoIndexer.getAutoIndex
+
+  val index = neo.index()
+  val entityIndex = index.forNodes("entities")
+  // val transactionIndex = index.forRelationships("transactions");
+
 
   class NeoDownLoadListener(params: NetworkParameters) extends DownloadListener {
 
@@ -44,59 +43,71 @@ object Graph extends Neo4jWrapper {
       execInNeo4j {
         neo => // this is very far out so as to keep the whole operation atomic
 
-        // block network
-          val blockHashString = block.getHashAsString
-          val blocknode = createIfNotPresent("BlockHash",blockHashString)
-
-          val prevHashString = block.getPrevBlockHash.toString
-          val prevnode = nodeindex.get("BlockHash", prevHashString).getSingle
-          if (prevnode != null) blocknode --> "isPrecededBy" --> prevnode
-          else if (prevHashString != params.genesisBlock.getHashAsString)
-            throw new Exception("non-genesis Block without predecessor: "+ blockHashString)
-          // todo: make exception handling nicer
-            else {  // handle special case: implicit genesisBlock
-              val genesisnode = neo.createNode()
-              genesisnode("BlockHash") = prevHashString
-              blocknode --> "isPrecededBy" --> genesisnode
-            }
-
-          // transaction network
+        // the all new "controlling entities" network
           for (trans: Transaction <- block.getTransactions.par) {
-            val transHashString = trans.getHashAsString
-            val node = createIfNotPresent("TransactionHash",transHashString)
-            node --> "isRecordedIn" --> blocknode
-         
-            if (!trans.isCoinBase) // record parent transactions if there is such a thing
-              for (input <- trans.getInputs.par) {
-                nodeindex.get("TransactionHash", input.getParentTransaction.getHashAsString).getSingle --> "getSpentBy" --> node
+            
+            val node = if (!trans.isCoinBase) {
 
-                // address network
-                val from = createIfNotPresent("Address",input.getFromAddress)
-                from --> "isInputInTransaction" --> node
+              // record incoming addresses if there is such a thing
+              // all incoming addresses are controlled by a common entity/node
+              // invariant kept: every address occurs in at most one node!
+
+              var addresses: List[Address] = trans.getInputs.map(_.getFromAddress)
+              val (unknown, known) = addresses.partition(entityIndex.get("address", _).isEmpty)
+
+              // get a List of all known unique entities that use addresses in this transaction input
+              if (known.isEmpty) {
+                val node = neo.createNode()
+                for (address <- addresses)
+                  entityIndex.add(node, "address", address)
+                node("addresses") = addresses
+                node
               }
+              else {
+                addresses = unknown
+                val entities = known.map(entityIndex.get("address", _).getSingle).distinct
+                val node = entities.head
+                for (oldnode <- entities.tail) {
+                  for (oldrel <- oldnode.getRelationships(Direction.OUTGOING))
+                    node --> "pays" --> oldrel.getEndNode
+                  for (oldrel <- oldnode.getRelationships(Direction.INCOMING))
+                    node <-- "pays" <-- oldrel.getEndNode
 
-            for (output <- trans.getOutputs.par) {
-              val to = createIfNotPresent("Address", output.getScriptPubKey.getToAddress)
-              val rel = to.createRelationshipTo(node, DynamicRelationshipType.withName("receivesInTransaction"))
-              rel.setProperty("value", output.getValue)
+                  addresses ++ oldnode("addresses")
+                  entityIndex.remove(oldnode)
+                  oldnode.delete()
+                }
+
+                for (address <- addresses)
+                  entityIndex.add(node, "address", address)
+                node("addresses") = node("addresses") ++ addresses
+                node 
+              }
             }
+            else createIfNotPresent("address","0")
+            
+            for (output <- trans.getOutputs)
+              node.createRelationshipTo(createIfNotPresent(output.getScriptPubKey.getToAddress),"pays")("amount") = output.getValue
 
           }
+
+
       }
 
       super.onBlocksDownloaded(peer: Peer, block: Block, blocksLeft: Int) // to keep the nice statistics
     }
 
-    def createIfNotPresent (key:String,value:Any) = {
-      var node = nodeindex.get(key, value).getSingle
-      if ( node != null)
+    def createIfNotPresent(key: String, value: Any) = {
+      var node = entityIndex.get(key, value).getSingle
+      if (node != null)
         println(key + " " + value + " already exists in neodb")
       else {
         node = neo.createNode()
-        node(key) = value
-       }
+        entityIndex.add(node, key, value)
+      }
       node
     }
+
 
   }
 
