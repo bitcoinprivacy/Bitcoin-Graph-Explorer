@@ -12,7 +12,7 @@ libraryDependencies ++= Seq(
 	"org.scalatest" % "scalatest_2.9.1" % "1.6.1", // scalatest
 //	"junit" % "junit" % "4.8" % "test->default", // For JUnit 4 testing
 	"ch.qos.logback" % "logback-classic" % "0.9.26" % "compile->default", // Logging
-	"com.google" % "bitcoinj" % "0.4-SNAPSHOT",
+	"com.google" % "bitcoinj" % "0.5-SNAPSHOT",
 	"org.neo4j" % "neo4j-scala" % "0.9.9-SNAPSHOT",
         "org.neo4j" % "neo4j" % "1.6.1"
 )

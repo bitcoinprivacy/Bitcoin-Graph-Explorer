@@ -52,7 +52,7 @@ object Graph extends Neo4jWrapper {
               // all incoming addresses are controlled by a common entity/node
               // invariant kept: every address occurs in at most one node!
 
-              var addresses: List[Address] = trans.getInputs.map(_.getFromAddress).toList
+              var addresses: Array[String] = trans.getInputs.map(_.getFromAddress.toString).toArray
               val (unknown, known) = addresses.partition(entityIndex.get("address", _).getSingle == null)
 
               // get a List of all known unique entities that use addresses in this transaction input
@@ -60,7 +60,7 @@ object Graph extends Neo4jWrapper {
                 val node = neo.createNode()
                 for (address <- addresses)
                   entityIndex.add(node, "address", address)
-                node("addresses") = addresses.toArray
+                node("addresses") = addresses
                 node
               }
               else {
@@ -68,10 +68,14 @@ object Graph extends Neo4jWrapper {
                 val entities = known.map(entityIndex.get("address", _).getSingle).distinct
                 val node = entities.head
                 for (oldnode <- entities.tail) {
-                  for (oldrel <- oldnode.getRelationships(Direction.OUTGOING))
+                  for (oldrel <- oldnode.getRelationships(Direction.OUTGOING)) {
                     node --> "pays" --> oldrel.getEndNode
-                  for (oldrel <- oldnode.getRelationships(Direction.INCOMING))
+                    oldrel.delete()
+                  }
+                  for (oldrel <- oldnode.getRelationships(Direction.INCOMING)) {
                     node <-- "pays" <-- oldrel.getEndNode
+                    oldrel.delete()
+                  }
 
                   addresses ++ oldnode("addresses")
                   entityIndex.remove(oldnode)
@@ -80,15 +84,16 @@ object Graph extends Neo4jWrapper {
 
                 for (address <- addresses)
                   entityIndex.add(node, "address", address)
-                node("addresses") = node("addresses") ++ addresses
+                addresses ++ node("addresses")
+                node("addresses") = addresses
                 node 
               }
             }
-            else createIfNotPresent("address","0")
+            else createNodeWithAddressIfNotPresent("0")
             
             for (output <- trans.getOutputs)
               try { 
-              node.createRelationshipTo(createIfNotPresent("address",output.getScriptPubKey.getToAddress),"pays")("amount") = output.getValue
+              node.createRelationshipTo(createNodeWithAddressIfNotPresent(output.getScriptPubKey.getToAddress.toString),"pays")("amount") = output.getValue.toString
               }
               catch {
                 case e: ScriptException => println("can't parse script paying from " + node("addresses"))
@@ -101,13 +106,14 @@ object Graph extends Neo4jWrapper {
       super.onBlocksDownloaded(peer: Peer, block: Block, blocksLeft: Int) // to keep the nice statistics
     }
 
-    def createIfNotPresent(key: String, value: Any) = {
-      var node = entityIndex.get(key, value).getSingle
+    def createNodeWithAddressIfNotPresent(value:String) = {
+      var node = entityIndex.get("address", value).getSingle
       if (node != null)
-        println(key + " " + value + " already exists in neodb")
+        println(value + " already exists in neodb")
       else {
         node = neo.createNode()
-        entityIndex.add(node, key, value)
+        node("addresses")=Array(value)
+        entityIndex.add(node, "address", value)
       }
       node
     }

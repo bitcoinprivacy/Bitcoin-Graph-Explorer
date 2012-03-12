@@ -2,11 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="9928c65f-7f46-489a-9631-83dd8a725770" name="Default" comment="fixed">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="$PROJECT_DIR$/.idea/misc.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea_modules/default-6166c3.iml" afterPath="$PROJECT_DIR$/.idea_modules/default-6166c3.iml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/build.sbt" afterPath="$PROJECT_DIR$/build.sbt" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/App.scala" afterPath="$PROJECT_DIR$/src/main/scala/App.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/Graph.scala" afterPath="$PROJECT_DIR$/src/main/scala/Graph.scala" />
     </list>
     <ignored path="Bitcoin-Graph-Explorer.iws" />
@@ -68,25 +64,16 @@
       <file leaf-file-name="Graph.scala" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/scala/Graph.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="62" column="53" selection-start="2110" selection-end="2110" vertical-scroll-proportion="0.33136094">
+            <state line="82" column="98" selection-start="2929" selection-end="2929" vertical-scroll-proportion="0.5118343">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="App.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/scala/App.scala">
+      <file leaf-file-name="PropertyStore.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="jar://$USER_HOME$/.ivy2/cache/org.neo4j/neo4j-kernel/srcs/neo4j-kernel-1.5-sources.jar!/org/neo4j/kernel/impl/nioneo/store/PropertyStore.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="26" column="44" selection-start="730" selection-end="730" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="TransactionOutput.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/TransactionOutput.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="105" column="18" selection-start="4714" selection-end="4714" vertical-scroll-proportion="0.0">
+            <state line="625" column="0" selection-start="21617" selection-end="21617" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -217,6 +204,8 @@
       <sortByType />
     </navigator>
     <panes>
+      <pane id="PackagesPane" />
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -407,8 +396,6 @@
           </PATH>
         </subPane>
       </pane>
-      <pane id="Scope" />
-      <pane id="PackagesPane" />
       <pane id="Favorites" />
     </panes>
   </component>
@@ -561,21 +548,21 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="26" width="1368" height="744" extended-state="6" />
-    <editor active="false" />
+    <editor active="true" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="SBT Console" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.3277027" sideWeight="0.0" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="SBT Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.3277027" sideWeight="0.0" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32881355" sideWeight="0.67173254" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32996634" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3293919" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="true" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32852808" sideWeight="0.2179054" order="1" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32927758" sideWeight="0.6503378" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32852808" sideWeight="0.6722973" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32852808" sideWeight="0.44256756" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
@@ -644,16 +631,6 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="jar:///usr/lib/jvm/java-1.6.0/jre/lib/rt.jar!/java/util/HashMap.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="43" column="13" selection-start="1628" selection-end="1628" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/BlockChain.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="479" column="45" selection-start="23688" selection-end="23688" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/Peer.java">
       <provider selected="true" editor-type-id="text-editor">
         <state line="199" column="102" selection-start="8032" selection-end="8032" vertical-scroll-proportion="0.0" />
@@ -664,14 +641,24 @@
         <state line="64" column="118" selection-start="2057" selection-end="2057" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/Transaction.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="624" column="34" selection-start="26400" selection-end="26400" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/TransactionInput.java">
       <provider selected="true" editor-type-id="text-editor">
         <state line="30" column="13" selection-start="1172" selection-end="1172" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/App.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="26" column="44" selection-start="730" selection-end="730" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/TransactionOutput.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="105" column="18" selection-start="4714" selection-end="4714" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/Script.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="37" column="13" selection-start="1415" selection-end="1415" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
     <entry file="jar://$USER_HOME$/.ivy2/cache/org.scala-lang/scala-library/srcs/scala-library-2.9.1-sources.jar!/scala/collection/immutable/List.scala">
@@ -704,28 +691,30 @@
         <state line="251" column="6" selection-start="8567" selection-end="8567" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/TransactionOutput.java">
+    <entry file="jar://$USER_HOME$/.ivy2/cache/org.neo4j/neo4j-kernel/srcs/neo4j-kernel-1.5-sources.jar!/org/neo4j/kernel/impl/nioneo/store/PropertyStore.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="105" column="18" selection-start="4714" selection-end="4714" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/Script.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="37" column="13" selection-start="1415" selection-end="1415" vertical-scroll-proportion="0.0">
+        <state line="625" column="0" selection-start="21617" selection-end="21617" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/scala/App.scala">
+    <entry file="file://$USER_HOME$/bitcoinj-sources/com/google/bitcoin/core/Transaction.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="26" column="44" selection-start="730" selection-end="730" vertical-scroll-proportion="0.0">
+        <state line="624" column="34" selection-start="26400" selection-end="26400" vertical-scroll-proportion="0.33136094">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$USER_HOME$/.ivy2/cache/org.scala-lang/scala-library/srcs/scala-library-2.9.1-sources.jar!/scala/collection/TraversableLike.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="146" column="6" selection-start="6025" selection-end="6025" vertical-scroll-proportion="0.20550458">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/Graph.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="62" column="53" selection-start="2110" selection-end="2110" vertical-scroll-proportion="0.33136094">
+        <state line="82" column="98" selection-start="2929" selection-end="2929" vertical-scroll-proportion="0.5118343">
           <folding />
         </state>
       </provider>
