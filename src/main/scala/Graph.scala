@@ -16,6 +16,7 @@ import collection.JavaConversions._
 import com.google.bitcoin.core._
 import org.neo4j.graphdb.index.IndexManager
 import org.neo4j.graphdb.{Direction, DynamicRelationshipType, GraphDatabaseService}
+import java.math.BigInteger
 
 // beware: Transaction might be shadowed by neo4j
 
@@ -96,7 +97,18 @@ object Graph extends Neo4jWrapper {
               node.createRelationshipTo(createNodeWithAddressIfNotPresent(output.getScriptPubKey.getToAddress.toString),"pays")("amount") = output.getValue.toString
               }
               catch {
-                case e: ScriptException => println("can't parse script paying from " + node("addresses"))
+                case e: ScriptException =>
+                  val script = output.getScriptPubKey.toString
+                  if (script.startsWith("[65]"))
+                  {
+                    val pubkeystring = script.substring(4,134)
+                    import Utils._
+                    val pubkey = hex2Bytes(pubkeystring)
+                    val address = new Address(params,sha256hash160(pubkey))
+                    node.createRelationshipTo(createNodeWithAddressIfNotPresent(address.toString),"pays")("amount") = output.getValue.toString
+                  }
+                    // special case because bitcoinJ doesn't support pay-to-IP scripts
+                  else println("can't parse script: " + output.getScriptPubKey.toString)
               }
           }
 
@@ -118,6 +130,11 @@ object Graph extends Neo4jWrapper {
       node
     }
 
+    def hex2Bytes( hex: String ): Array[Byte] = {
+      (for { i <- 0 to hex.length-1 by 2 if i > 0 || !hex.startsWith( "0x" )}
+      yield hex.substring( i, i+2 ))
+        .map( Integer.parseInt( _, 16 ).toByte ).toArray
+    }
 
   }
 

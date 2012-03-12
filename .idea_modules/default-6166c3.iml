@@ -27,7 +27,7 @@
     <orderEntry type="library" name="org.scalatest_scalatest_2.9.1_1.6.1" level="project" />
     <orderEntry type="library" name="ch.qos.logback_logback-classic_0.9.26" level="project" />
     <orderEntry type="library" name="ch.qos.logback_logback-core_0.9.26" level="project" />
-    <orderEntry type="library" name="com.google_bitcoinj_0.4-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="com.google_bitcoinj_0.5-SNAPSHOT" level="project" />
     <orderEntry type="library" name="org.slf4j_slf4j-api_1.6.2" level="project" />
     <orderEntry type="library" name="org.bouncycastle_bcprov-jdk15_1.46" level="project" />
     <orderEntry type="library" name="com.google.protobuf_protobuf-java_2.4.1" level="project" />
@@ -36,15 +36,15 @@
     <orderEntry type="library" name="org.apache.geronimo.specs_geronimo-jta_1.1_spec_1.1.1" level="project" />
     <orderEntry type="library" name="org.neo4j_neo4j-shell_1.0" level="project" />
     <orderEntry type="library" name="jline_jline_0.9.94" level="project" />
-    <orderEntry type="library" name="org.neo4j_neo4j_1.5" level="project" />
-    <orderEntry type="library" name="org.neo4j_neo4j-kernel_1.5" level="project" />
-    <orderEntry type="library" name="org.neo4j_neo4j-lucene-index_1.5" level="project" />
-    <orderEntry type="library" name="org.apache.lucene_lucene-core_3.1.0" level="project" />
-    <orderEntry type="library" name="org.neo4j_neo4j-graph-algo_1.5" level="project" />
-    <orderEntry type="library" name="org.neo4j_neo4j-udc_1.5" level="project" />
-    <orderEntry type="library" name="org.neo4j_neo4j-graph-matching_1.5" level="project" />
-    <orderEntry type="library" name="org.neo4j_neo4j-cypher_1.5" level="project" />
-    <orderEntry type="library" name="org.neo4j_neo4j-jmx_1.5" level="project" />
+    <orderEntry type="library" name="org.neo4j_neo4j_1.6.1" level="project" />
+    <orderEntry type="library" name="org.neo4j_neo4j-kernel_1.6.1" level="project" />
+    <orderEntry type="library" name="org.neo4j_neo4j-lucene-index_1.6.1" level="project" />
+    <orderEntry type="library" name="org.apache.lucene_lucene-core_3.5.0" level="project" />
+    <orderEntry type="library" name="org.neo4j_neo4j-graph-algo_1.6.1" level="project" />
+    <orderEntry type="library" name="org.neo4j_neo4j-udc_1.6.1" level="project" />
+    <orderEntry type="library" name="org.neo4j_neo4j-graph-matching_1.6.1" level="project" />
+    <orderEntry type="library" name="org.neo4j_neo4j-cypher_1.6.1" level="project" />
+    <orderEntry type="library" name="org.neo4j_neo4j-jmx_1.6.1" level="project" />
     <orderEntry type="library" scope="TEST" name="org.scala-tools.testing_specs_2.9.0_1.6.8" level="project" />
     <orderEntry type="library" scope="TEST" name="org.scala-lang_scala-compiler_2.9.1" level="project" />
   </component>
