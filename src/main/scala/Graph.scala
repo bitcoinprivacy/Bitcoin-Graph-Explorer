@@ -44,7 +44,7 @@ object Graph extends Neo4jWrapper {
         neo => // this is very far out so as to keep the whole operation atomic
 
         // the all new "controlling entities" network
-          for (trans: Transaction <- block.getTransactions.par) {
+          for (trans: Transaction <- block.getTransactions) {
             
             val node = if (!trans.isCoinBase) {
 
@@ -52,15 +52,15 @@ object Graph extends Neo4jWrapper {
               // all incoming addresses are controlled by a common entity/node
               // invariant kept: every address occurs in at most one node!
 
-              var addresses: List[Address] = trans.getInputs.map(_.getFromAddress)
-              val (unknown, known) = addresses.partition(entityIndex.get("address", _).isEmpty)
+              var addresses: List[Address] = trans.getInputs.map(_.getFromAddress).toList
+              val (unknown, known) = addresses.partition(entityIndex.get("address", _).getSingle == null)
 
               // get a List of all known unique entities that use addresses in this transaction input
               if (known.isEmpty) {
                 val node = neo.createNode()
                 for (address <- addresses)
                   entityIndex.add(node, "address", address)
-                node("addresses") = addresses
+                node("addresses") = addresses.toArray
                 node
               }
               else {
@@ -87,8 +87,12 @@ object Graph extends Neo4jWrapper {
             else createIfNotPresent("address","0")
             
             for (output <- trans.getOutputs)
-              node.createRelationshipTo(createIfNotPresent(output.getScriptPubKey.getToAddress),"pays")("amount") = output.getValue
-
+              try { 
+              node.createRelationshipTo(createIfNotPresent("address",output.getScriptPubKey.getToAddress),"pays")("amount") = output.getValue
+              }
+              catch {
+                case e: ScriptException => println("can't parse script paying from " + node("addresses"))
+              }
           }
 
 

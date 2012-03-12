@@ -13,7 +13,7 @@ object Main extends App {
   val wallet = new Wallet(params)
   val blockStore = new BoundedOverheadBlockStore(params, new File("bitcoin.blockchain"));
   val chain = new BlockChain(params, wallet, blockStore)
-  val peers = new PeerGroup(blockStore, params, chain)
+  val peers = new PeerGroup(params, chain)
   val listener: DownloadListener = new Graph.NeoDownLoadListener(params)
 
   println("Reading block store from disk");
@@ -23,6 +23,10 @@ object Main extends App {
   peers.start()
 
   peers.startBlockChainDownload(listener)
+
+  while (true)
+    Thread.sleep(1000)
+
 
   // hook up a DownloadListener to PeerGroup
   // this gets called every time a new block is linked to the chain with the block (this block is not castrated before we get to it)
