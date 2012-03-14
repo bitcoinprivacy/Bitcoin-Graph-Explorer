@@ -36,6 +36,7 @@ object Graph extends Neo4jWrapper {
   val entityIndex = index.forNodes("entities")
   // val transactionIndex = index.forRelationships("transactions");
 
+  val origin = createNodeWithAddressIfNotPresent("0")
 
   class NeoDownLoadListener(params: NetworkParameters) extends DownloadListener {
 
@@ -56,7 +57,8 @@ object Graph extends Neo4jWrapper {
               var addresses: Array[String] = trans.getInputs.map(_.getFromAddress.toString).toArray
               val (unknown, known) = addresses.partition(entityIndex.get("address", _).getSingle == null)
 
-              // get a List of all known unique entities that use addresses in this transaction input
+              // get a List (Arry) of all known unique entities that use addresses in this transaction input
+              
               if (known.isEmpty) {
                 val node = neo.createNode()
                 for (address <- addresses)
@@ -74,11 +76,11 @@ object Graph extends Neo4jWrapper {
                     oldrel.delete()
                   }
                   for (oldrel <- oldnode.getRelationships(Direction.INCOMING)) {
-                    node <-- "pays" <-- oldrel.getEndNode
+                    node <-- "pays" <-- oldrel.getStartNode
                     oldrel.delete()
                   }
 
-                  addresses ++ oldnode("addresses")
+                  addresses ++ oldnode("addresses")  // is always distinct due to invariant
                   entityIndex.remove(oldnode)
                   oldnode.delete()
                 }
@@ -90,11 +92,13 @@ object Graph extends Neo4jWrapper {
                 node 
               }
             }
-            else createNodeWithAddressIfNotPresent("0")
+            else origin
             
             for (output <- trans.getOutputs)
               try { 
-              node.createRelationshipTo(createNodeWithAddressIfNotPresent(output.getScriptPubKey.getToAddress.toString),"pays")("amount") = output.getValue.toString
+              node.createRelationshipTo(
+                createNodeWithAddressIfNotPresent(output.getScriptPubKey.getToAddress.toString),"pays")
+                ("amount") = output.getValue.toString
               }
               catch {
                 case e: ScriptException =>
@@ -105,7 +109,8 @@ object Graph extends Neo4jWrapper {
                     import Utils._
                     val pubkey = hex2Bytes(pubkeystring)
                     val address = new Address(params,sha256hash160(pubkey))
-                    node.createRelationshipTo(createNodeWithAddressIfNotPresent(address.toString),"pays")("amount") = output.getValue.toString
+                    node.createRelationshipTo(createNodeWithAddressIfNotPresent(address.toString),"pays")
+                      ("amount") = output.getValue.toString
                   }
                     // special case because bitcoinJ doesn't support pay-to-IP scripts
                   else println("can't parse script: " + output.getScriptPubKey.toString)
@@ -118,24 +123,24 @@ object Graph extends Neo4jWrapper {
       super.onBlocksDownloaded(peer: Peer, block: Block, blocksLeft: Int) // to keep the nice statistics
     }
 
-    def createNodeWithAddressIfNotPresent(value:String) = {
-      var node = entityIndex.get("address", value).getSingle
-      if (node != null)
-        println(value + " already exists in neodb")
-      else {
-        node = neo.createNode()
-        node("addresses")=Array(value)
-        entityIndex.add(node, "address", value)
-      }
-      node
-    }
-
     def hex2Bytes( hex: String ): Array[Byte] = {
       (for { i <- 0 to hex.length-1 by 2 if i > 0 || !hex.startsWith( "0x" )}
       yield hex.substring( i, i+2 ))
         .map( Integer.parseInt( _, 16 ).toByte ).toArray
     }
 
+  }
+
+  def createNodeWithAddressIfNotPresent(value:String) = {
+    var node = entityIndex.get("address", value).getSingle
+    if (node != null)
+      println(value + " already exists in neodb")
+    else {
+      node = neo.createNode()
+      node("addresses")=Array(value)
+      entityIndex.add(node, "address", value)
+    }
+    node
   }
 
 }
