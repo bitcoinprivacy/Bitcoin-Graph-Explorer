@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="9928c65f-7f46-489a-9631-83dd8a725770" name="Default" comment="fixed">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/Graph.scala" afterPath="$PROJECT_DIR$/src/main/scala/Graph.scala" />
-    </list>
+    <list default="true" id="9928c65f-7f46-489a-9631-83dd8a725770" name="Default" comment="fixed" />
     <ignored path="Bitcoin-Graph-Explorer.iws" />
     <ignored path=".idea/workspace.xml" />
     <option name="TRACKING_ENABLED" value="true" />
