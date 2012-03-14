@@ -36,7 +36,10 @@ object Graph extends Neo4jWrapper {
   val entityIndex = index.forNodes("entities")
   // val transactionIndex = index.forRelationships("transactions");
 
-  val origin = createNodeWithAddressIfNotPresent("0")
+
+      val origin = execInNeo4j {
+        neo => createNodeWithAddressIfNotPresent("0")
+  }
 
   class NeoDownLoadListener(params: NetworkParameters) extends DownloadListener {
 
@@ -97,8 +100,8 @@ object Graph extends Neo4jWrapper {
             for (output <- trans.getOutputs)
               try { 
               node.createRelationshipTo(
-                createNodeWithAddressIfNotPresent(output.getScriptPubKey.getToAddress.toString),"pays")
-                ("amount") = output.getValue.toString
+                createNodeWithAddressIfNotPresent(output.getScriptPubKey.getToAddress.toString),"pays")("amount")
+                = output.getValue.toString
               }
               catch {
                 case e: ScriptException =>
@@ -109,8 +112,8 @@ object Graph extends Neo4jWrapper {
                     import Utils._
                     val pubkey = hex2Bytes(pubkeystring)
                     val address = new Address(params,sha256hash160(pubkey))
-                    node.createRelationshipTo(createNodeWithAddressIfNotPresent(address.toString),"pays")
-                      ("amount") = output.getValue.toString
+                    node.createRelationshipTo(createNodeWithAddressIfNotPresent(address.toString),"pays")("amount")
+                      = output.getValue.toString
                   }
                     // special case because bitcoinJ doesn't support pay-to-IP scripts
                   else println("can't parse script: " + output.getScriptPubKey.toString)

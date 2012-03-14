@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="9928c65f-7f46-489a-9631-83dd8a725770" name="Default" comment="fixed">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/Graph.scala" afterPath="$PROJECT_DIR$/src/main/scala/Graph.scala" />
     </list>
     <ignored path="Bitcoin-Graph-Explorer.iws" />
@@ -64,7 +63,7 @@
       <file leaf-file-name="Graph.scala" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/scala/Graph.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="8" column="67" selection-start="182" selection-end="182" vertical-scroll-proportion="0.34985423">
+            <state line="50" column="108" selection-start="1348" selection-end="1348" vertical-scroll-proportion="0.7696793">
               <folding />
             </state>
           </provider>
@@ -607,7 +606,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/Graph.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="8" column="67" selection-start="182" selection-end="182" vertical-scroll-proportion="0.34985423">
+        <state line="50" column="108" selection-start="1348" selection-end="1348" vertical-scroll-proportion="0.7696793">
           <folding />
         </state>
       </provider>
