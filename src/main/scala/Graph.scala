@@ -34,11 +34,11 @@ object Graph extends Neo4jWrapper {
 
   val index = neo.index()
   val entityIndex = index.forNodes("entities")
-  // val transactionIndex = index.forRelationships("transactions");
+  val transactionIndex = index.forRelationships("transactions");
 
 
-      val origin = execInNeo4j {
-        neo => createNodeWithAddressIfNotPresent("0")
+  val origin = execInNeo4j {
+    neo => createNodeWithAddressIfNotPresent("0")
   }
 
   class NeoDownLoadListener(params: NetworkParameters) extends DownloadListener {
@@ -49,8 +49,13 @@ object Graph extends Neo4jWrapper {
         neo => // this is very far out so as to keep the whole operation atomic
 
         // the all new "controlling entities" network
-          for (trans: Transaction <- block.getTransactions) {
+          val transactions = block.getTransactions
+          if (transactionIndex.get("transaction", transactions.head.getHashAsString).getSingle != null)
+            println("graphdb already has block" + block.getHashAsString)
+
+          else for (trans: Transaction <- transactions) {
             
+            val transHash = trans.getHashAsString
             val node = if (!trans.isCoinBase) {
 
               // record incoming addresses if there is such a thing
@@ -61,7 +66,7 @@ object Graph extends Neo4jWrapper {
               val (unknown, known) = addresses.partition(entityIndex.get("address", _).getSingle == null)
 
               // get a List (Arry) of all known unique entities that use addresses in this transaction input
-              
+
               if (known.isEmpty) {
                 val node = neo.createNode()
                 for (address <- addresses)
@@ -75,15 +80,25 @@ object Graph extends Neo4jWrapper {
                 val node = entities.head
                 for (oldnode <- entities.tail) {
                   for (oldrel <- oldnode.getRelationships(Direction.OUTGOING)) {
-                    node --> "pays" --> oldrel.getEndNode
+                    val rel = node.createRelationshipTo (oldrel.getEndNode,"pays")
+                    rel("amount")= oldrel("amount")
+                    val oldtrans = oldrel("transaction")
+                    rel("transaction") = oldtrans
+                    transactionIndex.remove(oldrel)
+                    transactionIndex.add(rel,"transaction",oldtrans)
                     oldrel.delete()
                   }
                   for (oldrel <- oldnode.getRelationships(Direction.INCOMING)) {
-                    node <-- "pays" <-- oldrel.getStartNode
+                    val rel = oldrel.getStartNode.createRelationshipTo(node,"pays")
+                    rel("amount")= oldrel("amount")
+                    val oldtrans = oldrel("transaction")
+                    rel("transaction") = oldtrans
+                    transactionIndex.remove(oldrel)
+                    transactionIndex.add(rel,"transaction",oldtrans)
                     oldrel.delete()
                   }
 
-                  addresses ++ oldnode("addresses")  // is always distinct due to invariant
+                  addresses ++ oldnode("addresses") // is always distinct due to invariant
                   entityIndex.remove(oldnode)
                   oldnode.delete()
                 }
@@ -92,30 +107,33 @@ object Graph extends Neo4jWrapper {
                   entityIndex.add(node, "address", address)
                 addresses ++ node("addresses")
                 node("addresses") = addresses
-                node 
+                node
               }
             }
             else origin
-            
+
             for (output <- trans.getOutputs)
-              try { 
-              node.createRelationshipTo(
-                createNodeWithAddressIfNotPresent(output.getScriptPubKey.getToAddress.toString),"pays")("amount")
-                = output.getValue.toString
+              try {
+                val rel = node.createRelationshipTo(
+                  createNodeWithAddressIfNotPresent(output.getScriptPubKey.getToAddress.toString), "pays")
+                rel("amount") = output.getValue.toString
+                rel("transaction") = transHash
+                transactionIndex.add(rel,"transaction", transHash)
               }
               catch {
                 case e: ScriptException =>
                   val script = output.getScriptPubKey.toString
-                  if (script.startsWith("[65]"))
-                  {
-                    val pubkeystring = script.substring(4,134)
+                  if (script.startsWith("[65]")) {
+                    val pubkeystring = script.substring(4, 134)
                     import Utils._
                     val pubkey = hex2Bytes(pubkeystring)
-                    val address = new Address(params,sha256hash160(pubkey))
-                    node.createRelationshipTo(createNodeWithAddressIfNotPresent(address.toString),"pays")("amount")
-                      = output.getValue.toString
+                    val address = new Address(params, sha256hash160(pubkey))
+                    val rel = node.createRelationshipTo(createNodeWithAddressIfNotPresent(address.toString), "pays")
+                    rel ("amount") = output.getValue.toString
+                    rel ("transaction") = transHash 
+                    transactionIndex.add(rel,"transaction", transHash)
                   }
-                    // special case because bitcoinJ doesn't support pay-to-IP scripts
+                  // special case because bitcoinJ doesn't support pay-to-IP scripts
                   else println("can't parse script: " + output.getScriptPubKey.toString)
               }
           }
@@ -126,21 +144,21 @@ object Graph extends Neo4jWrapper {
       super.onBlocksDownloaded(peer: Peer, block: Block, blocksLeft: Int) // to keep the nice statistics
     }
 
-    def hex2Bytes( hex: String ): Array[Byte] = {
-      (for { i <- 0 to hex.length-1 by 2 if i > 0 || !hex.startsWith( "0x" )}
-      yield hex.substring( i, i+2 ))
-        .map( Integer.parseInt( _, 16 ).toByte ).toArray
+    def hex2Bytes(hex: String): Array[Byte] = {
+      (for {i <- 0 to hex.length - 1 by 2 if i > 0 || !hex.startsWith("0x")}
+      yield hex.substring(i, i + 2))
+        .map(Integer.parseInt(_, 16).toByte).toArray
     }
 
   }
 
-  def createNodeWithAddressIfNotPresent(value:String) = {
+  def createNodeWithAddressIfNotPresent(value: String) = {
     var node = entityIndex.get("address", value).getSingle
     if (node != null)
       println(value + " already exists in neodb")
     else {
       node = neo.createNode()
-      node("addresses")=Array(value)
+      node("addresses") = Array(value)
       entityIndex.add(node, "address", value)
     }
     node
