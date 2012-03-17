@@ -81,8 +81,8 @@ object Graph extends Neo4jWrapper {
                 for (oldnode <- entities.tail) {
                   for (oldrel <- oldnode.getRelationships(Direction.OUTGOING)) {
                     val rel = node.createRelationshipTo (oldrel.getEndNode,"pays")
-                    rel("amount")= oldrel("amount")
-                    val oldtrans = oldrel("transaction")
+                    rel("amount")= oldrel("amount") .get
+                    val oldtrans = oldrel("transaction").get
                     rel("transaction") = oldtrans
                     transactionIndex.remove(oldrel)
                     transactionIndex.add(rel,"transaction",oldtrans)
@@ -90,8 +90,8 @@ object Graph extends Neo4jWrapper {
                   }
                   for (oldrel <- oldnode.getRelationships(Direction.INCOMING)) {
                     val rel = oldrel.getStartNode.createRelationshipTo(node,"pays")
-                    rel("amount")= oldrel("amount")
-                    val oldtrans = oldrel("transaction")
+                    rel("amount")= oldrel("amount").get
+                    val oldtrans = oldrel("transaction").get
                     rel("transaction") = oldtrans
                     transactionIndex.remove(oldrel)
                     transactionIndex.add(rel,"transaction",oldtrans)
@@ -105,7 +105,7 @@ object Graph extends Neo4jWrapper {
 
                 for (address <- addresses)
                   entityIndex.add(node, "address", address)
-                addresses ++ node("addresses")
+                addresses ++ node("addresses")   // not sure why this compiles and if semantics is right
                 node("addresses") = addresses
                 node
               }

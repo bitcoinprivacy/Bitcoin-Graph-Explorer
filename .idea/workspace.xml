@@ -63,7 +63,7 @@
       <file leaf-file-name="Graph.scala" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/scala/Graph.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="97" column="62" selection-start="3760" selection-end="3760" vertical-scroll-proportion="4.462963">
+            <state line="107" column="104" selection-start="4197" selection-end="4197" vertical-scroll-proportion="1.8395061">
               <folding />
             </state>
           </provider>
@@ -72,7 +72,7 @@
       <file leaf-file-name="TraversableLike.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="jar://$USER_HOME$/.ivy2/cache/org.scala-lang/scala-library/srcs/scala-library-2.9.1-sources.jar!/scala/collection/TraversableLike.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="266" column="6" selection-start="10878" selection-end="10878" vertical-scroll-proportion="0.0">
+            <state line="146" column="6" selection-start="6025" selection-end="6025" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -599,14 +599,14 @@
     </entry>
     <entry file="jar://$USER_HOME$/.ivy2/cache/org.scala-lang/scala-library/srcs/scala-library-2.9.1-sources.jar!/scala/collection/TraversableLike.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="266" column="6" selection-start="10878" selection-end="10878" vertical-scroll-proportion="0.0">
+        <state line="146" column="6" selection-start="6025" selection-end="6025" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/Graph.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="97" column="62" selection-start="3760" selection-end="3760" vertical-scroll-proportion="4.462963">
+        <state line="107" column="104" selection-start="4197" selection-end="4197" vertical-scroll-proportion="1.8395061">
           <folding />
         </state>
       </provider>
