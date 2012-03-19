@@ -8,15 +8,14 @@ package BitcoinGraphExplorer
  * To change this template use File | Settings | File Templates.
  */
 
-import java.util.HashMap
-import org.neo4j.kernel.{Config, EmbeddedGraphDatabase}
+import org.neo4j.kernel.EmbeddedGraphDatabase
 import org.neo4j.scala._
 import collection.JavaConversions._
 
 import com.google.bitcoin.core._
-import org.neo4j.graphdb.index.IndexManager
-import org.neo4j.graphdb.{Direction, DynamicRelationshipType, GraphDatabaseService}
-import java.math.BigInteger
+import org.neo4j.graphdb.{Direction, GraphDatabaseService}
+import scala.actors.Actor._
+import actors.Actor
 
 // beware: Transaction might be shadowed by neo4j
 
@@ -41,108 +40,124 @@ object Graph extends Neo4jWrapper {
     neo => createNodeWithAddressIfNotPresent("0")
   }
 
+
+
   class NeoDownLoadListener(params: NetworkParameters) extends DownloadListener {
+
+    neoActor.start()
+
+    object neoActor extends Actor {
+      def act {
+        react {
+          case block:Block =>
+            execInNeo4j {
+              neo => // this is very far out so as to keep the whole operation atomic
+
+              // the all new "controlling entities" network
+                val transactions = block.getTransactions
+                if (transactionIndex.get("transaction", transactions.head.getHashAsString).getSingle != null)
+                  println("graphdb already has block" + block.getHashAsString)
+
+                else for (trans: Transaction <- transactions) {
+
+                  val transHash = trans.getHashAsString
+                  val node = if (!trans.isCoinBase) {
+
+                    // record incoming addresses if there is such a thing
+                    // all incoming addresses are controlled by a common entity/node
+                    // invariant kept: every address occurs in at most one node!
+
+                    var addresses: Array[String] = trans.getInputs.map(_.getFromAddress.toString).toArray
+                    val (unknown, known) = addresses.partition(entityIndex.get("address", _).getSingle == null)
+
+                    // get a List (Arry) of all known unique entities that use addresses in this transaction input
+
+                    if (known.isEmpty) {
+                      val node = neo.createNode()
+                      for (address <- addresses)
+                        entityIndex.add(node, "address", address)
+                      node("addresses") = addresses
+                      node
+                    }
+                    else {
+                      addresses = unknown
+                      val entities = known.map(entityIndex.get("address", _).getSingle).distinct
+                      val node = entities.head
+                      for (oldnode <- entities.tail) {
+                        for (oldrel <- oldnode.getRelationships(Direction.OUTGOING)) {
+                          val rel = node.createRelationshipTo (oldrel.getEndNode,"pays")
+                          rel("amount")= oldrel("amount") .get
+                          val oldtrans = oldrel("transaction").get
+                          rel("transaction") = oldtrans
+                          transactionIndex.remove(oldrel)
+                          transactionIndex.add(rel,"transaction",oldtrans)
+                          oldrel.delete()
+                        }
+                        for (oldrel <- oldnode.getRelationships(Direction.INCOMING)) {
+                          val rel = oldrel.getStartNode.createRelationshipTo(node,"pays")
+                          rel("amount")= oldrel("amount").get
+                          val oldtrans = oldrel("transaction").get
+                          rel("transaction") = oldtrans
+                          transactionIndex.remove(oldrel)
+                          transactionIndex.add(rel,"transaction",oldtrans)
+                          oldrel.delete()
+                        }
+
+                        addresses ++ oldnode("addresses") // is always distinct due to invariant
+                        entityIndex.remove(oldnode)
+                        oldnode.delete()
+                      }
+
+                      for (address <- addresses)
+                        entityIndex.add(node, "address", address)
+                      addresses ++ node("addresses")   // not sure why this compiles and if semantics is right
+                      node("addresses") = addresses
+                      node
+                    }
+                  }
+                  else origin
+
+                  for (output <- trans.getOutputs)
+                    try {
+                      val rel = node.createRelationshipTo(
+                        createNodeWithAddressIfNotPresent(output.getScriptPubKey.getToAddress.toString), "pays")
+                      rel("amount") = output.getValue.toString
+                      rel("transaction") = transHash
+                      transactionIndex.add(rel,"transaction", transHash)
+                    }
+                    catch {
+                      case e: ScriptException =>
+                        val script = output.getScriptPubKey.toString
+                        if (script.startsWith("[65]")) {
+                          val pubkeystring = script.substring(4, 134)
+                          import Utils._
+                          val pubkey = hex2Bytes(pubkeystring)
+                          val address = new Address(params, sha256hash160(pubkey))
+                          val rel = node.createRelationshipTo(createNodeWithAddressIfNotPresent(address.toString), "pays")
+                          rel ("amount") = output.getValue.toString
+                          rel ("transaction") = transHash
+                          transactionIndex.add(rel,"transaction", transHash)
+                        }
+                        // special case because bitcoinJ doesn't support pay-to-IP scripts
+                        else println("can't parse script: " + output.getScriptPubKey.toString)
+                    }
+                }
+
+
+            }
+            act()
+
+        }
+      }
+    }
 
     override def onBlocksDownloaded(peer: Peer, block: Block, blocksLeft: Int) {
 
-      execInNeo4j {
-        neo => // this is very far out so as to keep the whole operation atomic
-
-        // the all new "controlling entities" network
-          val transactions = block.getTransactions
-          if (transactionIndex.get("transaction", transactions.head.getHashAsString).getSingle != null)
-            println("graphdb already has block" + block.getHashAsString)
-
-          else for (trans: Transaction <- transactions) {
-            
-            val transHash = trans.getHashAsString
-            val node = if (!trans.isCoinBase) {
-
-              // record incoming addresses if there is such a thing
-              // all incoming addresses are controlled by a common entity/node
-              // invariant kept: every address occurs in at most one node!
-
-              var addresses: Array[String] = trans.getInputs.map(_.getFromAddress.toString).toArray
-              val (unknown, known) = addresses.partition(entityIndex.get("address", _).getSingle == null)
-
-              // get a List (Arry) of all known unique entities that use addresses in this transaction input
-
-              if (known.isEmpty) {
-                val node = neo.createNode()
-                for (address <- addresses)
-                  entityIndex.add(node, "address", address)
-                node("addresses") = addresses
-                node
-              }
-              else {
-                addresses = unknown
-                val entities = known.map(entityIndex.get("address", _).getSingle).distinct
-                val node = entities.head
-                for (oldnode <- entities.tail) {
-                  for (oldrel <- oldnode.getRelationships(Direction.OUTGOING)) {
-                    val rel = node.createRelationshipTo (oldrel.getEndNode,"pays")
-                    rel("amount")= oldrel("amount") .get
-                    val oldtrans = oldrel("transaction").get
-                    rel("transaction") = oldtrans
-                    transactionIndex.remove(oldrel)
-                    transactionIndex.add(rel,"transaction",oldtrans)
-                    oldrel.delete()
-                  }
-                  for (oldrel <- oldnode.getRelationships(Direction.INCOMING)) {
-                    val rel = oldrel.getStartNode.createRelationshipTo(node,"pays")
-                    rel("amount")= oldrel("amount").get
-                    val oldtrans = oldrel("transaction").get
-                    rel("transaction") = oldtrans
-                    transactionIndex.remove(oldrel)
-                    transactionIndex.add(rel,"transaction",oldtrans)
-                    oldrel.delete()
-                  }
-
-                  addresses ++ oldnode("addresses") // is always distinct due to invariant
-                  entityIndex.remove(oldnode)
-                  oldnode.delete()
-                }
-
-                for (address <- addresses)
-                  entityIndex.add(node, "address", address)
-                addresses ++ node("addresses")   // not sure why this compiles and if semantics is right
-                node("addresses") = addresses
-                node
-              }
-            }
-            else origin
-
-            for (output <- trans.getOutputs)
-              try {
-                val rel = node.createRelationshipTo(
-                  createNodeWithAddressIfNotPresent(output.getScriptPubKey.getToAddress.toString), "pays")
-                rel("amount") = output.getValue.toString
-                rel("transaction") = transHash
-                transactionIndex.add(rel,"transaction", transHash)
-              }
-              catch {
-                case e: ScriptException =>
-                  val script = output.getScriptPubKey.toString
-                  if (script.startsWith("[65]")) {
-                    val pubkeystring = script.substring(4, 134)
-                    import Utils._
-                    val pubkey = hex2Bytes(pubkeystring)
-                    val address = new Address(params, sha256hash160(pubkey))
-                    val rel = node.createRelationshipTo(createNodeWithAddressIfNotPresent(address.toString), "pays")
-                    rel ("amount") = output.getValue.toString
-                    rel ("transaction") = transHash 
-                    transactionIndex.add(rel,"transaction", transHash)
-                  }
-                  // special case because bitcoinJ doesn't support pay-to-IP scripts
-                  else println("can't parse script: " + output.getScriptPubKey.toString)
-              }
-          }
-
-
-      }
+      neoActor ! block
 
       super.onBlocksDownloaded(peer: Peer, block: Block, blocksLeft: Int) // to keep the nice statistics
     }
+
 
     def hex2Bytes(hex: String): Array[Byte] = {
       (for {i <- 0 to hex.length - 1 by 2 if i > 0 || !hex.startsWith("0x")}
@@ -151,6 +166,7 @@ object Graph extends Neo4jWrapper {
     }
 
   }
+
 
   def createNodeWithAddressIfNotPresent(value: String) = {
     var node = entityIndex.get("address", value).getSingle
