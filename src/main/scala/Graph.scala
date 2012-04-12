@@ -16,6 +16,7 @@ import com.google.bitcoin.core._
 import org.neo4j.graphdb.{Direction, GraphDatabaseService}
 import scala.actors.Actor._
 import actors.Actor
+import collection.mutable.HashMap
 
 // beware: Transaction might be shadowed by neo4j
 
@@ -40,12 +41,67 @@ object Graph extends Neo4jWrapper {
     neo => createNodeWithAddressIfNotPresent("0")
   }
 
+  val addressMap: HashMap[String,DisjointSetOfAddresses] = new HashMap[String, DisjointSetOfAddresses]()
 
 
   class NeoDownLoadListener(params: NetworkParameters) extends DownloadListener {
 
-    neoActor.start()
+    disjointSetActor.start()
 
+    object disjointSetActor extends Actor {
+      def act {
+        react {
+          case block:Block =>
+            // the all new "controlling entities" network
+            val transactions = block.getTransactions
+            for (trans: Transaction <- transactions) {
+
+              if (!trans.isCoinBase) {
+
+                // record incoming addresses if there is such a thing
+                // all incoming addresses are controlled by a common entity/node
+                // invariant kept: every address occurs in at most one node!
+
+                val addresses = trans.getInputs.map(_.getFromAddress.toString)
+                val disjointSets = addresses.map(x => addressMap.getOrElseUpdate(x,new DisjointSetOfAddresses(x)))
+                disjointSets.reduceLeft((x,y) =>  x.union(y))
+              }
+
+              for (output <- trans.getOutputs)
+              { val outaddress = 
+                try {
+                   output.getScriptPubKey.getToAddress.toString
+                }
+                catch {
+                  case e: ScriptException =>
+                    val script = output.getScriptPubKey.toString
+                    if (script.startsWith("[65]")) {
+                      val pubkeystring = script.substring(4, 134)
+                      import Utils._
+                      val pubkey = hex2Bytes(pubkeystring)
+                      val address = new Address(params, sha256hash160(pubkey))
+                      address.toString
+                    }
+                    // special case because bitcoinJ doesn't support pay-to-IP scripts
+                    else { 
+                      println("can't parse script: " + output.getScriptPubKey.toString)
+                      "0"
+                    }
+                }
+                addressMap.getOrElseUpdate(outaddress, new DisjointSetOfAddresses(outaddress))
+            }
+
+
+        }
+        println(addressMap.size + " addresses")
+        act()
+
+
+        }
+      }  
+    }
+    
+    
     object neoActor extends Actor {
       def act {
         react {
@@ -153,7 +209,7 @@ object Graph extends Neo4jWrapper {
 
     override def onBlocksDownloaded(peer: Peer, block: Block, blocksLeft: Int) {
 
-      neoActor ! block
+      disjointSetActor ! block
 
       super.onBlocksDownloaded(peer: Peer, block: Block, blocksLeft: Int) // to keep the nice statistics
     }
