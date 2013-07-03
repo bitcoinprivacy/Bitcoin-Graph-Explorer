@@ -20,8 +20,8 @@ import collection.mutable.HashMap
 
 // beware: Transaction might be shadowed by neo4j
 
-object Graph extends Neo4jWrapper {
-
+object Graph extends Neo4jWrapper with EmbeddedGraphDatabaseServiceProvider {
+  def neo4jStoreDir = "/tmp/temp-neo-test"
 
   implicit val neo: GraphDatabaseService = new EmbeddedGraphDatabase("neodb")
 
@@ -37,8 +37,8 @@ object Graph extends Neo4jWrapper {
   val transactionIndex = index.forRelationships("transactions");
 
 
-  val origin = execInNeo4j {
-    neo => createNodeWithAddressIfNotPresent("0")
+  val origin = withTx {
+    implicit neo => createNodeWithAddressIfNotPresent("0")
   }
 
   val addressMap: HashMap[String,DisjointSetOfAddresses] = new HashMap[String, DisjointSetOfAddresses]()
@@ -70,7 +70,7 @@ object Graph extends Neo4jWrapper {
               for (output <- trans.getOutputs)
               { val outaddress = 
                 try {
-                   output.getScriptPubKey.getToAddress.toString
+                   output.getScriptPubKey.getToAddress(params).toString
                 }
                 catch {
                   case e: ScriptException =>
@@ -106,8 +106,8 @@ object Graph extends Neo4jWrapper {
       def act {
         react {
           case block:Block =>
-            execInNeo4j {
-              neo => // this is very far out so as to keep the whole operation atomic
+            withTx {
+             implicit neo => // this is very far out so as to keep the whole operation atomic
 
               // the all new "controlling entities" network
                 val transactions = block.getTransactions
@@ -115,6 +115,7 @@ object Graph extends Neo4jWrapper {
                   println("graphdb already has block" + block.getHashAsString)
 
                 else for (trans: Transaction <- transactions) {
+
 
                   val transHash = trans.getHashAsString
                   val node = if (!trans.isCoinBase) {
@@ -129,7 +130,7 @@ object Graph extends Neo4jWrapper {
                     // get a List (Arry) of all known unique entities that use addresses in this transaction input
 
                     if (known.isEmpty) {
-                      val node = neo.createNode()
+                      val node = createNode
                       for (address <- addresses)
                         entityIndex.add(node, "address", address)
                       node("addresses") = addresses
@@ -176,7 +177,7 @@ object Graph extends Neo4jWrapper {
                   for (output <- trans.getOutputs)
                     try {
                       val rel = node.createRelationshipTo(
-                        createNodeWithAddressIfNotPresent(output.getScriptPubKey.getToAddress.toString), "pays")
+                        createNodeWithAddressIfNotPresent(output.getScriptPubKey.getToAddress(params).toString), "pays")
                       rel("amount") = output.getValue.toString
                       rel("transaction") = transHash
                       transactionIndex.add(rel,"transaction", transHash)
@@ -229,7 +230,7 @@ object Graph extends Neo4jWrapper {
     if (node != null)
       println(value + " already exists in neodb")
     else {
-      node = neo.createNode()
+      node = neo.createNode
       node("addresses") = Array(value)
       entityIndex.add(node, "address", value)
     }
