@@ -4,7 +4,7 @@ name := "Bitcoin Graph Explorer"
 
 version := "0.6"
 
-scalaVersion := "2.9.1"
+scalaVersion := "2.9.2"
 
 // additional libraries
 libraryDependencies ++= Seq(
@@ -13,9 +13,9 @@ libraryDependencies ++= Seq(
 //	"junit" % "junit" % "4.8" % "test->default", // For JUnit 4 testing
 	"ch.qos.logback" % "logback-classic" % "0.9.26" % "compile->default", // Logging
 	"com.google" % "bitcoinj" % "0.9",
-	"org.neo4j" % "neo4j-scala" % "0.2.0-M2-SNAPSHOT"
- //       "org.neo4j" % "neo4j" % "1.6.1"
-)
+	"org.neo4j" % "neo4j-scala" % "0.2.0-M2-SNAPSHOT",
+ "org.iq80.leveldb"%"leveldb"%"0.6")
+
 
 
 resolvers += "Local Maven Repository" at "file:///"+Path.userHome.absolutePath+"/.m2/repository"
