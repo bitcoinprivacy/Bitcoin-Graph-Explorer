@@ -12,7 +12,7 @@ libraryDependencies ++= Seq(
 //	"org.scalatest" % "scalatest_2.9.1" % "1.6.1", // scalatest
 //	"junit" % "junit" % "4.8" % "test->default", // For JUnit 4 testing
 	"ch.qos.logback" % "logback-classic" % "0.9.26" % "compile->default", // Logging
-	"com.google" % "bitcoinj" % "0.9",
+	"com.google" % "bitcoinj" % "0.10",
 	"org.neo4j" % "neo4j-scala" % "0.2.0-M2-SNAPSHOT",
  "org.iq80.leveldb"%"leveldb"%"0.6")
 
@@ -24,5 +24,6 @@ resolvers += "Fakod Snapshots" at "https://raw.github.com/FaKod/fakod-mvn-repo/m
 
 resolvers += "neo4j" at "http://m2.neo4j.org"
 
+resolvers += "bitcoinj" at "http://distribution.bitcoinj.googlecode.com/git/releases"
 
 // fork in run := true
