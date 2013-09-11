@@ -13,14 +13,23 @@ object LevelDBTest {
 
   var options = new Options();
   options.createIfMissing(true);
-  var db = factory.open(new File("example"), options);
+  var db = factory.open(new File("/home/stefan/.bitcoin/blocks/index"), options);
   try {
 
-    // Use the db in here....
-    db.put(bytes("Tampa"), bytes("rocks"))
-    var value = asString(db.get(bytes("Tampa")))
-    printf("wir sind gut!")
-    db.delete(bytes("Tampa"))
+    val iterator = db.iterator();
+    try {
+      iterator.seekToFirst()
+      while (iterator.hasNext()) {
+
+        val key = asString(iterator.peekNext().getKey());
+        val value = asString(iterator.peekNext().getValue());
+        System.out.println(key+" = "+value);
+        iterator.next()
+      }
+    } finally {
+      // Make sure you close the iterator to avoid resource leaks.
+      iterator.close();
+    }
 
   } finally {
     // Make sure you close the db to shutdown the

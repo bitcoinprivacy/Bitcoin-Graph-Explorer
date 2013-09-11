@@ -14,9 +14,9 @@ libraryDependencies ++= Seq(
 	"ch.qos.logback" % "logback-classic" % "0.9.26" % "compile->default", // Logging
 	"com.google" % "bitcoinj" % "0.10",
 	"org.neo4j" % "neo4j-scala" % "0.2.0-M2-SNAPSHOT",
- "org.iq80.leveldb"%"leveldb"%"0.6")
-
-
+ "org.iq80.leveldb"%"leveldb"%"0.6",
+  "net.databinder.dispatch" %% "dispatch-core" % "0.9.5"
+)
 
 resolvers += "Local Maven Repository" at "file:///"+Path.userHome.absolutePath+"/.m2/repository"
 
@@ -25,5 +25,7 @@ resolvers += "Fakod Snapshots" at "https://raw.github.com/FaKod/fakod-mvn-repo/m
 resolvers += "neo4j" at "http://m2.neo4j.org"
 
 resolvers += "bitcoinj" at "http://distribution.bitcoinj.googlecode.com/git/releases"
+
+resolvers += "scala-tools" at "https://oss.sonatype.org/content/groups/scala-tools"
 
 // fork in run := true
