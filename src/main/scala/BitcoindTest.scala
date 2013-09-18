@@ -1,5 +1,3 @@
-import dispatch._
-import java.net._
 /**
  * Created with IntelliJ IDEA.
  * User: stefan
@@ -7,7 +5,14 @@ import java.net._
  * Time: 6:37 PM
  * To change this template use File | Settings | File Templates.
  */
-object BitcoindTest {
+
+
+import com.googlecode.jj1.ServiceProxy
+import java.net._
+
+
+
+object BitcoindTest extends App {
   val rpcuser ="user"
   val rpcpassword ="pass"
 
@@ -16,6 +21,12 @@ object BitcoindTest {
       new PasswordAuthentication (rpcuser, rpcpassword.toCharArray())
     })
 
-  val svc = url("http://api.hostip.info/country.php")
-  val country = Http(svc OK as.String)
+  val serverURL = "http://127.0.0.1:8332"
+  val proxy = new ServiceProxy(serverURL)
+  val result = proxy.call("getinfo")
+  println(result)
+
+
+
+
 }

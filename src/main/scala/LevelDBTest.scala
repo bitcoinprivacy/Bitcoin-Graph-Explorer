@@ -28,7 +28,7 @@ object LevelDBTest {
       }
     } finally {
       // Make sure you close the iterator to avoid resource leaks.
-      iterator.close();
+      iterator.close()
     }
 
   } finally {
