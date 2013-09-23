@@ -7,7 +7,7 @@ import com.google.bitcoin.store.BoundedOverheadBlockStore
 import java.io.File
 
 
-object Main extends App {
+/*object Main extends App {
 
   val params = NetworkParameters.prodNet
   val wallet = new Wallet(params)
@@ -46,4 +46,4 @@ object Main extends App {
   // todo: on re-run with existing blockchain, check if we know of all the blocks mentioned already (otherwise, just reload)
   // todo: check what happens on fork
 
-}
+}*/

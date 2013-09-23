@@ -21,10 +21,23 @@ object BitcoindTest extends App {
       new PasswordAuthentication (rpcuser, rpcpassword.toCharArray())
     })
 
-  val serverURL = "http://127.0.0.1:8332"
+  val serverURL = "http://user:pass@127.0.0.1:8332"
   val proxy = new ServiceProxy(serverURL)
-  val result = proxy.call("getinfo")
-  println(result)
+
+  if (args.length == 1)
+  {
+    val result = proxy.call(args(0))
+    println(result)
+  }
+  else if (args.length > 1)
+  {
+    val result = proxy.call(args(0),args(1))
+    println(result)
+  }
+  else
+  {
+    println("missing parameter")
+  }
 
 
 
