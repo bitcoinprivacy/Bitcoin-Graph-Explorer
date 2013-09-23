@@ -36,7 +36,8 @@ object BitcoindTest extends App {
   }
   else
   {
-    println("missing parameter")
+    println("missing parameter: \n usage: \n" +
+      "run function [param1] [param2] ... [paramN]")
   }
 
 
