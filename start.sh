@@ -1,3 +1,3 @@
 #! /bin/bash
 
-bitcoind -rpcuser=user -rpcpassword=pass -daemon
+bitcoind -rpcuser=user -rpcpassword=pass -rpcthreads=16 -daemon
