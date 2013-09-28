@@ -5,26 +5,21 @@
  * Time: 6:37 PM
  * To change this template use File | Settings | File Templates.
  */
-
-
 import com.googlecode.jj1.ServiceProxy
 import java.net._
-
-
-
 object BitcoindHTTPTest extends App {
 
-  //var time = System.currentTimeMillis
-  //var time2:Long = 0
+  var startTime = System.currentTimeMillis
+  var lastTime = System.currentTimeMillis
 
+  def getTime: Long = {
+    val currentTime = System.currentTimeMillis - lastTime
+    lastTime = System.currentTimeMillis
+    currentTime
+  }
   val rpcuser ="user"
   val rpcpassword ="pass"
-  def hex2Bytes(hex: String): Array[Byte] = {
-    (for {i <- 0 to hex.length - 1 by 2 if i > 0 || !hex.startsWith("0x")}
-    yield hex.substring(i, i + 2))
-      .map(Integer.parseInt(_, 16).toByte).toArray
-  }
-  Authenticator.setDefault(new Authenticator(){
+  Authenticator.setDefault(new Authenticator{
     override def getPasswordAuthentication:PasswordAuthentication =
       new PasswordAuthentication (rpcuser, rpcpassword.toCharArray)
     })
@@ -44,60 +39,68 @@ object BitcoindHTTPTest extends App {
   }
   else
   {
-
-    val blockcount = proxy.call("getblockcount").toString.toInt
+    //val blockcount = proxy.call("getblockcount").toString.toInt
+    val blockcount = 100000
     var elementsCount = 0
-
-
-
-    for (i<- 1 to blockcount)
-    {
-      //time2 = System.currentTimeMillis - time
-      //time = System.currentTimeMillis
+    val results = for (i<- 1 to blockcount)
+    yield {
+      getTime
       val hash = proxy.call("getblockhash",i:java.lang.Integer).toString
+      val time1 = getTime
       val block = proxy.call("getblock",hash);
-
-
+      val time2 = getTime
+      elementsCount += 1
       val arrTransactions =
       block match{
         case a:java.util.HashMap[String,Object] => a.get("tx") match{
             case e:java.util.ArrayList[String] => e
         }
       }
-      //val time3 = time2
-      //time2 = System.currentTimeMillis - time
-      //time = System.currentTimeMillis
-      //println("Block "+ i +" (" + arrTransactions.size() + " transactions) in " + time3 + " / " + time2)
-      println("Block "+i)
 
-      /*for (j <- 0 until arrTransactions.size())
-      {
-        elementsCount += 1
-        println(elementsCount)
+
+      for (j <- 0 until arrTransactions.size)
+      yield {
         val txid = arrTransactions.get(j).toString
+        getTime
         val encodedTransaction = proxy.call("getrawtransaction",txid)
-        //time2 = System.currentTimeMillis()
+        val time3 = getTime
         val decodedTransaction = proxy.call("decoderawtransaction",encodedTransaction)
-        //println(System.currentTimeMillis()-time2)
+        val time4 = getTime
         decodedTransaction match{
           case a:java.util.HashMap[String,Object] =>
           {
             a.get("vout") match{
               case b:java.util.ArrayList[Object] => {
-                for (k <- 0 until b.size())
-                    b.get(k) match{
-                      case c:java.util.HashMap[String,Object] => {
-                        c.get("value")
-                      }
-                    }
+                for (k <- 0 until b.size)
+                  yield b.get(k) match{
+                  case c:java.util.HashMap[String,Object] => {
+                    c.get("value")
+                  }
+                }
+              }
+            }
+            a.get("vin") match{
+              case b:java.util.ArrayList[Object] => {
+                for (k <- 0 until b.size)
+                  yield b.get(k) match{
+                  case c:java.util.HashMap[String,Object] => {
+                    c.get("value")
+                  }
+                }
               }
             }
           }
         }
-      }*/
+        print(time4 + time3 + ", ")
+      }
+      println()
+      println("Block "+ i +" (" + arrTransactions.size + " transactions) in " +  time2 + time1 )
     }
-    println("elements analyzed: "+elementsCount)
+
+    println("elements analyzed: " + elementsCount)
   }
+
+
 
 
 
