@@ -47,11 +47,11 @@ object BitcoindHTTPTest extends App {
     val blockcount = proxy.call("getblockcount").toString.toInt
     val stmt = conn.createStatement();
     val rs0 = stmt.executeQuery("SELECT max(block_nr) as value FROM bitcoin.transactions");
-    var block_start = 0;
+    var block_start = 5;
     while (rs0.next()) {
       block_start = rs0.getInt("value");
     }
-    val block_end  = math.min(blockcount,block_start+10000)
+    val block_end  = 6 //math.min(blockcount,block_start+10000)
     var insertTableSQL = "INSERT INTO bitcoin.transactions" + " (`block_nr`, `transaction_nr`, `movement_nr`, `mode`, `from`,`to`,`value`) VALUES "
     var elementsCount = 0
 
