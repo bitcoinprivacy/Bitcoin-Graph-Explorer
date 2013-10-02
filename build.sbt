@@ -15,7 +15,8 @@ libraryDependencies ++= Seq(
 	"com.google" % "bitcoinj" % "0.10",
 	"org.neo4j" % "neo4j-scala" % "0.2.0-M2-SNAPSHOT",
     "org.iq80.leveldb"%"leveldb"%"0.6",
-    "mysql"%"mysql-connector-java"%"5.1.26"
+    "mysql"%"mysql-connector-java"%"5.1.26",
+    "com.sagesex" % "json-rpc-client_2.10" % "0.0.1"
 )
 
 resolvers += "Local Maven Repository" at "file:///"+Path.userHome.absolutePath+"/.m2/repository"

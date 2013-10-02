@@ -13,6 +13,7 @@ object LevelDBTest {
 
   var options = new Options();
   options.createIfMissing(true);
+
   var db = factory.open(new File("/home/stefan/.bitcoin/blocks/index"), options);
   try {
 
