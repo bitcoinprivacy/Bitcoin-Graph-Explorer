@@ -5,9 +5,9 @@
  * Time: 6:37 PM
  * To change this template use File | Settings | File Templates.
  */
-import com.googlecode.jj1.ServiceProxy
-import java.net._
+import com.sagesex.JsonRPCProxy
 import java.sql.DriverManager;
+import dispatch._
 
 object BitcoindHTTPTest extends App {
 
@@ -24,13 +24,9 @@ object BitcoindHTTPTest extends App {
   }
   val rpcuser ="user"
   val rpcpassword ="pass"
-  Authenticator.setDefault(new Authenticator{
-    override def getPasswordAuthentication:PasswordAuthentication =
-      new PasswordAuthentication (rpcuser, rpcpassword.toCharArray)
-    })
 
-  val serverURL = "http://user:pass@127.0.0.1:8332"
-  val proxy = new ServiceProxy(serverURL)
+  val serverURL = "http://127.0.0.1:8332"
+  val proxy = new JsonRPCProxy(serverURL,rpcuser,rpcpassword)
   var splitter = ""
   if (args.length == 1)
   {
@@ -44,23 +40,25 @@ object BitcoindHTTPTest extends App {
   }
   else
   {
-    val blockcount = proxy.call("getblockcount").toString.toInt
+    val blockcountFuture = proxy.call("getblockcount")
+    val blockcount = blockcountFuture() match {
+      case Right(e) => e.as[Int]
+    } // this blocks. not very nice, but OK here, I think
+
     val stmt = conn.createStatement();
     val rs0 = stmt.executeQuery("SELECT max(block_nr) as value FROM bitcoin.transactions");
-    var block_start = 5;
+    var block_start = 1;
     while (rs0.next()) {
       block_start = rs0.getInt("value");
     }
-    val block_end  = 6 //math.min(blockcount,block_start+10000)
+    val block_end = math.min(blockcount,block_start+10000)
     var insertTableSQL = "INSERT INTO bitcoin.transactions" + " (`block_nr`, `transaction_nr`, `movement_nr`, `mode`, `from`,`to`,`value`) VALUES "
     var elementsCount = 0
-
-
 
     /*val results = */for (i<- block_start to block_end)
     /*yield */{
       getTime
-      val hash = proxy.call("getblockhash",i:java.lang.Integer).toString
+      val hash = proxy.call("getblockhash",i.toString).toString
       val time1 = getTime
       val block = proxy.call("getblock",hash)
       elementsCount += 1
@@ -76,7 +74,7 @@ object BitcoindHTTPTest extends App {
         getTime
         val encodedTransaction = proxy.call("getrawtransaction",txid)
         //val time3 = getTime
-        val decodedTransaction = proxy.call("decoderawtransaction",encodedTransaction)
+        val decodedTransaction = proxy.call("decoderawtransaction",encodedTransaction.toString)
         //val time4 = getTime
         decodedTransaction match{
           case a:java.util.HashMap[String,Object] =>

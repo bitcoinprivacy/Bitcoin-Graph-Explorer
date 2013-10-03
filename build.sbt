@@ -4,7 +4,7 @@ name := "Bitcoin Graph Explorer"
 
 version := "0.6"
 
-scalaVersion := "2.9.2"
+scalaVersion := "2.10.3"
 
 // additional libraries
 libraryDependencies ++= Seq(
@@ -16,7 +16,8 @@ libraryDependencies ++= Seq(
 	"org.neo4j" % "neo4j-scala" % "0.2.0-M2-SNAPSHOT",
     "org.iq80.leveldb"%"leveldb"%"0.6",
     "mysql"%"mysql-connector-java"%"5.1.26",
-    "com.sagesex" % "json-rpc-client_2.10" % "0.0.1"
+    "com.sagesex" %% "json-rpc-client" % "0.0.1",
+    "org.scala-lang" % "scala-actors" % "2.10.3"
 )
 
 resolvers += "Local Maven Repository" at "file:///"+Path.userHome.absolutePath+"/.m2/repository"
