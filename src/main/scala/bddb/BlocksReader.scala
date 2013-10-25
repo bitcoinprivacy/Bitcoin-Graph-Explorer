@@ -7,31 +7,28 @@ package bddb
  * Time: 4:22 PM
  * To change this template use File | Settings | File Templates.
  */
-import bddb.BlocksReader
 import scala.slick.driver.MySQLDriver.simple._
 import Database.threadLocalSession
 import java.sql.DriverManager;
-import play.api.libs.json.JsValue
+import play.api.libs._
+import json.JsValue
 import scala.concurrent._
 import ExecutionContext.Implicits.global
 import dispatch._
 import com.sagesex.JsonRPCProxy
-object BlocksReader {
+import scala.concurrent.duration._
 
-  var url = "";
-  var user = "";
-  var pass = "";
+
+class BlocksReader(val url:String, user:String, pass:String, timeout:Int, maxcalls:Int) {
+
+
   def run = {
 
-    val proxy: JsonRPCProxy = new JsonRPCProxy(this.url,this.user,this.pass);
+    val proxy: JsonRPCProxy = new JsonRPCProxy(url,user,pass, timeout, maxcalls);
 
     val blockCountFuture = proxy.call("getblockcount")
-    val blockCount = blockCountFuture() match
-    {
-      case Right(e) => e.as[Int]
-      case _ => 1
-    } // this blocks. not very nice, but OK here, I think
-
+    //val blockCount = for (nr <- blockCountFuture) yield nr
+    val blockCount = 100000
 
     var blockNrs = (1 until blockCount).toSet
     // NOT TO USE SINCE WE ARE NOT YET SAVING ANYTHING
@@ -41,20 +38,26 @@ object BlocksReader {
 
     //for (existingBlockNr <- existingBlockNrs)
     //  blockNrs = blockNrs - existingBlockNr
-
+    
     println("Block nrs. successfully read.")
 
+    var step = 0;
+    var count = 0;
     for (blockNr <- blockNrs)
     {
       val blockHashFuture = proxy.call("getblockhash",blockNr)
-      for (blockHash <- blockHashFuture.right)
+      blockHashFuture onFailure {case(t) => println ("Failure :" + t.getMessage) }
+      for (blockHash <- blockHashFuture)
       {
         val blockJSONFuture = proxy.call("getblock",blockHash.as[String])
-        for ( blockJSON <- blockJSONFuture().right )
+        blockJSONFuture onFailure {case(t) => println ("Failure :" + t.getMessage) }
+        for ( blockJSON <- blockJSONFuture )
         {
+          count+=1
+          println("=>"+count)
           for (transactionHash <-  (blockJSON\"tx").as[Seq[String]])
           {
-            println(transactionHash)
+            //println(transactionHash)
             // call getrawtransaction
             // call decoderawtransaction
             // read "vout" or "vin" to get "value"

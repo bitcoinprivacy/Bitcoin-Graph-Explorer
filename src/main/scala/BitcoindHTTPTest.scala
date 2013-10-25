@@ -18,9 +18,7 @@ import com.sagesex.JsonRPCProxy
 
 object BitcoindHTTPTest extends App {
 
-  BlocksReader.user ="user"
-  BlocksReader.pass ="pass"
-  BlocksReader.url = "http://127.0.0.1:8332"
+  val blocksReader = new BlocksReader(user="user",pass="pass",url="http://127.0.0.1:8332", timeout=100, maxcalls = 8)
 
 
   Database.forURL(
@@ -29,7 +27,7 @@ object BitcoindHTTPTest extends App {
       user = "root",
       password = "12345"
 
-  )  withSession { BlocksReader.run }
+  )  withSession { blocksReader.run }
 
 
 }
