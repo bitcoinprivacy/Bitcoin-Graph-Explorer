@@ -8,7 +8,7 @@
 
 import bddb.BlocksReader
 import scala.slick.driver.MySQLDriver.simple._
-import Database.threadLocalSession
+
 import java.sql.DriverManager;
 import play.api.libs.json.JsValue
 import scala.concurrent._
@@ -18,7 +18,7 @@ import com.sagesex.JsonRPCProxy
 
 object BitcoindHTTPTest extends App {
 
-  val blocksReader = new BlocksReader(user="user",pass="pass",url="http://127.0.0.1:8332", timeout=100, maxcalls = 8)
+  val blocksReader = new BlocksReader(user="user",pass="pass",url="http://127.0.0.1:8332", timeout=30000, maxcalls = 8)
 
 
   Database.forURL(

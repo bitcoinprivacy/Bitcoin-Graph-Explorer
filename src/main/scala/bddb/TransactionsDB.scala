@@ -9,9 +9,6 @@ package bddb
  */
 
 import scala.slick.driver.MySQLDriver.simple._
-import bddb._
-
-
 
 
 object TransactionsDB extends Table[(Int, Int, Int, String, String, String, String )]("transactions") {
