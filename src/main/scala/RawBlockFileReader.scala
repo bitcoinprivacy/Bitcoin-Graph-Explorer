@@ -21,8 +21,7 @@ import scalax.io._
 import scala.collection.JavaConversions._
 
 object RawBlockFileReader extends App {
-  val addressMap: HashMap[String,DisjointSetOfAddresses] = new HashMap[String, DisjointSetOfAddresses]()
-  //val Source = Resource.fromFile("/home/stefan/.bitcoin/blocks/blk00000.dat")
+
   val params = MainNetParams.get();
 
   val wallet = new Wallet(params)
@@ -32,14 +31,17 @@ object RawBlockFileReader extends App {
   //val listener: DownloadListener = new Graph.NeoDownLoadListener(params)
 
   val loader = new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList());
-  var inputTry = 0
-  var inputError= 0
-  var blockCount = 0
-  var outputTry = 0
-  var outputError = 0
   var counter = 0
-  var outputList:List[(String, Long, Int, String)] = List.empty
-  var inputList:List[(String, Long, Int, String, String, Long)] = List.empty
+  /////////////////
+  var outputList:List[(Int, Int, Int, Int)] = Nil
+  //var inputList:List[(String, Long, Int, String, String, Long)] = List.empty
+  var blockList:List[(String,Int)] = Nil
+  var transactionList:List[(String,Int,Int)] = Nil
+  var addressMap:HashMap[String,Int] = HashMap.empty
+  ///////////////
+
+  val nrBlocksToSave = if (args.length > 0) args(0).toInt else Int.MaxValue
+
   Database.forURL(
     url = "jdbc:mysql://localhost/bitcoin",
     driver = "com.mysql.jdbc.Driver",
@@ -47,76 +49,111 @@ object RawBlockFileReader extends App {
     password = "12345"
 
   )  withSession {
-    (Outputs.ddl ++ Inputs.ddl).drop
-    (Outputs.ddl ++ Inputs.ddl).create
-      for (block <- asScalaIterator(loader)) {
-        blockCount+=1
-        if (counter > 50000){
-            val startTime = System.currentTimeMillis
-            Inputs.insertAll(inputList:_*)
-            Outputs.insertAll(outputList:_*)
-            inputList = List.empty
-            outputList = List.empty
-            counter = 0
-            val totalTime = System.currentTimeMillis - startTime
-            println("Saved until block nr. "+blockCount+" in "+ totalTime +"ms")
+    (Outputs.ddl ++ Inputs.ddl ++ Blocks.ddl ++ Transactions.ddl ++ Addresses.ddl).drop
+    (Outputs.ddl ++ Inputs.ddl ++ Blocks.ddl ++ Transactions.ddl ++ Addresses.ddl).create
+    doSomethingBeautiful
+    println("wir sind geil!")
+
+
+
+  }
+  def hex2Bytes(hex: String): Array[Byte] = {
+    (for {i <- 0 to hex.length - 1 by 2 if i > 0 || !hex.startsWith("0x")}
+    yield hex.substring(i, i + 2))
+      .map(Integer.parseInt(_, 16).toByte).toArray
+  }
+  def doSomethingBeautiful:Unit =
+  {
+var blockCount = Query(Blocks.length).first
+    var transactionCount:Int = Query(Transactions.length).first
+    var addressCount:Int = Query(Addresses.length).first
+    println("Saving blocks from " + blockCount + " to " + nrBlocksToSave)
+    for (block <- asScalaIterator(loader) )
+    //   if (Blocks.findByHash(block.getHashAsString())).isEmpty
+    {
+      if (blockCount > nrBlocksToSave)
+      {
+        Addresses.insertAll(addressMap.toSeq:_*)
+
+        return
+      }
+
+
+
+
+      val blockHash = block.getHashAsString();
+      if (counter > 50000){
+        val startTime = System.currentTimeMillis
+        //Inputs.insertAll(inputList:_*)
+        Outputs.insertAll(outputList:_*)
+        Blocks.insertAll(blockList:_*)
+        Transactions.insertAll(transactionList:_*)
+        blockList = Nil
+        transactionList = Nil
+        outputList = Nil
+        //inputList = List.empty
+        counter = 0
+        val totalTime = System.currentTimeMillis - startTime
+        println("Saved until block nr. "+blockCount+" in "+ totalTime +"ms")
+      }
+
+
+      blockCount += 1
+
+      blockList = (blockHash, blockCount)::blockList
+
+      for (trans <- block.getTransactions){
+        transactionCount+=1
+        val transactionHash = trans.getHashAsString()
+        transactionList = (transactionHash, transactionCount, blockCount)::transactionList
+
+
+        /*if (!trans.isCoinBase)
+        {
+          for (input <- trans.getInputs)
+          {
+            val outpoint_transaction_hash = input.getOutpoint.getHash.toString
+            val outpoint_index = input.getOutpoint.getIndex
+            inputList = (transaction_hash,0:Long,0,"-",outpoint_transaction_hash,outpoint_index)::inputList
+            //println(counter);
+            counter+=1
           }
+        } */
+        var index = 0
+        for (output <- trans.getOutputs)
+        {
+          val addressHash:String =
+            try {
+              output.getScriptPubKey.getToAddress(params).toString
+            }
+            catch {
+              case e: ScriptException =>
+                val script = output.getScriptPubKey.toString
+                if (script.startsWith("[65]")) {
+                  val pubkeystring = script.substring(4, 134)
+                  import Utils._
+                  val pubkey = hex2Bytes(pubkeystring)
+                  val address = new Address(params, sha256hash160(pubkey))
+                  address.toString
 
-          for (trans <- block.getTransactions){
-
-            val transaction_hash = trans.getHashAsString()
-            if (!trans.isCoinBase)
-              for (input <- trans.getInputs)
-              {
-                val outpoint_transaction_hash = input.getOutpoint.getHash.toString
-                val outpoint_index = input.getOutpoint.getIndex
-                inputList = (transaction_hash,0:Long,0,"-",outpoint_transaction_hash,outpoint_index)::inputList
-                //println(counter);
-                counter+=1
-              }
-            var count:Long = 0
-            for (output <- trans.getOutputs)
-            {
-              val outaddress =
-                try {
-                  output.getScriptPubKey.getToAddress(params).toString
                 }
-                catch {
-                  case e: ScriptException =>
-                    val script = output.getScriptPubKey.toString
-                    if (script.startsWith("[65]")) {
-                      val pubkeystring = script.substring(4, 134)
-                      import Utils._
-                      val pubkey = hex2Bytes(pubkeystring)
-                      val address = new Address(params, sha256hash160(pubkey))
-                      address.toString
-
-                    }
-                    // special case because bitcoinJ doesn't support pay-to-IP scripts
-                    else {
-                       //println("can't parse script: " + output.getScriptPubKey.toString)
-                      "0"
-                    }
+                // special case because bitcoinJ doesn't support pay-to-IP scripts
+                else {
+                  //println("can't parse script: " + output.getScriptPubKey.toString)
+                  "0"
                 }
-              val value = output.getValue.intValue
+            }
+          val addressId = addressMap.getOrElseUpdate(addressHash,{addressCount+=1;addressCount} )
+          val value = output.getValue.intValue
 
-              outputList = (transaction_hash, count, value, outaddress)::outputList
-              //println(counter);
-              counter+=1
-              count+=1
-          }
+
+          outputList = (transactionCount, addressId, index, value)::outputList
+          //println(counter);
+          counter+=1
+          index+=1
         }
       }
-
-
-      println("Errors:")
-      println("Input: " + inputError +"/"+inputTry )
-      println("Output: " + outputError +"/"+outputTry )
-      def hex2Bytes(hex: String): Array[Byte] = {
-        (for {i <- 0 to hex.length - 1 by 2 if i > 0 || !hex.startsWith("0x")}
-        yield hex.substring(i, i + 2))
-          .map(Integer.parseInt(_, 16).toByte).toArray
-      }
+    }
   }
 }
 
