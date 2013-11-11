@@ -16,9 +16,11 @@ import com.google.bitcoin.store.SPVBlockStore
 import com.google.bitcoin.utils.BlockFileLoader
 import java.io.File
 import scala.collection.mutable.HashMap
+import scala.slick.jdbc.meta.MTable
 import scala.util.control.Exception
 import scalax.io._
 import scala.collection.JavaConversions._
+
 
 object RawBlockFileReader extends App {
 
@@ -33,14 +35,16 @@ object RawBlockFileReader extends App {
   val loader = new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList());
   var counter = 0
   /////////////////
-  var outputList:List[(Int, Int, Int, Int)] = Nil
-  //var inputList:List[(String, Long, Int, String, String, Long)] = List.empty
+  var outputList:List[(Int, Int, Int, Double)] = Nil
+  var inputList:List[(Int, Int, Int)] = Nil
   var blockList:List[(String,Int)] = Nil
   var transactionList:List[(String,Int,Int)] = Nil
-  var addressMap:HashMap[String,Int] = HashMap.empty
+  var allAddressesMap:HashMap[String,Int] = HashMap.empty
+  var transactionsMap:HashMap[String,Int] = HashMap.empty
+  var newAddressesMap:HashMap[String,Int] = HashMap.empty
   ///////////////
 
-  val nrBlocksToSave = if (args.length > 0) args(0).toInt else Int.MaxValue
+  var nrBlocksToSave = if (args.length > 0) args(0).toInt else 1000
 
   Database.forURL(
     url = "jdbc:mysql://localhost/bitcoin",
@@ -49,10 +53,38 @@ object RawBlockFileReader extends App {
     password = "12345"
 
   )  withSession {
-    (Outputs.ddl ++ Inputs.ddl ++ Blocks.ddl ++ Transactions.ddl ++ Addresses.ddl).drop
-    (Outputs.ddl ++ Inputs.ddl ++ Blocks.ddl ++ Transactions.ddl ++ Addresses.ddl).create
+
+    val tableList = MTable.getTables.list;
+    val tableMap = tableList.map{t => (t.name.name, t)}.toMap;
+
+    if (args.length > 1 && args(1) == "init" )
+    {
+
+      if (tableMap.contains("b_outputs"))
+        (Outputs.ddl).drop
+      if (tableMap.contains("b_inputs"))
+        (Inputs.ddl).drop
+      if (tableMap.contains("b_blocks"))
+        (Blocks.ddl).drop
+      if (tableMap.contains("b_transactions"))
+        (Transactions.ddl).drop
+      if (tableMap.contains("b_addresses"))
+        (Addresses.ddl).drop
+
+    }
+
+    if (!tableMap.contains("b_outputs"))
+      (Outputs.ddl).create
+    if (!tableMap.contains("b_inputs"))
+      (Inputs.ddl).create
+    if (!tableMap.contains("b_blocks"))
+      (Blocks.ddl).create
+    if (!tableMap.contains("b_transactions"))
+      (Transactions.ddl).create
+    if (!tableMap.contains("b_addresses"))
+      (Addresses.ddl).create
     doSomethingBeautiful
-    println("wir sind geil!")
+    println("wir sind sehr geil!")
 
 
 
@@ -64,37 +96,64 @@ object RawBlockFileReader extends App {
   }
   def doSomethingBeautiful:Unit =
   {
-var blockCount = Query(Blocks.length).first
+    var savedBlocksSet:Set[String] = Set.empty
+    val savedBlocks =
+      (for (b <- Blocks /* if b.id === 42*/)
+        yield (b.hash))
+
+    for (c <- savedBlocks)
+      savedBlocksSet = savedBlocksSet + c
+
+    val savedAddresses =
+      (for (a <- Addresses /* if b.id === 42*/)
+      yield (a.hash,a.id))
+
+    for (c <- savedAddresses)
+      allAddressesMap += c
+
+    val savedTransactions =
+      (for (a <- Transactions /* if b.id === 42*/)
+      yield (a.hash,a.id))
+
+    for (c <- savedAddresses)
+      transactionsMap += c
+
+
+    var blockCount = Query(Blocks.length).first
+
+    nrBlocksToSave += blockCount
+    val saveInterval = 50000
     var transactionCount:Int = Query(Transactions.length).first
-    var addressCount:Int = Query(Addresses.length).first
+    var addressCount:Int = allAddressesMap.size
     println("Saving blocks from " + blockCount + " to " + nrBlocksToSave)
-    for (block <- asScalaIterator(loader) )
-    //   if (Blocks.findByHash(block.getHashAsString())).isEmpty
+
+    for(
+      block <- asScalaIterator(loader)
+      if (!savedBlocksSet.contains(block.getHashAsString())))
     {
-      if (blockCount > nrBlocksToSave)
-      {
-        Addresses.insertAll(addressMap.toSeq:_*)
-
-        return
-      }
-
-
-
-
-      val blockHash = block.getHashAsString();
-      if (counter > 50000){
+      val blockHash = block.getHashAsString()
+      savedBlocksSet += blockHash
+      if (counter > saveInterval || blockCount >= nrBlocksToSave ){
         val startTime = System.currentTimeMillis
-        //Inputs.insertAll(inputList:_*)
+        println("Saving until block nr. " + blockCount + " ...")
+        Addresses.insertAll(newAddressesMap.toSeq:_*)
+        Inputs.insertAll(inputList:_*)
         Outputs.insertAll(outputList:_*)
-        Blocks.insertAll(blockList:_*)
         Transactions.insertAll(transactionList:_*)
+        Blocks.insertAll(blockList:_*)
         blockList = Nil
         transactionList = Nil
         outputList = Nil
-        //inputList = List.empty
+        inputList = Nil
+        allAddressesMap ++= newAddressesMap
+        newAddressesMap = HashMap.empty
         counter = 0
+
         val totalTime = System.currentTimeMillis - startTime
-        println("Saved until block nr. "+blockCount+" in "+ totalTime +"ms")
+        println("Saved in " + totalTime + "ms")
+        if (blockCount >= nrBlocksToSave)
+          return
+
       }
 
 
@@ -106,19 +165,20 @@ var blockCount = Query(Blocks.length).first
         transactionCount+=1
         val transactionHash = trans.getHashAsString()
         transactionList = (transactionHash, transactionCount, blockCount)::transactionList
+        transactionsMap.update(transactionHash,transactionCount)
 
-
-        /*if (!trans.isCoinBase)
+        if (!trans.isCoinBase)
         {
           for (input <- trans.getInputs)
           {
             val outpoint_transaction_hash = input.getOutpoint.getHash.toString
-            val outpoint_index = input.getOutpoint.getIndex
-            inputList = (transaction_hash,0:Long,0,"-",outpoint_transaction_hash,outpoint_index)::inputList
-            //println(counter);
+            val outpoint_transaction_id = transactionsMap.getOrElseUpdate(outpoint_transaction_hash,{transactionCount+=1;transactionCount})
+            val outpoint_index = input.getOutpoint.getIndex.toInt
+            inputList = (outpoint_transaction_id,outpoint_index, transactionCount)::inputList
+
             counter+=1
           }
-        } */
+        }
         var index = 0
         for (output <- trans.getOutputs)
         {
@@ -143,8 +203,13 @@ var blockCount = Query(Blocks.length).first
                   "0"
                 }
             }
-          val addressId = addressMap.getOrElseUpdate(addressHash,{addressCount+=1;addressCount} )
-          val value = output.getValue.intValue
+
+          val addressId = allAddressesMap.getOrElse(
+            addressHash,
+            {newAddressesMap.getOrElseUpdate(addressHash,{addressCount+=1;addressCount} )}
+          )
+
+          val value = output.getValue.doubleValue
 
 
           outputList = (transactionCount, addressId, index, value)::outputList
