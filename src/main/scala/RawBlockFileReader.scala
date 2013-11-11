@@ -54,8 +54,8 @@ object RawBlockFileReader extends App {
 
   )  withSession {
 
-    val tableList = MTable.getTables.list;
-    val tableMap = tableList.map{t => (t.name.name, t)}.toMap;
+    var tableList = MTable.getTables.list;
+    var tableMap = tableList.map{t => (t.name.name, t)}.toMap;
 
     if (args.length > 1 && args(1) == "init" )
     {
@@ -72,6 +72,10 @@ object RawBlockFileReader extends App {
         (Addresses.ddl).drop
 
     }
+
+    tableList = MTable.getTables.list;
+    tableMap = tableList.map{t => (t.name.name, t)}.toMap;
+
 
     if (!tableMap.contains("b_outputs"))
       (Outputs.ddl).create
