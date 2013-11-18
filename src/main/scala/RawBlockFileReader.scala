@@ -9,7 +9,7 @@
 import bddb._
 import scala.slick.driver.MySQLDriver.simple._
 import Database.threadLocalSession
-import BitcoinGraphExplorer.DisjointSetOfAddresses
+//import BitcoinGraphExplorer.DisjointSetOfAddresses
 import com.google.bitcoin.core._
 import com.google.bitcoin.params.MainNetParams
 import com.google.bitcoin.store.SPVBlockStore
@@ -34,6 +34,8 @@ object RawBlockFileReader extends App {
 
   val loader = new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList());
   var counter = 0
+  var totalOutIn = 0
+
   /////////////////
   var outputList:List[(Int, Int, Int, Double)] = Nil
   var inputList:List[(Int, Int, Int)] = Nil
@@ -59,36 +61,34 @@ object RawBlockFileReader extends App {
 
     if (args.length > 1 && args(1) == "init" )
     {
-
+      println("Resetting tables from the bitcoins database.")
       if (tableMap.contains("b_outputs"))
         (Outputs.ddl).drop
+      (Outputs.ddl).create
       if (tableMap.contains("b_inputs"))
         (Inputs.ddl).drop
+      (Inputs.ddl).create
       if (tableMap.contains("b_blocks"))
         (Blocks.ddl).drop
+      (Blocks.ddl).create
       if (tableMap.contains("b_transactions"))
         (Transactions.ddl).drop
+      (Transactions.ddl).create
       if (tableMap.contains("b_addresses"))
         (Addresses.ddl).drop
-
+      (Addresses.ddl).create
     }
 
     tableList = MTable.getTables.list;
     tableMap = tableList.map{t => (t.name.name, t)}.toMap;
-
-
-    if (!tableMap.contains("b_outputs"))
-      (Outputs.ddl).create
-    if (!tableMap.contains("b_inputs"))
-      (Inputs.ddl).create
-    if (!tableMap.contains("b_blocks"))
-      (Blocks.ddl).create
-    if (!tableMap.contains("b_transactions"))
-      (Transactions.ddl).create
-    if (!tableMap.contains("b_addresses"))
-      (Addresses.ddl).create
+    val globalTime = System.currentTimeMillis
     doSomethingBeautiful
-    println("wir sind sehr geil!")
+    val totalTime:Long = ( System.currentTimeMillis - globalTime )
+
+    println("Total time to save movements = " + totalTime + " ms")
+    println("Total of movements = " + totalOutIn)
+    println("Time required pro movement = " + totalTime.toDouble/totalOutIn +" ms")
+    println("Wir sind sehr geil!")
 
 
 
@@ -119,14 +119,14 @@ object RawBlockFileReader extends App {
       (for (a <- Transactions /* if b.id === 42*/)
       yield (a.hash,a.id))
 
-    for (c <- savedAddresses)
+    for (c <- savedTransactions)
       transactionsMap += c
 
 
     var blockCount = Query(Blocks.length).first
 
     nrBlocksToSave += blockCount
-    val saveInterval = 50000
+    val saveInterval = 100000
     var transactionCount:Int = Query(Transactions.length).first
     var addressCount:Int = allAddressesMap.size
     println("Saving blocks from " + blockCount + " to " + nrBlocksToSave)
@@ -143,6 +143,7 @@ object RawBlockFileReader extends App {
         Addresses.insertAll(newAddressesMap.toSeq:_*)
         Inputs.insertAll(inputList:_*)
         Outputs.insertAll(outputList:_*)
+        //println(transactionList.filter(p => p._2 == 142574))
         Transactions.insertAll(transactionList:_*)
         Blocks.insertAll(blockList:_*)
         blockList = Nil
@@ -166,24 +167,40 @@ object RawBlockFileReader extends App {
       blockList = (blockHash, blockCount)::blockList
 
       for (trans <- block.getTransactions){
-        transactionCount+=1
-        val transactionHash = trans.getHashAsString()
-        transactionList = (transactionHash, transactionCount, blockCount)::transactionList
-        transactionsMap.update(transactionHash,transactionCount)
 
+        val transactionHash = trans.getHashAsString()
+        val transactionId = transactionsMap.getOrElseUpdate(transactionHash, {
+          transactionCount+=1
+          transactionList = (transactionHash, transactionCount, blockCount)::transactionList
+          transactionCount
+        })
+        //val transactionId = transactionCount
         if (!trans.isCoinBase)
         {
           for (input <- trans.getInputs)
           {
             val outpoint_transaction_hash = input.getOutpoint.getHash.toString
-            val outpoint_transaction_id = transactionsMap.getOrElseUpdate(outpoint_transaction_hash,{transactionCount+=1;transactionCount})
+
+            val outpoint_transaction_id = transactionsMap.getOrElseUpdate(outpoint_transaction_hash,{
+              transactionCount+=1
+              transactionList = (outpoint_transaction_hash, transactionCount, -1)::transactionList
+              transactionCount
+            })
             val outpoint_index = input.getOutpoint.getIndex.toInt
-            inputList = (outpoint_transaction_id,outpoint_index, transactionCount)::inputList
+            inputList = (outpoint_transaction_id,outpoint_index, transactionId)::inputList
 
             counter+=1
+            totalOutIn+=1
           }
         }
+
+
+
+
+
+        //transactionsMap.update(transactionHash,transactionCount)
         var index = 0
+
         for (output <- trans.getOutputs)
         {
           val addressHash:String =
@@ -216,9 +233,10 @@ object RawBlockFileReader extends App {
           val value = output.getValue.doubleValue
 
 
-          outputList = (transactionCount, addressId, index, value)::outputList
+          outputList = (transactionId, addressId, index, value)::outputList
           //println(counter);
           counter+=1
+          totalOutIn+=1
           index+=1
         }
       }

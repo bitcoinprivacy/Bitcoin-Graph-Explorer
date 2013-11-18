@@ -56,8 +56,8 @@ object Blocks extends Table[(String, Int)]("b_blocks") {
   def * = hash ~ id
   def idx = index("hash", hash, unique = true)
 
-  def findByHash(hash: String)(implicit session: Session): Option[(String,Int)] = {
-    val block = this.map { e => e }.where(u => u.hash === hash).take(1)
-    block.firstOption
-  }
+  //def findByHash(hash: String)(implicit session: Session): Option[(String,Int)] = {
+  //  val block = this.map { e => e }.where(u => u.hash === hash).take(1)
+  //  block.firstOption
+  //}
 }

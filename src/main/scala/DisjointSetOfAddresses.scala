@@ -5,7 +5,7 @@
  * Time: 4:30 PM
  * To change this template use File | Settings | File Templates.
  */
-package BitcoinGraphExplorer
+/*package BitcoinGraphExplorer
 
 import collection.mutable.HashSet
 
@@ -51,3 +51,4 @@ class DisjointSetOfAddresses(val address: String) {
   }
 
 }
+*/

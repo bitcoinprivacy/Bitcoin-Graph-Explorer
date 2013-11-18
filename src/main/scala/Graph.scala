@@ -7,7 +7,7 @@ package BitcoinGraphExplorer
  * Time: 3:57 PM
  * To change this template use File | Settings | File Templates.
  */
-
+   /*
 import org.neo4j.kernel.EmbeddedGraphDatabase
 import org.neo4j.scala._
 import collection.JavaConversions._
@@ -237,4 +237,4 @@ object Graph extends Neo4jWrapper with EmbeddedGraphDatabaseServiceProvider {
     node
   }
 
-}
+}*/
