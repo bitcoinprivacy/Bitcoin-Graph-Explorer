@@ -33,4 +33,8 @@ resolvers += "bitcoinj" at "http://distribution.bitcoinj.googlecode.com/git/rele
 
 resolvers += "scala-tools" at "https://oss.sonatype.org/content/groups/scala-tools"
 
+javaOptions in run += "-Xmx6G"
+
+javaOptions in run += "-Xmax-classfile-name=254"
+
 // fork in run := true
