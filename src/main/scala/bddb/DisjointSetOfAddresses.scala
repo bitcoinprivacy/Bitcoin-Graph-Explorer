@@ -1,3 +1,5 @@
+package bddb
+
 /**
  * Created by IntelliJ IDEA.
  * User: stefan
@@ -5,15 +7,17 @@
  * Time: 4:30 PM
  * To change this template use File | Settings | File Templates.
  */
-/*package BitcoinGraphExplorer
 
 import collection.mutable.HashSet
 
-class DisjointSetOfAddresses(val address: String) {
+case class DisjointSetOfAddresses(val address: String) {
 
   var rank = 0
   var parent: Option[DisjointSetOfAddresses] = None
   var children: Set[DisjointSetOfAddresses] = Set.empty  // to be able to return all members of a set
+
+  def equals(that:DisjointSetOfAddresses) =
+    this.address == that.address
 
   def union(that: DisjointSetOfAddresses): DisjointSetOfAddresses = {
     val left = this.find
@@ -51,4 +55,3 @@ class DisjointSetOfAddresses(val address: String) {
   }
 
 }
-*/

@@ -41,7 +41,7 @@ object Graph extends Neo4jWrapper with EmbeddedGraphDatabaseServiceProvider {
     implicit neo => createNodeWithAddressIfNotPresent("0")
   }
 
-  val addressMap: HashMap[String,DisjointSetOfAddresses] = new HashMap[String, DisjointSetOfAddresses]()
+  val addressMap: HashMap[String,bddb.DisjointSetOfAddresses] = new HashMap[String, bddb.DisjointSetOfAddresses]()
 
 
   class NeoDownLoadListener(params: NetworkParameters) extends DownloadListener {
@@ -63,7 +63,7 @@ object Graph extends Neo4jWrapper with EmbeddedGraphDatabaseServiceProvider {
                 // invariant kept: every address occurs in at most one node!
 
                 val addresses = trans.getInputs.map(_.getFromAddress.toString)
-                val disjointSets = addresses.map(x => addressMap.getOrElseUpdate(x,new DisjointSetOfAddresses(x)))
+                val disjointSets = addresses.map(x => addressMap.getOrElseUpdate(x,new bddb.DisjointSetOfAddresses(x)))
                 disjointSets.reduceLeft((x,y) =>  x.union(y))
               }
 
@@ -88,7 +88,7 @@ object Graph extends Neo4jWrapper with EmbeddedGraphDatabaseServiceProvider {
                       "0"
                     }
                 }
-                addressMap.getOrElseUpdate(outaddress, new DisjointSetOfAddresses(outaddress))
+                addressMap.getOrElseUpdate(outaddress, new bddb.DisjointSetOfAddresses(outaddress))
             }
 
 

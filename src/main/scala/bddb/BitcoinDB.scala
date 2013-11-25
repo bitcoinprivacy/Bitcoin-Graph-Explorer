@@ -10,50 +10,10 @@ package bddb
 
 import scala.slick.driver.MySQLDriver.simple._
 
+object RawBlocks extends Table[(String)]("blocks") {
 
-object Outputs extends Table[(Int, Int, Int, Double)]("b_outputs") {
-
-  def transaction_id = column[Int]("transaction_id")
-  def address_id = column[Int]("address_id")
-  def index = column[Int]("index")
-  def value = column[Double]("value")
-  def * = transaction_id ~ address_id ~ index ~ value
-
-  def idx2 = index("transaction_id", transaction_id)
-  def idx3 = index("address_id", address_id)
-}
-
-object Inputs extends Table[(Int, Int, Int)]("b_inputs") {
-
-  def output_transaction_id = column[Int]("output_transaction_id")
-  def output_index = column[Int]("output_index")
-  def transaction_id = column[Int]("transaction_id")
-  def idx2 = index("transaction_id", transaction_id)
-  def * = output_transaction_id ~ output_index ~ transaction_id
-
-}
-
-object Transactions extends Table[(String, Int, Int)]("b_transactions") {
-
-  def id= column[Int]("id",O.PrimaryKey)
-  def block_id = column[Int]("block_id")
   def hash= column[String]("hash")
-  def * = hash ~ id ~ block_id
-  def idx1 = index("hash", hash/*, unique = true*/)
-  def idx2 = index("block_id", block_id)
-}
-object Addresses extends Table[(String, Int)]("b_addresses") {
-
-  def id= column[Int]("id",O.PrimaryKey)
-  def hash= column[String]("hash")
-  def * = hash ~ id
-  def idx = index("hash", hash, unique = true)
-}
-object Blocks extends Table[(String, Int)]("b_blocks") {
-
-  def id= column[Int]("id",O.PrimaryKey)
-  def hash= column[String]("hash")
-  def * = hash ~ id
+  def * = hash
   def idx = index("hash", hash, unique = true)
 
   //def findByHash(hash: String)(implicit session: Session): Option[(String,Int)] = {
@@ -61,3 +21,35 @@ object Blocks extends Table[(String, Int)]("b_blocks") {
   //  block.firstOption
   //}
 }
+
+object RawOutputs extends Table[(String, String, Int, Double)]("outputs") {
+
+  def transaction_hash = column[String]("transaction_hash")
+  def address = column[String]("address")
+  def index = column[Int]("index")
+  def value = column[Double]("value")
+  def * = transaction_hash ~ address ~ index ~ value
+
+  def idx2 = index("transaction_hash", transaction_hash)
+  def idx3 = index("address", address)
+}
+
+object RawInputs extends Table[(String, Int, String)]("inputs") {
+
+  def output_transaction_hash = column[String]("output_transaction_hash")
+  def output_index = column[Int]("output_index")
+  def transaction_hash = column[String]("transaction_hash")
+  def idx2 = index("transaction_hash", transaction_hash)
+  def * = output_transaction_hash ~ output_index ~ transaction_hash
+
+}
+
+object GroupedAddresses extends Table[(String, String)]("grouped_addresses") {
+
+  def hash= column[String]("hash")
+  def representant= column[String]("representant")
+  def * = hash ~ representant
+  def idx = index("hash", hash, unique = true)
+  def idx2 = index("representant", representant)
+}
+
