@@ -1,4 +1,4 @@
-package bddb
+package libs
 
 /**
  * Created by IntelliJ IDEA.

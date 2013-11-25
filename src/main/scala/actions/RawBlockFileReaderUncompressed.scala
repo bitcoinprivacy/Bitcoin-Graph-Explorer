@@ -8,10 +8,10 @@ package actions
  * To change this template use File | Settings | File Templates.
  */
 
-import bddb._
+import libs._
 import scala.slick.driver.MySQLDriver.simple._
 import Database.threadLocalSession
-//import BitcoinGraphExplorer.bddb.DisjointSetOfAddresses
+//import BitcoinGraphExplorer.libs.DisjointSetOfAddresses
 import com.google.bitcoin.core._
 import com.google.bitcoin.params.MainNetParams
 import com.google.bitcoin.store.SPVBlockStore

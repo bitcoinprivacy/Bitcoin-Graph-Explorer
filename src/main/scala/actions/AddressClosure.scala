@@ -7,7 +7,7 @@ package actions
  * Time: 1:03 PM
  * To change this template use File | Settings | File Templates.
  */
-import bddb._
+import libs._
 import scala.slick.driver.MySQLDriver.simple._
 import Database.threadLocalSession
 
