@@ -9,14 +9,20 @@ import actions._
  */
 object Explorer extends App{
   args.toList match{
-    case Nil => println("What do you want?")
-    case "populate"::rest => new RawBlockFileReaderUncompressed(rest)
+    case "populate"::rest             => new RawBlockFileReaderUncompressed(rest)
     case "singleaddressclosure"::rest => new AddressClosure(rest)
-    case "closure"::rest => new AllAddressesClosure(rest)
-    case _=> println("""Available commands:
+    case "singleaddressbalance"::rest => new AddressBalance(rest)
+    case "closure"::rest              => new AllAddressesClosure(rest)
+    case "balance"::rest              => new AllAddressesBalance(rest)
+    case "createindexes"::rest        => new CreateIndex(rest)
+    case _=> println("""
+             Available commands:
              populate [number of blocks] [init]
              singleaddressclosure [address]
-             closure""")
+             singleaddressbalance [address]
+             closure
+             createindexes
+                     """)
 
   }
 

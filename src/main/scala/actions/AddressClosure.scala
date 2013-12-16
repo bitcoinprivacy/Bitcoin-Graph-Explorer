@@ -12,13 +12,7 @@ import scala.slick.driver.MySQLDriver.simple._
 import Database.threadLocalSession
 
 class AddressClosure(args:List[String]){
-  Database.forURL(
-    url = "jdbc:mysql://localhost/bitcoin",
-    driver = "com.mysql.jdbc.Driver",
-    user = "root",
-    password = "12345"
-
-  )  withSession {
+  databaseSession  {
 
       val address = if (args.length > 0 && args(0) != "0") args(0) else "1XPTgDRhN8RFnzniWCddobD9iKZatrvH4"
 
@@ -66,4 +60,6 @@ class AddressClosure(args:List[String]){
           else recursiveExtend(nextSet)
       }
   }
+
+
 }

@@ -17,19 +17,36 @@ import scala.slick.jdbc.meta.MTable
 import scala.collection.mutable.HashMap
 
 class AllAddressesClosure(args:List[String]){
-  Database.forURL(
-    url = "jdbc:mysql://localhost/bitcoin",
-    driver = "com.mysql.jdbc.Driver",
-    user = "root",
-    password = "12345"
+  databaseSession  {
+    val mapDSOA:HashMap[String, DisjointSetOfAddresses] = HashMap.empty
+    val mapAddresses:HashMap[String, List[String]] = HashMap.empty
+    var counter = 0
+    val q2 = Q.queryNA[(String,String)](
+      """
+      select
+        IFNULL(i.transaction_hash,"NULL"),
+        o.address
+      from
+        outputs o left outer join
+        inputs i on
+          (
+            i.output_transaction_hash = o.transaction_hash  and
+            i.output_index = o.index
+          )
+      where
+        o.address != "0"
+      ;
+      """
+    )
+    for (t <- q2)
+    {
+      val list = mapAddresses.getOrElse(t._1, { Nil }  )
 
-  )  withSession {
-    var mapDSOA:HashMap[String, DisjointSetOfAddresses] = HashMap.empty
+      mapAddresses.update(t._1, t._2::list)
+    }
 
 
-    val q2 = Q.queryNA[String]("""
-      select group_concat(o.address) as addresses from outputs o join inputs i on o.transaction_hash = i.output_transaction_hash and i.output_index = o.index group by i.transaction_hash
-    """)
+       //order by i.transaction_hash
     println("Creating table...")
     var tableList = MTable.getTables.list;
     var tableMap = tableList.map{t => (t.name.name, t)}.toMap;
@@ -37,12 +54,28 @@ class AllAddressesClosure(args:List[String]){
       (GroupedAddresses.ddl).drop
     (GroupedAddresses.ddl).create
     println("Calculating address dependencies...")
-    for (t <- q2.list)
-    {
 
-      val addresses = t.split(",").toList
-      //println(addresses)
-      val dSOAs= addresses filterNot (_=="0") map(a => mapDSOA.getOrElseUpdate(a, {DisjointSetOfAddresses(a)}) )
+    //println(mapAddresses(""))
+    // TODO: avoid duplicate addresses
+    println("Total transaction addresses: "+mapAddresses.size)
+    if (mapAddresses.contains("NULL"))
+    {
+      for (a <- mapAddresses("NULL"))
+        mapDSOA.getOrElseUpdate(a, {DisjointSetOfAddresses(a)})
+
+      mapAddresses.remove("NULL")
+    }
+
+
+
+    for (t <- mapAddresses)
+    {
+      //println("Reading element "+counter)
+      counter += 1
+
+
+      val dSOAs= t._2 filterNot (_=="0") map(a => mapDSOA.getOrElseUpdate(a, {DisjointSetOfAddresses(a)}) )
+
       def union(l:List[DisjointSetOfAddresses]): Unit = l match
       {
         case Nil =>
@@ -52,7 +85,7 @@ class AllAddressesClosure(args:List[String]){
       union(dSOAs)
    }
    println("Copying results to the database...")
-   GroupedAddresses.insertAll((mapDSOA map ( p => (p._1,p._2.find.address) )).toSeq:_*)
+   GroupedAddresses.insertAll((mapDSOA map ( p => (p._1,p._2.find.address, 0.toDouble) )).toSeq:_*)
    println("Wir sind geil!!!")
   }
 }

@@ -33,9 +33,9 @@ resolvers += "bitcoinj" at "http://distribution.bitcoinj.googlecode.com/git/rele
 
 resolvers += "scala-tools" at "https://oss.sonatype.org/content/groups/scala-tools"
 
-javaOptions in run += "-Xmx4G"
+javaOptions in run += "-Xmx2G"
 
-javaOptions in run += "-Xms4G"
+javaOptions in run += "-Xms1G"
 
 javaOptions in run += "-XX:-UseGCOverheadLimit"
 
