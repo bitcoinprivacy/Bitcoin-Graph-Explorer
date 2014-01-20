@@ -14,6 +14,7 @@ object Explorer extends App{
     case "singleaddressbalance"::rest => new AddressBalance(rest)
     case "closure"::rest              => new AllAddressesClosure(rest)
     case "balance"::rest              => new AllAddressesBalance(rest)
+
     case "createindexes"::rest        => new CreateIndex(rest)
     case _=> println("""
              Available commands:

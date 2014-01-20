@@ -18,64 +18,77 @@ import scala.collection.mutable.HashMap
 
 class AllAddressesClosure(args:List[String]){
   databaseSession  {
-    val mapDSOA:HashMap[String, DisjointSetOfAddresses] = HashMap.empty
-    val mapAddresses:HashMap[String, List[String]] = HashMap.empty
-    var counter = 0
-    val q2 = Q.queryNA[(String,String)](
-      """
-      select
-        IFNULL(i.transaction_hash,"NULL"),
-        o.address
-      from
-        outputs o left outer join
-        inputs i on
-          (
-            i.output_transaction_hash = o.transaction_hash  and
-            i.output_index = o.index
-          )
-      where
-        o.address != "0"
-      ;
-      """
-    )
-    for (t <- q2)
+	val numberOfSteps = 1
+  println("Intializing variables ...")
+
+  val limit = if (args.length > 0) "limit " + args(0) else ""
+  val mapDSOA:HashMap[Int, DisjointSetOfAddresses] = HashMap.empty
+  val mapAddresses:HashMap[String, List[Int]] = HashMap.empty
+  var adMap: HashMap[String,Int] = HashMap.empty
+
+  var adCon: Int = 1
+
+  var counter = 0
+
+  val q1 = Q.queryNA[Long](
+        """
+        select
+          count(*)
+        from
+          inputs
+          """ + limit
+  )
+  var max = 0.toLong
+  for (t <- q1)
+	  max = t
+  println("Total rows to read "+max)
+  println("Reading data ...")
+
+  var startTime = System.currentTimeMillis
+  var counter0 = 0
+
+  var step = max / numberOfSteps
+  var position = 0.toLong
+
+  var pos = 0
+  while (position < max && step > 0)
+  {
+    println(pos)
+    pos = pos+1
+
+    if (position + step > max)
+		  step = max - position
+	
+	  val query = """  select i.transaction_hash, o.address from inputs i join outputs o on
+          (o.transaction_hash  = i.output_transaction_hash and o.`index` = i.output_index)
+          limit """  + position + """,""" +step
+
+    println(query)
+    position = position + step
+	
+	  val q2 = Q.queryNA[(String,String)](query)
+
+    for (t <- q2) if (t._2 != "0")
     {
+      val t2 = adMap.getOrElseUpdate(t._2, { adCon += 1; adCon } )
+
       val list = mapAddresses.getOrElse(t._1, { Nil }  )
+      mapAddresses.update(t._1, t2::list)
 
-      mapAddresses.update(t._1, t._2::list)
     }
+    //print("/")
+}
+	println("")
+    println("Data read in "+ (System.currentTimeMillis - startTime )+" ms"    )
 
 
-       //order by i.transaction_hash
-    println("Creating table...")
-    var tableList = MTable.getTables.list;
-    var tableMap = tableList.map{t => (t.name.name, t)}.toMap;
-    if (tableMap.contains("grouped_addresses"))
-      (GroupedAddresses.ddl).drop
-    (GroupedAddresses.ddl).create
     println("Calculating address dependencies...")
-
-    //println(mapAddresses(""))
-    // TODO: avoid duplicate addresses
-    println("Total transaction addresses: "+mapAddresses.size)
-    if (mapAddresses.contains("NULL"))
-    {
-      for (a <- mapAddresses("NULL"))
-        mapDSOA.getOrElseUpdate(a, {DisjointSetOfAddresses(a)})
-
-      mapAddresses.remove("NULL")
-    }
-
-
+    startTime = System.currentTimeMillis
 
     for (t <- mapAddresses)
     {
-      //println("Reading element "+counter)
       counter += 1
-
-
-      val dSOAs= t._2 filterNot (_=="0") map(a => mapDSOA.getOrElseUpdate(a, {DisjointSetOfAddresses(a)}) )
-
+      val dSOAs= t._2 map(a => mapDSOA.getOrElseUpdate(a, {DisjointSetOfAddresses(a)}) )
       def union(l:List[DisjointSetOfAddresses]): Unit = l match
       {
         case Nil =>
@@ -84,8 +97,26 @@ class AllAddressesClosure(args:List[String]){
       }
       union(dSOAs)
    }
-   println("Copying results to the database...")
-   GroupedAddresses.insertAll((mapDSOA map ( p => (p._1,p._2.find.address, 0.toDouble) )).toSeq:_*)
-   println("Wir sind geil!!!")
+   println("Dependences calculated in "+ (System.currentTimeMillis - startTime) +" ms")
+   println("Compiling SQL queries ...")
+
+   val adMapReverse = adMap map (_.swap)
+   val values = (mapDSOA map ( p => ('"'+ adMapReverse(p._1) +'"','"'+adMapReverse(p._2.find.address) +'"', 0.toDouble))).toList
+
+    println("Copying results to the database...")
+    startTime = System.currentTimeMillis
+
+    (Q.u + "PRAGMA page_size = 409600;").execute
+    (Q.u + "PRAGMA journal_mode=off;").execute
+    (Q.u + "PRAGMA synchronous=0;").execute
+    (Q.u + "PRAGMA cache_size=5000000;").execute
+    (Q.u + "BEGIN TRANSACTION;").execute
+
+    for (value <- values )
+    (Q.u + """insert into grouped_addresses values """+ value.toString +""";""").execute
+   (Q.u + "COMMIT TRANSACTION;").execute
+
+   println("Data copied in "+ (System.currentTimeMillis - startTime) +" ms")
+   println("Wir sind sehr geil!!!")
   }
 }

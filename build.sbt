@@ -15,10 +15,11 @@ libraryDependencies ++= Seq(
     "org.slf4j" % "slf4j-simple" % "1.7.5",
 	"com.google" % "bitcoinj" % "0.10",
 	"org.neo4j" % "neo4j-scala" % "0.2.0-M2-SNAPSHOT",
-    "org.iq80.leveldb"%"leveldb"%"0.6",
-    "mysql"%"mysql-connector-java"%"5.1.26",
-    "com.sagesex" %% "json-rpc-client" % "0.0.1",
-    "org.scala-lang" % "scala-actors" % "2.10.3",
+  //  "org.iq80.leveldb"%"leveldb"%"0.6",
+    //"mysql"%"mysql-connector-java"%"5.1.26",
+  "org.xerial" % "sqlite-jdbc" % "3.7.15-M1",
+     // "com.sagesex" %% "json-rpc-client" % "0.0.1",
+   // "org.scala-lang" % "scala-actors" % "2.10.3",
     "com.typesafe.slick" %% "slick" % "1.0.1",
     "com.typesafe.play" %% "play" % "2.2.0"
 )
@@ -33,9 +34,9 @@ resolvers += "bitcoinj" at "http://distribution.bitcoinj.googlecode.com/git/rele
 
 resolvers += "scala-tools" at "https://oss.sonatype.org/content/groups/scala-tools"
 
-javaOptions in run += "-Xmx2G"
+javaOptions in run += "-Xmx6G"
 
-javaOptions in run += "-Xms1G"
+javaOptions in run += "-Xms2G"
 
 javaOptions in run += "-XX:-UseGCOverheadLimit"
 

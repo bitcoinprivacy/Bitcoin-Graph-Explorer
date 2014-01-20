@@ -10,7 +10,7 @@ package libs
 
 import scala.slick.driver.MySQLDriver.simple._
 
-object RawBlocks extends Table[(String)]("blocks") {
+object RawBlocks extends Table[String]("blocks") {
 
   def hash= column[String]("hash")
   def * = hash
