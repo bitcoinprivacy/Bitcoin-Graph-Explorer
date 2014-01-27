@@ -21,6 +21,7 @@ object Explorer extends App{
              populate [number of blocks] [init]
              singleaddressclosure [address]
              singleaddressbalance [address]
+             balance
              closure
              createindexes
                      """)

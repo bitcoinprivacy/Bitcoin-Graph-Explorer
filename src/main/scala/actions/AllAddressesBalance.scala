@@ -11,16 +11,21 @@ import scala.slick.jdbc.{GetResult, StaticQuery => Q}
  */
 class AllAddressesBalance(args:List[String]){
   databaseSession {
-    val values = Q.queryNA[(String,String)]("""SELECT SUM(o.value) as suma, o.address as address FROM outputs o LEFT OUTER JOIN inputs i ON o.transaction_hash = i.output_transaction_hash AND i.output_index = o.index where i.transaction_hash IS NULL group by o.address""")
+    val values = Q.queryNA[(String,String)]("""SELECT SUM(o.value) as suma, o.address as address FROM outputs o LEFT OUTER JOIN inputs i ON o.transaction_hash = i.output_transaction_hash AND i.output_index = o.`index` where i.transaction_hash IS NULL group by o.address""")
+
+    println("balances calculated. now writing ...")
+    (Q.u + "BEGIN TRANSACTION").execute
     for (value <- values)
     (Q.u + """
       update
         grouped_addresses
       set
-        grouped_addresses.balance = """ + value._1 + """
+        balance = """ + value._1 + """
       where
-        grouped_addresses.hash = """" + value._2 + """""""
+        hash = """" + value._2 + """""""
     ).execute
+
+    (Q.u + "COMMIT TRANSACTION").execute
     println("Wir sind geil!")
 
   }

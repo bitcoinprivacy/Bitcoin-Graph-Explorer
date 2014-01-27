@@ -29,8 +29,12 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   var counter = 0
   var totalOutIn = 0
   var listData:List[String] = Nil
-  val saveInterval = 100000
+  val saveInterval = 2000000
   var blockCount = 0
+  var ad1Exists = false
+  var ad2Exists = false
+  val ad1 = "d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599"
+  val ad2 = "e3bf3d07d4b0375638d5f1db5255fe07ba2c4cb067cd81b84ee974b6585fb468"
   var nrBlocksToSave = if (args.length > 0) args(0).toInt else 1000
 
   databaseSession {
@@ -40,8 +44,14 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     else
       blockCount = Query(RawBlocks.length).first
 
+    if (Q.queryNA[Int]("""select count(*) from outputs where transaction_hash = """"+ad1+"""";""").list.head == 1)
+      ad1Exists = true
+    if (Q.queryNA[Int]("""select count(*) from outputs where transaction_hash = """"+ad2+"""";""").list.head == 1)
+      ad2Exists = true
+    println(ad1Exists + " , " + ad2Exists)
 
     val totalTime = doSomethingBeautiful
+
     println("Total time to save movements = " + totalTime + " ms")
     println("Total of movements = " + totalOutIn)
     println("Time required pro movement = " + totalTime.toDouble/totalOutIn +" ms")
@@ -77,8 +87,12 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     val startTime = System.currentTimeMillis
     println("Saving until block nr. " + blockCount + " ...")
 
+    (Q.u + "BEGIN TRANSACTION").execute
+
     for (line <- listData)
       (Q.u + line+";").execute
+
+    (Q.u + "COMMIT TRANSACTION").execute
 
     listData = Nil
     counter = 0
@@ -119,7 +133,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       blockCount += 1
       listData = "insert into blocks VALUES (" + '"' + blockHash + '"' + ")"::listData
 
-      for (trans <- block.getTransactions.par)
+      for (trans <- block.getTransactions)
       {
         val transactionHash = trans.getHashAsString()
 
@@ -161,10 +175,15 @@ class RawBlockFileReaderUncompressed(args:List[String]){
                 }
             }
           val value = output.getValue.doubleValue
-          listData = "insert into outputs VALUES (" + '"' + transactionHash + '"' + "," + '"'+addressHash + '"' + "," + index + "," + value + ")"::listData
-          counter+=1
-          totalOutIn+=1
-          index+=1
+          if ( (transactionHash != ad1 || !ad1Exists) && (transactionHash != ad2 || !ad2Exists))
+          {
+            listData = "insert into outputs VALUES (" + '"' + transactionHash + '"' + "," + '"'+addressHash + '"' + "," + index + "," + value + ")"::listData
+            counter+=1
+            totalOutIn+=1
+            index+=1
+            ad1Exists = ad1Exists || (transactionHash == ad1)
+            ad2Exists = ad2Exists || (transactionHash == ad2)
+          }
         }
       }
     }

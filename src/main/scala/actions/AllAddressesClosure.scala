@@ -18,12 +18,12 @@ import scala.collection.mutable.HashMap
 
 class AllAddressesClosure(args:List[String]){
   databaseSession  {
-	val numberOfSteps = 1
+	val numberOfSteps = 10
   println("Intializing variables ...")
 
   val limit = if (args.length > 0) "limit " + args(0) else ""
   val mapDSOA:HashMap[Int, DisjointSetOfAddresses] = HashMap.empty
-  val mapAddresses:HashMap[String, List[Int]] = HashMap.empty
+  val mapAddresses:HashMap[String, Array[Int]] = HashMap.empty
   var adMap: HashMap[String,Int] = HashMap.empty
 
   var adCon: Int = 1
@@ -45,7 +45,7 @@ class AllAddressesClosure(args:List[String]){
   println("Reading data ...")
 
   var startTime = System.currentTimeMillis
-  var counter0 = 0
+
 
   var step = max / numberOfSteps
   var position = 0.toLong
@@ -72,13 +72,16 @@ class AllAddressesClosure(args:List[String]){
     {
       val t2 = adMap.getOrElseUpdate(t._2, { adCon += 1; adCon } )
 
-      val list = mapAddresses.getOrElse(t._1, { Nil }  )
-      mapAddresses.update(t._1, t2::list)
+      val list:Array[Int] = mapAddresses.getOrElse(t._1, Array()  )
+
+      mapAddresses.update(t._1, list :+ t2 )
 
     }
     //print("/")
 }
-	println("")
+	  //println("admap size " + globalInstr.getObjectSize(adMap))
+    //println("mapaddresses size "+ globalInstr.getObjectSize(mapAddresses))
+    println("")
     println("Data read in "+ (System.currentTimeMillis - startTime )+" ms"    )
 
 
@@ -89,11 +92,11 @@ class AllAddressesClosure(args:List[String]){
     {
       counter += 1
       val dSOAs= t._2 map(a => mapDSOA.getOrElseUpdate(a, {DisjointSetOfAddresses(a)}) )
-      def union(l:List[DisjointSetOfAddresses]): Unit = l match
+      def union(l:Array[DisjointSetOfAddresses]): Unit = l match
       {
-        case Nil =>
-        case x::Nil =>
-        case x::y::xs => x.union(y) ; union(y::xs)
+        case Array() =>
+        case Array(x) =>
+        case ar => ar(0).union(ar(1)) ; union(ar.drop(1))
       }
       union(dSOAs)
    }
@@ -103,18 +106,13 @@ class AllAddressesClosure(args:List[String]){
    val adMapReverse = adMap map (_.swap)
    val values = (mapDSOA map ( p => ('"'+ adMapReverse(p._1) +'"','"'+adMapReverse(p._2.find.address) +'"', 0.toDouble))).toList
 
-    println("Copying results to the database...")
-    startTime = System.currentTimeMillis
+  println("Copying results to the database...")
+  startTime = System.currentTimeMillis
+  (Q.u + "BEGIN TRANSACTION;").execute
 
-    (Q.u + "PRAGMA page_size = 409600;").execute
-    (Q.u + "PRAGMA journal_mode=off;").execute
-    (Q.u + "PRAGMA synchronous=0;").execute
-    (Q.u + "PRAGMA cache_size=5000000;").execute
-    (Q.u + "BEGIN TRANSACTION;").execute
-
-    for (value <- values )
+  for (value <- values )
     (Q.u + """insert into grouped_addresses values """+ value.toString +""";""").execute
-   (Q.u + "COMMIT TRANSACTION;").execute
+  (Q.u + "COMMIT TRANSACTION;").execute
 
    println("Data copied in "+ (System.currentTimeMillis - startTime) +" ms")
    println("Wir sind sehr geil!!!")
