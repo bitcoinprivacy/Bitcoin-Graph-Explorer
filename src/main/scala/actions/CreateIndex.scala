@@ -21,7 +21,7 @@ class CreateIndex(args:List[String]){
     //  """ create index transaction_hash_o on outputs (transaction_hash)""",
 
     """ create index address on outputs (address)""",
-    //""" create index transaction_hash_i on inputs (transaction_hash)""",
+    """ create index transaction_hash_i on inputs (transaction_hash)""",
     //""" create unique index outpoint on inputs (output_transaction_hash, `output_index`)""",
     //""" create unique index hash_b on blocks (hash)""",
     """ create index representant on grouped_addresses (representant)""",

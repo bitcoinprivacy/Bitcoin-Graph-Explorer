@@ -9,7 +9,7 @@ package actions
  */
 
 import libs._
-
+import java.io._
 import com.google.bitcoin.core._
 import com.google.bitcoin.params.MainNetParams
 import com.google.bitcoin.store.SPVBlockStore
@@ -29,14 +29,16 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   var counter = 0
   var totalOutIn = 0
   var listData:List[String] = Nil
-  val saveInterval = 2000000
+  val saveInterval = 50000
   var blockCount = 0
   var ad1Exists = false
   var ad2Exists = false
+  // We need to capture these two fucking transactions because they are repeated.
   val ad1 = "d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599"
   val ad2 = "e3bf3d07d4b0375638d5f1db5255fe07ba2c4cb067cd81b84ee974b6585fb468"
   var nrBlocksToSave = if (args.length > 0) args(0).toInt else 1000
-
+  if (args.length > 1 && args(1) == "init" )
+    new File(db_file).delete
   databaseSession {
 
     if (args.length > 1 && args(1) == "init" )
@@ -48,10 +50,9 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       ad1Exists = true
     if (Q.queryNA[Int]("""select count(*) from outputs where transaction_hash = """"+ad2+"""";""").list.head == 1)
       ad2Exists = true
-    println(ad1Exists + " , " + ad2Exists)
-
+    (Q.u + "PRAGMA foreign_keys=OFF;").execute
     val totalTime = doSomethingBeautiful
-
+    (Q.u + "PRAGMA foreign_keys=ON;").execute
     println("Total time to save movements = " + totalTime + " ms")
     println("Total of movements = " + totalOutIn)
     println("Time required pro movement = " + totalTime.toDouble/totalOutIn +" ms")
@@ -66,19 +67,21 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   def initializeDB: Unit =
   {
     println("Resetting tables of the bitcoin database.")
+
+
     var tableList = MTable.getTables.list;
     var tableMap = tableList.map{t => (t.name.name, t)}.toMap;
-    if (tableMap.contains("outputs"))
-      (RawOutputs.ddl).drop
+    //if (tableMap.contains("outputs"))
+    //  (RawOutputs.ddl).drop
     (RawOutputs.ddl).create
-    if (tableMap.contains("inputs"))
-      (RawInputs.ddl).drop
+    //if (tableMap.contains("inputs"))
+    //  (RawInputs.ddl).drop
     (RawInputs.ddl).create
-    if (tableMap.contains("blocks"))
-      (RawBlocks.ddl).drop
+    //if (tableMap.contains("blocks"))
+    //  (RawBlocks.ddl).drop
     (RawBlocks.ddl).create
-    if (tableMap.contains("grouped_addresses"))
-      (GroupedAddresses.ddl).drop
+    //if (tableMap.contains("grouped_addresses"))
+    //  (GroupedAddresses.ddl).drop
     (GroupedAddresses.ddl).create
   }
 

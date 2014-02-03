@@ -13,20 +13,38 @@ class AllAddressesBalance(args:List[String]){
   databaseSession {
     val values = Q.queryNA[(String,String)]("""SELECT SUM(o.value) as suma, o.address as address FROM outputs o LEFT OUTER JOIN inputs i ON o.transaction_hash = i.output_transaction_hash AND i.output_index = o.`index` where i.transaction_hash IS NULL group by o.address""")
 
-    println("balances calculated. now writing ...")
-    (Q.u + "BEGIN TRANSACTION").execute
+    println("Reading Data...")
+    var counter = 0
+    var arrQueries:List[String] = List()
+
+
     for (value <- values)
-    (Q.u + """
+    {
+      if (counter == 50000)
+      {
+        println ("Copying elements to Database")
+        (Q.u + "BEGIN TRANSACTION").execute
+        for (query <- arrQueries)    (Q.u + query).execute
+        arrQueries = List()
+        (Q.u + "COMMIT TRANSACTION").execute
+        counter = 0
+      }
+      arrQueries = """
       update
         grouped_addresses
       set
         balance = """ + value._1 + """
       where
-        hash = """" + value._2 + """""""
-    ).execute
+        hash = """" + value._2 + """""""::arrQueries
+      counter += 1
 
+    }
+    println ("Copying remaining data :D")
+    (Q.u + "BEGIN TRANSACTION").execute
+    for (query <- arrQueries)    (Q.u + query).execute
     (Q.u + "COMMIT TRANSACTION").execute
-    println("Wir sind geil!")
+
+    println("Wir sind ultra geil!")
 
   }
 }

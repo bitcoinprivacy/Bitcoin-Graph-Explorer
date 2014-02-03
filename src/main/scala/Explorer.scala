@@ -14,17 +14,23 @@ object Explorer extends App{
     case "singleaddressbalance"::rest => new AddressBalance(rest)
     case "closure"::rest              => new AllAddressesClosure(rest)
     case "balance"::rest              => new AllAddressesBalance(rest)
+    case "all"::rest                  => new RawBlockFileReaderUncompressed(List(if (rest.isEmpty) "150000" else rest.head,"init"))
+                                         new CreateIndex(List())
+                                         new AllAddressesClosure(List())
+                                         new AllAddressesBalance(List())
 
     case "createindexes"::rest        => new CreateIndex(rest)
-    case _=> println("""
-             Available commands:
-             populate [number of blocks] [init]
-             singleaddressclosure [address]
-             singleaddressbalance [address]
-             balance
-             closure
-             createindexes
-                     """)
+    case _=> println
+    ("""
+      Available commands:
+      populate [number of blocks] [init]
+      singleaddressclosure [address]
+      singleaddressbalance [address]
+      balance
+      closure
+      createindexes
+      all [number of blocks]
+    """)
 
   }
 
