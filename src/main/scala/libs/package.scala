@@ -3,15 +3,12 @@
  */
 import scala.slick.driver.SQLiteDriver.simple._
 import Database.threadLocalSession
-import scala.collection.mutable.HashMap
-import scala.slick.jdbc.meta.MTable
-import scala.collection.JavaConversions._
-import scala.slick.jdbc.{GetResult, StaticQuery => Q}
-
-import java.lang.instrument._
+import scala.slick.jdbc.{StaticQuery => Q}
 
 package object libs {
   val db_file = "/home/yzark/Repositories/Bitcoin-Graph-Explorer/blockchain/bitcoin.db"
+  val stepClosure = 50000
+  val stepPopulate = 50000
 
   def databaseSession(f: => Unit): Unit = {
     Database.forURL(
@@ -31,8 +28,5 @@ package object libs {
 
   }
 
-  var globalInstr:Instrumentation= null;
-  def premain(args:String, inst: Instrumentation) {
-    globalInstr = inst
-  }
+
 }

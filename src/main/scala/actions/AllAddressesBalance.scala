@@ -9,8 +9,10 @@ import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 /**
  * Created by yzark on 12/16/13.
  */
+
+// TODO: de you really need me? if yes rewrite me plz, else remove
 class AllAddressesBalance(args:List[String]){
-  databaseSession {
+  /*databaseSession {
     val values = Q.queryNA[(String,String)]("""SELECT SUM(o.value) as suma, o.address as address FROM outputs o LEFT OUTER JOIN inputs i ON o.transaction_hash = i.output_transaction_hash AND i.output_index = o.`index` where i.transaction_hash IS NULL group by o.address""")
 
     println("Reading Data...")
@@ -31,7 +33,7 @@ class AllAddressesBalance(args:List[String]){
       }
       arrQueries = """
       update
-        grouped_addresses
+        addresses
       set
         balance = """ + value._1 + """
       where
@@ -46,5 +48,5 @@ class AllAddressesBalance(args:List[String]){
 
     println("Wir sind ultra geil!")
 
-  }
+  }*/
 }

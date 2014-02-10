@@ -25,11 +25,12 @@ import Database.threadLocalSession
 
 class RawBlockFileReaderUncompressed(args:List[String]){
   val params = MainNetParams.get();
+  var start = 0
+  var end = 0
   val loader = new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList());
   var counter = 0
   var totalOutIn = 0
   var listData:List[String] = Nil
-  val saveInterval = 50000
   var blockCount = 0
   var ad1Exists = false
   var ad2Exists = false
@@ -37,52 +38,31 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   val ad1 = "d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599"
   val ad2 = "e3bf3d07d4b0375638d5f1db5255fe07ba2c4cb067cd81b84ee974b6585fb468"
   var nrBlocksToSave = if (args.length > 0) args(0).toInt else 1000
-  if (args.length > 1 && args(1) == "init" )
-    new File(db_file).delete
-  databaseSession {
+  if (args.length > 1 && args(1) == "init" )   new File(db_file).delete
 
-    if (args.length > 1 && args(1) == "init" )
-      initializeDB
-    else
-      blockCount = Query(RawBlocks.length).first
 
-    if (Q.queryNA[Int]("""select count(*) from outputs where transaction_hash = """"+ad1+"""";""").list.head == 1)
-      ad1Exists = true
-    if (Q.queryNA[Int]("""select count(*) from outputs where transaction_hash = """"+ad2+"""";""").list.head == 1)
-      ad2Exists = true
-    (Q.u + "PRAGMA foreign_keys=OFF;").execute
-    val totalTime = doSomethingBeautiful
-    (Q.u + "PRAGMA foreign_keys=ON;").execute
-    println("Total time to save movements = " + totalTime + " ms")
-    println("Total of movements = " + totalOutIn)
-    println("Time required pro movement = " + totalTime.toDouble/totalOutIn +" ms")
-    println("Wir sind sehr geil!")
+
+  def countInputs: Int =
+  {
+    Q.queryNA[Int]("""select count(*) from inputs""").list.head
   }
 
-  def hex2Bytes(hex: String): Array[Byte] = {
+  def hex2Bytes(hex: String): Array[Byte] =
+  {
     (for {i <- 0 to hex.length - 1 by 2 if i > 0 || !hex.startsWith("0x")}
       yield hex.substring(i, i + 2))
         .map(Integer.parseInt(_, 16).toByte).toArray
   }
+
   def initializeDB: Unit =
   {
     println("Resetting tables of the bitcoin database.")
-
-
     var tableList = MTable.getTables.list;
     var tableMap = tableList.map{t => (t.name.name, t)}.toMap;
-    //if (tableMap.contains("outputs"))
-    //  (RawOutputs.ddl).drop
     (RawOutputs.ddl).create
-    //if (tableMap.contains("inputs"))
-    //  (RawInputs.ddl).drop
     (RawInputs.ddl).create
-    //if (tableMap.contains("blocks"))
-    //  (RawBlocks.ddl).drop
     (RawBlocks.ddl).create
-    //if (tableMap.contains("grouped_addresses"))
-    //  (GroupedAddresses.ddl).drop
-    (GroupedAddresses.ddl).create
+    (Addresses.ddl).create
   }
 
   def saveDataToDB: Unit =
@@ -125,7 +105,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       val blockHash = block.getHashAsString()
       savedBlocksSet += blockHash
 
-      if (counter > saveInterval || blockCount >= nrBlocksToSave )
+      if (counter > stepPopulate || blockCount >= nrBlocksToSave )
       {
         saveDataToDB
 
@@ -191,5 +171,36 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       }
     }
     return 0.toLong
+  }
+
+  databaseSession
+  {
+
+    if (args.length > 1 && args(1) == "init" )
+    {
+      initializeDB
+    }
+
+    else
+    {
+      blockCount = Query(RawBlocks.length).first
+
+    }
+
+    if (Q.queryNA[Int]("""select count(*) from outputs where transaction_hash = """"+ad1+"""";""").list.head == 1)
+      ad1Exists = true
+    if (Q.queryNA[Int]("""select count(*) from outputs where transaction_hash = """"+ad2+"""";""").list.head == 1)
+      ad2Exists = true
+
+    (Q.u + "PRAGMA foreign_keys=OFF;").execute
+    start = countInputs
+    val totalTime = doSomethingBeautiful
+    end = countInputs
+    (Q.u + "PRAGMA foreign_keys=ON;").execute
+
+    println("Total time to save movements = " + totalTime + " ms")
+    println("Total of movements = " + totalOutIn)
+    println("Time required pro movement = " + totalTime.toDouble/totalOutIn +" ms")
+    println("Wir sind sehr geil!")
   }
 }

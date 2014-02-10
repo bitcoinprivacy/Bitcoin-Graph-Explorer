@@ -14,10 +14,10 @@ object Explorer extends App{
     case "singleaddressbalance"::rest => new AddressBalance(rest)
     case "closure"::rest              => new AllAddressesClosure(rest)
     case "balance"::rest              => new AllAddressesBalance(rest)
-    case "all"::rest                  => new RawBlockFileReaderUncompressed(List(if (rest.isEmpty) "150000" else rest.head,"init"))
-                                         new CreateIndex(List())
-                                         new AllAddressesClosure(List())
-                                         new AllAddressesBalance(List())
+    case "all"::rest                  =>
+      val populater = new RawBlockFileReaderUncompressed(List(if (rest.isEmpty) "100000" else rest.head, "init"))
+      new CreateIndex(List())
+      new AllAddressesClosure(List(populater.start.toString, populater.end.toString))
 
     case "createindexes"::rest        => new CreateIndex(rest)
     case _=> println

@@ -17,70 +17,38 @@ import scala.slick.jdbc.meta.MTable
 import scala.collection.mutable.HashMap
 
 class AllAddressesClosure(args:List[String]){
-  databaseSession  {
-	val numberOfSteps = 10
-  println("Intializing variables ...")
 
-  val limit = if (args.length > 0) "limit " + args(0) else ""
-  val mapDSOA:HashMap[Int, DisjointSetOfAddresses] = HashMap.empty
-  val mapAddresses:HashMap[String, Array[Int]] = HashMap.empty
-  var adMap: HashMap[String,Int] = HashMap.empty
-
-  var adCon: Int = 1
-
-  var counter = 0
-
-  val q1 = Q.queryNA[Long](
-        """
-        select
-          count(*)
-        from
-          inputs
-          """ + limit
-  )
-  var max = 0.toLong
-  for (t <- q1)
-	  max = t
-  println("Total rows to read "+max)
-  println("Reading data ...")
-
-  var startTime = System.currentTimeMillis
-
-
-  var step = max / numberOfSteps
-  var position = 0.toLong
-
-  var pos = 0
-  while (position < max && step > 0)
+  def generateTree (firstElement: Int, elements: Int): HashMap[String, DisjointSetOfAddresses]  =
   {
-    println(pos)
-    pos = pos+1
+    val numberOfSteps = 10
+    println("Intializing variables ...")
 
-    if (position + step > max)
-		  step = max - position
-	
-	  val query = """  select i.transaction_hash, o.address from inputs i join outputs o on
-          (o.transaction_hash  = i.output_transaction_hash and o.`index` = i.output_index)
-          limit """  + position + """,""" +step
+    val limit = if (args.length > 0) "limit " + args(0) else ""
+    val mapDSOA:HashMap[String, DisjointSetOfAddresses] = HashMap.empty
+    val mapAddresses:HashMap[String, Array[String]] = HashMap.empty
 
-    println(query)
-    position = position + step
-	
-	  val q2 = Q.queryNA[(String,String)](query)
+    var adCon: Int = 1
+
+    var counter = 0
+
+    println("Total rows to read " +elements)
+    println("Reading data ...")
+
+    var startTime = System.currentTimeMillis
+    val query = """  select i.transaction_hash, o.address from inputs i join outputs o on
+        (o.transaction_hash  = i.output_transaction_hash and o.`index` = i.output_index)
+        limit """  + firstElement + ','  + elements
+
+    val q2 = Q.queryNA[(String,String)](query)
 
     for (t <- q2) if (t._2 != "0")
     {
-      val t2 = adMap.getOrElseUpdate(t._2, { adCon += 1; adCon } )
+      val list:Array[String] = mapAddresses.getOrElse(t._1, Array()  )
 
-      val list:Array[Int] = mapAddresses.getOrElse(t._1, Array()  )
-
-      mapAddresses.update(t._1, list :+ t2 )
+      mapAddresses.update(t._1, list :+ t._2 )
 
     }
-    //print("/")
-}
-	  //println("admap size " + globalInstr.getObjectSize(adMap))
-    //println("mapaddresses size "+ globalInstr.getObjectSize(mapAddresses))
+
     println("")
     println("Data read in "+ (System.currentTimeMillis - startTime )+" ms"    )
 
@@ -99,22 +67,57 @@ class AllAddressesClosure(args:List[String]){
         case ar => ar(0).union(ar(1)) ; union(ar.drop(1))
       }
       union(dSOAs)
-   }
-   println("Dependences calculated in "+ (System.currentTimeMillis - startTime) +" ms")
-   println("Compiling SQL queries ...")
+    }
 
-   val adMapReverse = adMap map (_.swap)
-   val values = (mapDSOA map ( p => ('"'+ adMapReverse(p._1) +'"','"'+adMapReverse(p._2.find.address) +'"', 0.toDouble))).toList
+  mapDSOA
 
-  println("Copying results to the database...")
-  startTime = System.currentTimeMillis
-  (Q.u + "BEGIN TRANSACTION;").execute
+  }
 
-  for (value <- values )
-    (Q.u + """insert into grouped_addresses values """+ value.toString +""";""").execute
-  (Q.u + "COMMIT TRANSACTION;").execute
+  def adaptTreeToDB(mapDSOA: HashMap[String, DisjointSetOfAddresses]): HashMap[String, DisjointSetOfAddresses] =
+  {
+    for ( (address, dsoa) <- mapDSOA)
+    {
+      Q.queryNA[String]("""select representant from addresses where hash= """"+address+"""";""").list match
+      {
+        case representant::xs =>
+          dsoa.find.parent = Some(DisjointSetOfAddresses(representant))
+          mapDSOA remove address
+        case _  =>
+      }
 
-   println("Data copied in "+ (System.currentTimeMillis - startTime) +" ms")
-   println("Wir sind sehr geil!!!")
+    }
+
+    mapDSOA
+  }
+
+  def saveTree(mapDSOA: HashMap[String, DisjointSetOfAddresses]): Unit =
+  {
+    println("Compiling SQL queries ...")
+
+    val values = (mapDSOA map ( p => ('"'+ p._1 + '"' , '"' + p._2.find.address +'"', 0.toDouble))).toList
+
+    println("Copying results to the database...")
+
+    (Q.u + "BEGIN TRANSACTION;").execute
+
+    for (value <- values )
+      (Q.u + """insert into addresses values """+ value.toString +""";""").execute
+    (Q.u + "COMMIT TRANSACTION;").execute
+  }
+
+
+  databaseSession  {
+    val start = args(0).toInt
+    val end = args(1).toInt
+
+    var i = start
+
+    for (i <- start to end by stepClosure)
+    {
+      println("Closuring inputs from " + i + " to " + ( i + stepClosure ) )
+      saveTree(adaptTreeToDB(generateTree(i, stepClosure)))
+    }
+
+    println("Wir sind sehr geil!!!")
   }
 }
