@@ -24,7 +24,7 @@ object RawOutputs extends Table[(String, String, Int, Double)]("outputs") {
   def value = column[Double]("value")
   def * = transaction_hash ~ address ~ index ~ value
   def xa = transaction_hash ~ index
-  def pk = primaryKey("pk_myTable2", (transaction_hash, index) )
+//  def pk = primaryKey("pk_myTable2", (transaction_hash, index) )
 }
 
 object RawInputs extends Table[(String, Int, String)]("inputs") {
@@ -32,7 +32,7 @@ object RawInputs extends Table[(String, Int, String)]("inputs") {
   def output_transaction_hash = column[String]("output_transaction_hash")
   def output_index = column[Int]("output_index")
   def transaction_hash = column[String]("transaction_hash")
-  def fkMyTable1 = foreignKey("myTable1_fk", output_transaction_hash ~ output_index, RawOutputs)( _.xa )
+  //def fkMyTable1 = foreignKey("myTable1_fk", output_transaction_hash ~ output_index, RawOutputs)( _.xa )
   def * = output_transaction_hash ~ output_index ~ transaction_hash
 }
 
