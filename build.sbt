@@ -20,8 +20,8 @@ libraryDependencies ++= Seq(
   "org.xerial" % "sqlite-jdbc" % "3.7.15-M1",
      // "com.sagesex" %% "json-rpc-client" % "0.0.1",
    // "org.scala-lang" % "scala-actors" % "2.10.3",
-    "com.typesafe.slick" %% "slick" % "1.0.1",
-    "com.typesafe.play" %% "play" % "2.2.0"
+    "com.typesafe.slick" %% "slick" % "1.0.1"
+    //"com.typesafe.play" %% "play" % "2.2.0"
 )
 
 resolvers += "Local Maven Repository" at "file:///"+Path.userHome.absolutePath+"/.m2/repository"
