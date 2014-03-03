@@ -14,7 +14,7 @@ libraryDependencies ++= Seq(
 //	"ch.qos.logback" % "logback-classic" % "0.9.26" % "compile->default", // Logging
     "org.slf4j" % "slf4j-simple" % "1.7.5",
 	"com.google" % "bitcoinj" % "0.10",
-	"org.neo4j" % "neo4j-scala" % "0.2.0-M2-SNAPSHOT",
+//	"org.neo4j" % "neo4j-scala" % "0.2.0-M2-SNAPSHOT",
   //  "org.iq80.leveldb"%"leveldb"%"0.6",
     //"mysql"%"mysql-connector-java"%"5.1.26",
   "org.xerial" % "sqlite-jdbc" % "3.7.15-M1",
