@@ -126,7 +126,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
           {
             val outpointTransactionHash = input.getOutpoint.getHash.toString
             val outpointIndex = input.getOutpoint.getIndex.toInt
-            listData = "insert into inputs VALUES (" + '"' + outpointTransactionHash + '"' + "," + outpointIndex +"," + '"' + transactionHash+'"'+")"::listData
+            listData = "insert into inputs (output_transaction_hash, output_index, transaction_hash) VALUES (" + '"' + outpointTransactionHash + '"' + "," + outpointIndex +"," + '"' + transactionHash+'"'+")"::listData
             counter+=1
             totalOutIn+=1
           }
@@ -160,7 +160,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
           val value = output.getValue.doubleValue
           if ( (transactionHash != ad1 || !ad1Exists) && (transactionHash != ad2 || !ad2Exists))
           {
-            listData = "insert into outputs VALUES (" + '"' + transactionHash + '"' + "," + '"'+addressHash + '"' + "," + index + "," + value + ")"::listData
+            listData = "insert into outputs (transaction_hash, address, `index`, `value`) VALUES (" + '"' + transactionHash + '"' + "," + '"'+addressHash + '"' + "," + index + "," + value + ")"::listData
             counter+=1
             totalOutIn+=1
             index+=1
@@ -192,11 +192,11 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     if (Q.queryNA[Int]("""select count(*) from outputs where transaction_hash = """"+ad2+"""";""").list.head == 1)
       ad2Exists = true
 
-    (Q.u + "PRAGMA foreign_keys=OFF;").execute
+    //(Q.u + "PRAGMA foreign_keys=OFF;").execute
     start = countInputs
     val totalTime = doSomethingBeautiful
     end = countInputs
-    (Q.u + "PRAGMA foreign_keys=ON;").execute
+    //(Q.u + "PRAGMA foreign_keys=ON;").execute
 
     println("Total time to save movements = " + totalTime + " ms")
     println("Total of movements = " + totalOutIn)

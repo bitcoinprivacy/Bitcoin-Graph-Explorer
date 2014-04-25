@@ -25,7 +25,7 @@ class AllAddressesClosure(args:List[String]){
     var startTime = System.currentTimeMillis
     val query = """  select i.transaction_hash, o.address from inputs i join outputs o on
         (o.transaction_hash  = i.output_transaction_hash and o.`index` = i.output_index)
-        limit """  + firstElement + ','  + elements
+        limit """  + firstElement + ','  + elements   + """;"""
 
     println("Reading " +elements+ " elements")
 
@@ -71,7 +71,6 @@ class AllAddressesClosure(args:List[String]){
           mapDSOA remove address
         case _  =>
       }
-
     }
 
     mapDSOA
@@ -104,6 +103,6 @@ class AllAddressesClosure(args:List[String]){
       saveTree(adaptTreeToDB(generateTree(i, stepClosure)))
     }
 
-    println("Wir sind sehr geil!!!")
+    println("Wir sind supergeil!!!")
   }
 }
