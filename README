@@ -1,1 +1,1 @@
-An exploration bringing together Scala and Bitcoin.
+Probably the first project bringing together Scala and bitcoin, this exploration is growing into a tool that parses the blockchain, stores the relevant data in databases, and gives the user access to powerful analysis tools like the closure of an address with regard to probable co-ownership.
