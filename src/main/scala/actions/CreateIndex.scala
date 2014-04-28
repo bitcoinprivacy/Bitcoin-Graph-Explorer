@@ -13,7 +13,7 @@ import scala.slick.jdbc.{GetResult, StaticQuery => Q}
  */
 class CreateIndex(args:List[String]){
   databaseSession {
-                   println(args)
+                  
     println("Building indexes...")
 
     val queries:List[String] = List(
