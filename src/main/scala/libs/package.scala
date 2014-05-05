@@ -6,7 +6,7 @@ import Database.threadLocalSession
 import scala.slick.jdbc.{StaticQuery => Q}
 
 package object libs {
-  val db_file = "blockchain/bitcoin.db"
+  var db_file = "blockchain/bitcoin.db"
   val stepClosure = 25000
   val stepPopulate = 100000
 
