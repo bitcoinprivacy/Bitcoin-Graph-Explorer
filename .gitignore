@@ -2,7 +2,6 @@ target/
 project/boot/
 project/target/
 project/plugins/
-blockchain/*
 .idea/
 *.log
 neodb/
