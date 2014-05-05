@@ -7,12 +7,10 @@ import scala.slick.driver.SQLiteDriver.simple._
 import Database.threadLocalSession
 import scala.slick.jdbc.{StaticQuery => Q}
 
+
 package object libs
 {
   var db_file = "blockchain/bitcoin.db"
-  //var stepClosure = 25000
-  //var stepPopulate = 100000
-
   val conf = ConfigFactory.load()
 
   var stepClosure = conf.getInt("closureStep")

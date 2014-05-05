@@ -2,7 +2,7 @@ organization := "sagesex"
 
 name := "Bitcoin Graph Explorer"
 
-version := "0.6"
+version := "0.7"
 
 scalaVersion := "2.10.3"
 
@@ -21,8 +21,10 @@ libraryDependencies ++= Seq(
      // "com.sagesex" %% "json-rpc-client" % "0.0.1",
    // "org.scala-lang" % "scala-actors" % "2.10.3",
     "com.typesafe.slick" %% "slick" % "1.0.1",
-  "com.typesafe" % "config" % "1.2.1"
-    //"com.typesafe.play" %% "play" % "2.2.0"
+  "com.typesafe" % "config" % "1.2.1",
+      //"com.typesafe.play" %% "play" % "2.2.0"
+      "org.scalacheck" %% "scalacheck" % "1.11.3" % "test",
+      "org.scalatest" %% "scalatest" % "2.1.5" % "test"   
 )
 
 
