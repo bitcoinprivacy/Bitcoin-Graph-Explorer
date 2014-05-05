@@ -2,6 +2,6 @@ target/
 project/boot/
 project/target/
 project/plugins/
-bitcoin.blockchain
+blockchain/*
 .idea/
 neodb/
