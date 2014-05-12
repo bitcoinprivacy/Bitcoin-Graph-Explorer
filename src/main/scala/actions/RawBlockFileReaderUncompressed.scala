@@ -56,7 +56,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 
   def initializeDB: Unit =
   {
-    println("Resetting tables of the bitcoin database.")
+    //println("Resetting tables of the bitcoin database.")
     var tableList = MTable.getTables.list;
     var tableMap = tableList.map{t => (t.name.name, t)}.toMap;
     (RawOutputs.ddl).create
@@ -68,7 +68,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   def saveDataToDB: Unit =
   {
     val startTime = System.currentTimeMillis
-    println("Saving until block nr. " + blockCount + " ...")
+    //println("Saving until block nr. " + blockCount + " ...")
 
     (Q.u + "BEGIN TRANSACTION").execute
 
@@ -80,13 +80,13 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     listData = Nil
     counter = 0
     val totalTime = System.currentTimeMillis - startTime
-    println("Saved in " + totalTime + "ms")
+    //println("Saved in " + totalTime + "ms")
   }
 
   def doSomethingBeautiful: Long =
   {
-    println("Start")
-    println("Reading binaries")
+    //println("Start")
+    //println("Reading binaries")
     var savedBlocksSet:Set[String] = Set.empty
     val savedBlocks =
       (for (b <- RawBlocks /* if b.id === 42*/)
@@ -95,13 +95,21 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       savedBlocksSet = savedBlocksSet + c
 
     nrBlocksToSave += blockCount
-
-    println("Saving blocks from " + blockCount + " to " + nrBlocksToSave)
+    var counter2 = 0
+    //println("Saving blocks from " + blockCount + " to " + nrBlocksToSave)
     val globalTime = System.currentTimeMillis
     for(
       block <- asScalaIterator(loader)
-      if (!savedBlocksSet.contains(block.getHashAsString())))
-    {
+    )
+      if (counter2 < 265300)
+      {
+        counter2 += 1
+      }
+      else
+      //if (!savedBlocksSet.contains(block.getHashAsString())))
+      {
+      counter += 1
+
       val blockHash = block.getHashAsString()
       savedBlocksSet += blockHash
 
@@ -118,7 +126,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 
       for (trans <- block.getTransactions)
       {
-        val transactionHash = trans.getHashAsString()
+        val transactionHash = trans.getHashAsString
 
         if (!trans.isCoinBase)
         {
@@ -143,6 +151,9 @@ class RawBlockFileReaderUncompressed(args:List[String]){
             catch
             {
               case e: ScriptException =>
+                println(transactionHash)
+             "0"
+                /*//println(output)
                 val script = output.getScriptPubKey.toString
                 if (script.startsWith("[65]"))
                 {
@@ -155,7 +166,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
                 else
                 { // special case because bitcoinJ doesn't support pay-to-IP scripts
                   "0"
-                }
+                } */
             }
           val value = output.getValue.doubleValue
           if ( (transactionHash != ad1 || !ad1Exists) && (transactionHash != ad2 || !ad2Exists))
@@ -184,7 +195,8 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     else
     {
       blockCount = Query(RawBlocks.length).first
-
+      // test
+      blockCount = 267000
     }
 
     if (Q.queryNA[Int]("""select count(*) from outputs where transaction_hash = """"+ad1+"""";""").list.head == 1)
@@ -198,9 +210,9 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     end = countInputs
     //(Q.u + "PRAGMA foreign_keys=ON;").execute
 
-    println("Total time to save movements = " + totalTime + " ms")
-    println("Total of movements = " + totalOutIn)
-    println("Time required pro movement = " + totalTime.toDouble/totalOutIn +" ms")
-    println("Wir sind sehr geil!")
+    //println("Total time to save movements = " + totalTime + " ms")
+    //println("Total of movements = " + totalOutIn)
+    //println("Time required pro movement = " + totalTime.toDouble/totalOutIn +" ms")
+    //println("Wir sind sehr geil!")
   }
 }
