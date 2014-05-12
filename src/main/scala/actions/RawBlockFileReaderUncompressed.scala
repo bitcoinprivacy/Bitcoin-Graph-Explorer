@@ -98,15 +98,11 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     var counter2 = 0
     println("Saving blocks from " + blockCount + " to " + nrBlocksToSave)
     val globalTime = System.currentTimeMillis
-    for(
+    for
+    (
       block <- asScalaIterator(loader)
+      if (!savedBlocksSet.contains(block.getHashAsString()))
     )
-      if (counter2 < 265300)
-      {
-        counter2 += 1
-      }
-      else
-      //if (!savedBlocksSet.contains(block.getHashAsString())))
       {
       counter += 1
 
