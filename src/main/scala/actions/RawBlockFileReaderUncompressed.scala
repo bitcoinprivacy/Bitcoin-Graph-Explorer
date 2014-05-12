@@ -143,20 +143,37 @@ class RawBlockFileReaderUncompressed(args:List[String]){
             catch
             {
               case e: ScriptException =>
-                val script = output.getScriptPubKey.toString
-                if (script.startsWith("[65]"))
+                try
                 {
-                  val pubkeystring = script.substring(4, 134)
-                  import Utils._
-                  val pubkey = hex2Bytes(pubkeystring)
-                  val address = new Address(params, sha256hash160(pubkey))
-                  address.toString
+	                val script = output.getScriptPubKey.toString
+	                //TODO: This is bad. Seems to throw exceptions at some multisig transactions
+	                // steps: 1. find out which transactions exactly
+	                // 2. check for multisig and first put out a marker or such, then 
+	                // 3. generate correct address (doesn't seem  to be in bitcoinj - pull req?)
+	                // 4. check the strange case below again. is the first one correct, what does it mean?
+	                // can we generate an address for pay-to-ip?
+	                
+	                if (script.startsWith("[65]"))
+	                {
+	                  val pubkeystring = script.substring(4, 134)
+	                  import Utils._
+	                  val pubkey = hex2Bytes(pubkeystring)
+	                  val address = new Address(params, sha256hash160(pubkey))
+	                  address.toString
+	                }
+	                else
+	                { // special case because bitcoinJ doesn't support pay-to-IP scripts
+	                  "0"
+	                }
                 }
-                else
-                { // special case because bitcoinJ doesn't support pay-to-IP scripts
-                  "0"
+                catch
+                {
+                  case e: ScriptException =>
+                  	println(transactionHash)
+                  	"0"
                 }
             }
+       
           val value = output.getValue.doubleValue
           if ( (transactionHash != ad1 || !ad1Exists) && (transactionHash != ad2 || !ad2Exists))
           {
