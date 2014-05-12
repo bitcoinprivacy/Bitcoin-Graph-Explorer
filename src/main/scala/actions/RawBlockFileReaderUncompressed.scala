@@ -56,7 +56,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 
   def initializeDB: Unit =
   {
-    //println("Resetting tables of the bitcoin database.")
+    println("Resetting tables of the bitcoin database.")
     var tableList = MTable.getTables.list;
     var tableMap = tableList.map{t => (t.name.name, t)}.toMap;
     (RawOutputs.ddl).create
@@ -68,7 +68,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   def saveDataToDB: Unit =
   {
     val startTime = System.currentTimeMillis
-    //println("Saving until block nr. " + blockCount + " ...")
+    println("Saving until block nr. " + blockCount + " ...")
 
     (Q.u + "BEGIN TRANSACTION").execute
 
@@ -80,13 +80,13 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     listData = Nil
     counter = 0
     val totalTime = System.currentTimeMillis - startTime
-    //println("Saved in " + totalTime + "ms")
+    println("Saved in " + totalTime + "ms")
   }
 
   def doSomethingBeautiful: Long =
   {
-    //println("Start")
-    //println("Reading binaries")
+    println("Start")
+    println("Reading binaries")
     var savedBlocksSet:Set[String] = Set.empty
     val savedBlocks =
       (for (b <- RawBlocks /* if b.id === 42*/)
@@ -96,7 +96,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 
     nrBlocksToSave += blockCount
     var counter2 = 0
-    //println("Saving blocks from " + blockCount + " to " + nrBlocksToSave)
+    println("Saving blocks from " + blockCount + " to " + nrBlocksToSave)
     val globalTime = System.currentTimeMillis
     for(
       block <- asScalaIterator(loader)
@@ -154,11 +154,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
                 try
                 {
 	                val script = output.getScriptPubKey.toString
-	                //TODO: This is bad. Seems to throw exceptions at some multisig transactions
-	                // steps: 1. find out which transactions exactly
-	                // 2. check for multisig and first put out a marker or such, then 
-	                // 3. generate correct address (doesn't seem  to be in bitcoinj - pull req?)
-	                // 4. check the strange case below again. is the first one correct, what does it mean?
+	                //TODO: 
 	                // can we generate an address for pay-to-ip?
 	                
 	                if (script.startsWith("[65]"))
@@ -177,11 +173,10 @@ class RawBlockFileReaderUncompressed(args:List[String]){
                 catch
                 {
                   case e: ScriptException =>
-                  	println(transactionHash)
-                  	"0"
+                  	println("bad transaction: "+transactionHash)
+                  	"dead"
                 }
             }
-       
           val value = output.getValue.doubleValue
           if ( (transactionHash != ad1 || !ad1Exists) && (transactionHash != ad2 || !ad2Exists))
           {
@@ -209,8 +204,6 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     else
     {
       blockCount = Query(RawBlocks.length).first
-      // test
-      blockCount = 267000
     }
 
     if (Q.queryNA[Int]("""select count(*) from outputs where transaction_hash = """"+ad1+"""";""").list.head == 1)
@@ -224,9 +217,9 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     end = countInputs
     //(Q.u + "PRAGMA foreign_keys=ON;").execute
 
-    //println("Total time to save movements = " + totalTime + " ms")
-    //println("Total of movements = " + totalOutIn)
-    //println("Time required pro movement = " + totalTime.toDouble/totalOutIn +" ms")
-    //println("Wir sind sehr geil!")
+    println("Total time to save movements = " + totalTime + " ms")
+    println("Total of movements = " + totalOutIn)
+    println("Time required pro movement = " + totalTime.toDouble/totalOutIn +" ms")
+    println("Wir sind sehr geil!")
   }
 }
