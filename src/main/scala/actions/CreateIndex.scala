@@ -19,9 +19,10 @@ class CreateIndex(args:List[String]){
     val queries:List[String] = List(
 
       """ create index if not exists address on outputs (address)""",
-      """ create index if not exists transaction_hash_i on inputs (transaction_hash)""",
       """ create index if not exists representant on addresses (representant)""",
-      """ create unique index if not exists hash_a on addresses (hash)"""
+      """ create unique index if not exists hash_a on addresses (hash)""",
+      """ create index if not exists transaction_hash_i on outputs (transaction_hash)""",
+      """ create index if not exists index_i on outputs (`index`)"""
     )
     for (query <- queries)
     {

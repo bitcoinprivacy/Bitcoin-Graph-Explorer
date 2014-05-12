@@ -11,3 +11,4 @@ else
     echo "file up to date"
 fi
 dpkg -i sbt.deb
+rm sbt.deb

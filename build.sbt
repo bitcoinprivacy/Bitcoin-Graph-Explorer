@@ -13,7 +13,7 @@ libraryDependencies ++= Seq(
 //	"junit" % "junit" % "4.8" % "test->default", // For JUnit 4 testing
 //	"ch.qos.logback" % "logback-classic" % "0.9.26" % "compile->default", // Logging
     "org.slf4j" % "slf4j-simple" % "1.7.5",
-	"com.google" % "bitcoinj" % "0.10",
+	"com.google" % "bitcoinj" % "0.11",
 //	"org.neo4j" % "neo4j-scala" % "0.2.0-M2-SNAPSHOT",
   //  "org.iq80.leveldb"%"leveldb"%"0.6",
     //"mysql"%"mysql-connector-java"%"5.1.26",
@@ -21,10 +21,13 @@ libraryDependencies ++= Seq(
      // "com.sagesex" %% "json-rpc-client" % "0.0.1",
    // "org.scala-lang" % "scala-actors" % "2.10.3",
     "com.typesafe.slick" %% "slick" % "1.0.1",
-    //"com.typesafe.play" %% "play" % "2.2.0"
+  "com.typesafe" % "config" % "1.2.1",
+      //"com.typesafe.play" %% "play" % "2.2.0"
       "org.scalacheck" %% "scalacheck" % "1.11.3" % "test",
       "org.scalatest" %% "scalatest" % "2.1.5" % "test"   
 )
+
+
 
 resolvers += "Local Maven Repository" at "file:///"+Path.userHome.absolutePath+"/.m2/repository"
 
