@@ -10,16 +10,17 @@ import scala.slick.jdbc.{StaticQuery => Q}
 
 package object libs
 {
-  var db_file = "blockchain/bitcoin.db"
+  var databaseFile = conf.getString("databaseFile") //"blockchain/bitcoin.db"
   val conf = ConfigFactory.load()
 
   var stepClosure = conf.getInt("closureStep")
   var stepPopulate = conf.getInt("populateStep");
+  
 
   def databaseSession(f: => Unit): Unit =
   {
     Database.forURL(
-      url = "jdbc:sqlite:"+db_file,
+      url = "jdbc:sqlite:"+databaseFile,
       driver = "org.sqlite.JDBC"
     ) withSession
     {
@@ -28,7 +29,6 @@ package object libs
       (Q.u + "PRAGMA main.locking_mode=EXCLUSIVE;     ").execute
       (Q.u + "PRAGMA main.synchronous=NORMAL;         ").execute
       (Q.u + "PRAGMA main.journal_mode=WAL;           ").execute
-      (Q.u + "analyze;                                ").execute
       f
     }
 
