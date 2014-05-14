@@ -93,8 +93,8 @@ class AllAddressesClosure(args:List[String]){
 
   databaseSession
   {
-    val start = args(0).toInt
-    val end = args(1).toInt
+    val start = if (args.length>0) args(0).toInt else 0
+    val end = if (args.length>1) args(1).toInt else countInputs
     var i = start
 
     for (i <- start to end by stepClosure)

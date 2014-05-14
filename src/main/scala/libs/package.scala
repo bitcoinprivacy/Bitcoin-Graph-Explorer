@@ -30,8 +30,12 @@ package object libs
       (Q.u + "PRAGMA main.synchronous=NORMAL;         ").execute
       (Q.u + "PRAGMA main.journal_mode=WAL;           ").execute
       f
-    }
-
+    }    
+  }
+  
+  def countInputs: Int =
+  {
+    Q.queryNA[Int]("""select count(*) from inputs""").list.head
   }
 
 
