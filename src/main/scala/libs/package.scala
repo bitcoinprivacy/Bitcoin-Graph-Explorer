@@ -9,10 +9,10 @@ import scala.slick.jdbc.{StaticQuery => Q}
 
 
 package object libs
-{
-  var databaseFile = conf.getString("databaseFile") //"blockchain/bitcoin.db"
+{  
   val conf = ConfigFactory.load()
 
+  var databaseFile = conf.getString("databaseFile") //"blockchain/bitcoin.db"
   var stepClosure = conf.getInt("closureStep")
   var stepPopulate = conf.getInt("populateStep");
   

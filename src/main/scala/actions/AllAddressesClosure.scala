@@ -90,7 +90,6 @@ class AllAddressesClosure(args:List[String]){
     (Q.u + "COMMIT TRANSACTION;").execute
   }
 
-
   databaseSession
   {
     val start = if (args.length>0) args(0).toInt else 0
