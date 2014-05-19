@@ -23,10 +23,10 @@ class AllAddressesClosure(args:List[String]){
     val mapDSOA:HashMap[String, DisjointSetOfAddresses] = HashMap.empty
     val mapAddresses:HashMap[String, Array[String]] = HashMap.empty
     var startTime = System.currentTimeMillis
-    val query = """  select i.transaction_hash, o.address from inputs i join outputs o on
-        (o.transaction_hash  = i.output_transaction_hash and o.`index` = i.output_index)
-        limit """  + firstElement + ','  + elements   + """;"""
-
+    val query = """ select i.transaction_hash, o.address from 
+        (select * from inputs limit """ + firstElement + ',' + elements + """ ) as i join outputs o on 
+        (o.transaction_hash  = i.output_transaction_hash and o.`index` = i.output_index) ; """
+        
     println("Reading " +elements+ " elements")
 
     val q2 = Q.queryNA[(String,String)](query)
@@ -90,11 +90,10 @@ class AllAddressesClosure(args:List[String]){
     (Q.u + "COMMIT TRANSACTION;").execute
   }
 
-
   databaseSession
   {
-    val start = args(0).toInt
-    val end = args(1).toInt
+    val start = if (args.length>0) args(0).toInt else 0
+    val end = if (args.length>1) args(1).toInt else countInputs
     var i = start
 
     for (i <- start to end by stepClosure)

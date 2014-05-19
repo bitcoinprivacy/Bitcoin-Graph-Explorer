@@ -34,18 +34,12 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   var blockCount = 0
   var ad1Exists = false
   var ad2Exists = false
-  // We need to capture these two fucking transactions because they are repeated.
+  // We need to capture these two transactions because they are repeated.
   val ad1 = "d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599"
   val ad2 = "e3bf3d07d4b0375638d5f1db5255fe07ba2c4cb067cd81b84ee974b6585fb468"
   var nrBlocksToSave = if (args.length > 0) args(0).toInt else 1000
-  if (args.length > 1 && args(1) == "init" )   new File(db_file).delete
+  if (args.length > 1 && args(1) == "init" )   new File(databaseFile).delete
 
-
-
-  def countInputs: Int =
-  {
-    Q.queryNA[Int]("""select count(*) from inputs""").list.head
-  }
 
   def hex2Bytes(hex: String): Array[Byte] =
   {
