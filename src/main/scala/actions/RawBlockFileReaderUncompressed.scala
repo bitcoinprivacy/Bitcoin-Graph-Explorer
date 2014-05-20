@@ -89,7 +89,6 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       savedBlocksSet = savedBlocksSet + c
 
     nrBlocksToSave += blockCount
-    var counter2 = 0
     println("Saving blocks from " + blockCount + " to " + nrBlocksToSave)
     val globalTime = System.currentTimeMillis
     for

@@ -26,7 +26,10 @@ class AllAddressesClosure(args:List[String]){
     val query = """ select i.transaction_hash, o.address from 
         (select * from inputs limit """ + firstElement + ',' + elements + """ ) as i join outputs o on 
         (o.transaction_hash  = i.output_transaction_hash and o.`index` = i.output_index) ; """
-        
+        /* select i.transaction_hash, o.address from 
+        (select * from inputs limit 10000, 10000 ) as i join outputs o on 
+        (o.transaction_hash  = i.output_transaction_hash and o.`index` = i.output_index) ; 
+        */
     println("Reading " +elements+ " elements")
 
     val q2 = Q.queryNA[(String,String)](query)
