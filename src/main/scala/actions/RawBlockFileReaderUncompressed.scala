@@ -54,6 +54,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     var tableList = MTable.getTables.list;
     var tableMap = tableList.map{t => (t.name.name, t)}.toMap;
     (RawOutputs.ddl).create
+    ( Outputs.ddl).create
     (RawInputs.ddl).create
     (RawBlocks.ddl).create
     (Addresses.ddl).create
@@ -67,7 +68,9 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     (Q.u + "BEGIN TRANSACTION").execute
 
     for (line <- listData)
+    {
       (Q.u + line+";").execute
+    }
 
     (Q.u + "COMMIT TRANSACTION").execute
 
@@ -123,7 +126,11 @@ class RawBlockFileReaderUncompressed(args:List[String]){
           {
             val outpointTransactionHash = input.getOutpoint.getHash.toString
             val outpointIndex = input.getOutpoint.getIndex.toInt
-            listData = "insert into inputs (output_transaction_hash, output_index, transaction_hash) VALUES (" + '"' + outpointTransactionHash + '"' + "," + outpointIndex +"," + '"' + transactionHash+'"'+")"::listData
+            listData =
+              "INSERT OR REPLACE INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`)  VALUES " +
+              " ('"+transactionHash+"', '"+ outpointTransactionHash+"', '"+ outpointIndex+"', (SELECT address  FROM movements WHERE transaction_hash = '"+outpointTransactionHash+"' and `index` = '"+outpointIndex+"'), (SELECT `value` FROM movements WHERE transaction_hash = '"+outpointTransactionHash+"' and `index` = '"+outpointIndex+"'))"::listData;
+
+            //listData = "insert into inputs (output_transaction_hash, output_index, transaction_hash) VALUES (" + '"' + outpointTransactionHash + '"' + "," + outpointIndex +"," + '"' + transactionHash+'"'+")"::listData
             counter+=1
             totalOutIn+=1
           }
@@ -169,7 +176,11 @@ class RawBlockFileReaderUncompressed(args:List[String]){
           val value = output.getValue.doubleValue
           if ( (transactionHash != ad1 || !ad1Exists) && (transactionHash != ad2 || !ad2Exists))
           {
-            listData = "insert into outputs (transaction_hash, address, `index`, `value`) VALUES (" + '"' + transactionHash + '"' + "," + '"'+addressHash + '"' + "," + index + "," + value + ")"::listData
+            //listData = "insert into outputs (transaction_hash, address, `index`, `value`) VALUES (" + '"' + transactionHash + '"' + "," + '"'+addressHash + '"' + "," + index + "," + value + ")"::listData
+            listData =
+              "INSERT OR REPLACE INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`)  VALUES " +
+                " ((SELECT spent_in_transaction_hash  FROM movements WHERE transaction_hash = '"+transactionHash+"' and `index` = '"+index+"'), '"+ transactionHash+"', '"+ index+"', '"+addressHash+"', '"+value+"' )"::listData;
+
             counter+=1
             totalOutIn+=1
             index+=1

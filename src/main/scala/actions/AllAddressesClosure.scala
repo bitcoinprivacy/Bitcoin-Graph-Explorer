@@ -23,13 +23,10 @@ class AllAddressesClosure(args:List[String]){
     val mapDSOA:HashMap[String, DisjointSetOfAddresses] = HashMap.empty
     val mapAddresses:HashMap[String, Array[String]] = HashMap.empty
     var startTime = System.currentTimeMillis
-    val query = """ select i.transaction_hash, o.address from 
-        (select * from inputs limit """ + firstElement + ',' + elements + """ ) as i join outputs o on 
-        (o.transaction_hash  = i.output_transaction_hash and o.`index` = i.output_index) ; """
-        /* select i.transaction_hash, o.address from 
-        (select * from inputs limit 10000, 10000 ) as i join outputs o on 
-        (o.transaction_hash  = i.output_transaction_hash and o.`index` = i.output_index) ; 
-        */
+
+    val query = """ select spent_in_transaction_hash, address from
+        movements where spent_in_transaction_hash NOT NULL limit """ + firstElement + ',' + elements + """ ; """
+        
     println("Reading " +elements+ " elements")
 
     val q2 = Q.queryNA[(String,String)](query)
