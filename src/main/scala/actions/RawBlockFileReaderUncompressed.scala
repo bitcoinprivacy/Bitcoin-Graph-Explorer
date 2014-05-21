@@ -31,12 +31,14 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   var counter = 0
   var totalOutIn = 0
   var listData:List[String] = Nil
+  val outputMap: HashMap[Array[Byte],(Array[Byte],Array[Int])] = HashMap.empty // txhash -> ([address,...],[value,...]) (one entry per index)
+  val outOfOrderInputMap: HashMap[(Array[Byte],Int),Array[Byte]] = HashMap.empty //  outpoint -> txhash
   var blockCount = 0
   var ad1Exists = false
   var ad2Exists = false
   // We need to capture these two transactions because they are repeated.
-  val ad1 = "d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599"
-  val ad2 = "e3bf3d07d4b0375638d5f1db5255fe07ba2c4cb067cd81b84ee974b6585fb468"
+  val ad1 = hex2Bytes("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599")
+  val ad2 = hex2Bytes("e3bf3d07d4b0375638d5f1db5255fe07ba2c4cb067cd81b84ee974b6585fb468")
   var nrBlocksToSave = if (args.length > 0) args(0).toInt else 1000
   if (args.length > 1 && args(1) == "init" )   new File(databaseFile).delete
 
@@ -86,8 +88,8 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     println("Reading binaries")
     var savedBlocksSet:Set[String] = Set.empty
     val savedBlocks =
-      (for (b <- RawBlocks /* if b.id === 42*/)
-        yield (b.hash))
+      for (b <- RawBlocks)
+        yield (b.hash)
     for (c <- savedBlocks)
       savedBlocksSet = savedBlocksSet + c
 
@@ -118,28 +120,37 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 
       for (trans <- block.getTransactions)
       {
-        val transactionHash = trans.getHashAsString
+        val transactionHash = trans.getHash.getBytes //trans.getHashAsString
 
         if (!trans.isCoinBase)
         {
           for (input <- trans.getInputs)
           {
-            val outpointTransactionHash = input.getOutpoint.getHash.toString
+            val outpointTransactionHash = input.getOutpoint.getHash.getBytes
             val outpointIndex = input.getOutpoint.getIndex.toInt
-            listData =
-              "INSERT OR REPLACE INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`)  VALUES " +
-              " ('"+transactionHash+"', '"+ outpointTransactionHash+"', '"+ outpointIndex+"', (SELECT address  FROM movements WHERE transaction_hash = '"+outpointTransactionHash+"' and `index` = '"+outpointIndex+"'), (SELECT `value` FROM movements WHERE transaction_hash = '"+outpointTransactionHash+"' and `index` = '"+outpointIndex+"'))"::listData;
-
-            //listData = "insert into inputs (output_transaction_hash, output_index, transaction_hash) VALUES (" + '"' + outpointTransactionHash + '"' + "," + outpointIndex +"," + '"' + transactionHash+'"'+")"::listData
+            if (outputMap.contains(outpointTransactionHash))
+            {
+              val outputTx = outputMap(outpointTransactionHash)
+              listData = "INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
+            	" ('"+ transactionHash + "', '"+ outpointTransactionHash + "', '"+ outpointIndex+"', '"+ outputTx._1(outpointIndex*20) + "', '"+ outputTx._2(outpointIndex) +"')"::listData
+              outputTx._2(outpointIndex) = 0 // a value of 0 marks this output as spent
+              if (outputTx._2.forall(_ == 0))
+                outputMap -= outpointTransactionHash
+            }
+            else 
+              outOfOrderInputMap += ((outpointTransactionHash, outpointIndex) -> transactionHash)
+              
             counter+=1
             totalOutIn+=1
           }
         }
         var index = 0
+        val addressBuffer = scala.collection.mutable.ArrayBuffer.empty[Byte]   
+        val valueBuffer = collection.mutable.ArrayBuffer.empty[Int]
 
         for (output <- trans.getOutputs)
         {
-          val addressHash:String =
+          val addressHash:String = 
             try
             {
               output.getScriptPubKey.getToAddress(params).toString
@@ -173,14 +184,23 @@ class RawBlockFileReaderUncompressed(args:List[String]){
                   	"dead"
                 }
             }
-          val value = output.getValue.doubleValue
+          val address = hex2Bytes(addressHash)
+          addressBuffer ++= address
+          val value = output.getValue.doubleValue.toInt
+            
           if ( (transactionHash != ad1 || !ad1Exists) && (transactionHash != ad2 || !ad2Exists))
-          {
-            //listData = "insert into outputs (transaction_hash, address, `index`, `value`) VALUES (" + '"' + transactionHash + '"' + "," + '"'+addressHash + '"' + "," + index + "," + value + ")"::listData
-            listData =
-              "INSERT OR REPLACE INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`)  VALUES " +
-                " ((SELECT spent_in_transaction_hash  FROM movements WHERE transaction_hash = '"+transactionHash+"' and `index` = '"+index+"'), '"+ transactionHash+"', '"+ index+"', '"+addressHash+"', '"+value+"' )"::listData;
-
+          {          
+            if (outOfOrderInputMap.contains(transactionHash,index))
+            {
+              val inputTxHash = outOfOrderInputMap(transactionHash,index)
+              listData = "INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
+            	" ('"+ inputTxHash + "', '"+ transactionHash + "', '"+ index+ "', '" + address + "', '"+ value +"')"::listData
+              outOfOrderInputMap -= (transactionHash -> index)
+              valueBuffer += 0
+            }  
+            else
+              valueBuffer += value
+              
             counter+=1
             totalOutIn+=1
             index+=1
@@ -188,8 +208,23 @@ class RawBlockFileReaderUncompressed(args:List[String]){
             ad2Exists = ad2Exists || (transactionHash == ad2)
           }
         }
+        if (!valueBuffer.forall(_ == 0))
+          outputMap += (transactionHash -> (addressBuffer.toArray -> valueBuffer.toArray))
       }
     }
+    for {(transactionHash, (addresses,values)) <- outputMap
+        i <- 0 to addresses.length }
+      if (values(i) != 0)
+        listData = "INSERT INTO movements (transaction_hash, `index`, address, `value`) VALUES " +
+                	" ('"+ transactionHash + "', '"+ i + "', '" + addresses(i) + "', '"+ values(i) +"')"::listData
+          
+    for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)  
+      listData = "INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`) VALUES " +
+            	" ('"+ transactionHash + "', '"+ outpointTransactionHash + "', '"+ outpointIndex +"')"::listData
+            	// TODO: Check if this code is ever run, simplify exit conditions
+    saveDataToDB     
+    	
+      
     return 0.toLong
   }
 
