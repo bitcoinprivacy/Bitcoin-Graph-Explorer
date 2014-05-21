@@ -31,7 +31,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   var counter = 0
   var totalOutIn = 0
   var listData:List[String] = Nil
-  val outputMap: HashMap[Array[Byte],(Array[Byte],Array[Int])] = HashMap.empty // txhash -> ([address,...],[value,...]) (one entry per index)
+  val outputMap: HashMap[Array[Byte],(Array[Byte],Array[Double])] = HashMap.empty // txhash -> ([address,...],[value,...]) (one entry per index)
   val outOfOrderInputMap: HashMap[(Array[Byte],Int),Array[Byte]] = HashMap.empty //  outpoint -> txhash
   var blockCount = 0
   var ad1Exists = false
@@ -146,7 +146,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
         }
         var index = 0
         val addressBuffer = scala.collection.mutable.ArrayBuffer.empty[Byte]   
-        val valueBuffer = collection.mutable.ArrayBuffer.empty[Int]
+        val valueBuffer = collection.mutable.ArrayBuffer.empty[Double]
 
         for (output <- trans.getOutputs)
         {
@@ -186,7 +186,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
             }
           val address = hex2Bytes(addressHash)
           addressBuffer ++= address
-          val value = output.getValue.doubleValue.toInt
+          val value = output.getValue.doubleValue
             
           if ( (transactionHash != ad1 || !ad1Exists) && (transactionHash != ad2 || !ad2Exists))
           {          

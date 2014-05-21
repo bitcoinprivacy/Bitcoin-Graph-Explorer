@@ -45,13 +45,13 @@ object Addresses extends Table[(String, String, Double)]("addresses") {
   def * = hash ~ representant ~ balance
 }
 
-object Outputs extends Table[(String, String, String, Int, Double)]("movements") {
+object Outputs extends Table[(Array[Byte], Array[Byte], Array[Byte], Int, Double)]("movements") {
 
-  def transaction_hash = column[String]("transaction_hash", O.Nullable)
-  def address = column[String]("address", O.Nullable)
+  def transaction_hash = column[Array[Byte]]("transaction_hash", O.Nullable)
+  def address = column[Array[Byte]]("address", O.Nullable)
   def index = column[Int]("index", O.Nullable)
   def value = column[Double]("value", O.Nullable)
-  def spent_in_transaction_hash = column[String]("spent_in_transaction_hash", O.Nullable)
+  def spent_in_transaction_hash = column[Array[Byte]]("spent_in_transaction_hash", O.Nullable)
 
   def * = spent_in_transaction_hash ~ transaction_hash ~ address ~ index ~ value
 }
