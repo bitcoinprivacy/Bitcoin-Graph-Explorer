@@ -150,10 +150,10 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 
         for (output <- trans.getOutputs)
         {
-          val addressHash:String = 
+          val address:Array[Byte] = 
             try
             {
-              output.getScriptPubKey.getToAddress(params).toString
+              output.getScriptPubKey.getToAddress(params).getHash160
             }
             catch
             {
@@ -170,21 +170,21 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 	                  import Utils._
 	                  val pubkey = hex2Bytes(pubkeystring)
 	                  val address = new Address(params, sha256hash160(pubkey))
-	                  address.toString
+	                  address.getHash160
 	                }
 	                else
 	                { // special case because bitcoinJ doesn't support pay-to-IP scripts
-	                  "0"
+	                  hex2Bytes("0")
 	                }
                 }
                 catch
                 {
                   case e: ScriptException =>
                   	println("bad transaction: "+transactionHash)
-                  	"dead"
+                  	hex2Bytes("dead")
                 }
             }
-          val address = hex2Bytes(addressHash)
+          
           addressBuffer ++= address
           val value = output.getValue.doubleValue
             
