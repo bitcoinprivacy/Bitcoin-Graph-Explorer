@@ -53,7 +53,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   def populateOutputMap = 
   {
     val query = """ select transaction_hash, `index`, address, `value` from
-        movements where spent_in_transaction_hash IS NULL order by `index` desc group by transaction_hash; """
+        movements where spent_in_transaction_hash IS NULL order by `index` desc ; """
         // now the highest remaining index in a transaction comes first
     println("Reading utxo Set")
     
