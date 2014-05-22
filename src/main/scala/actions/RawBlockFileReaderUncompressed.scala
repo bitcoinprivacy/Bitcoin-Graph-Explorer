@@ -82,8 +82,25 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     println("Saved in " + totalTime + "ms")
   }
 
-  def doSomethingBeautiful: Long =
+  def wrapUpAndReturnTimeTaken(startTime: Long): Long =  	
   {
+    for {(transactionHash, (addresses,values)) <- outputMap
+ 	 		i <- 0 to addresses.length }
+    	if (values(i) != 0)
+    		listData = "INSERT INTO movements (transaction_hash, `index`, address, `value`) VALUES " +
+    					" ('"+ transactionHash + "', '"+ i + "', '" + addresses(i) + "', '"+ values(i) +"')"::listData
+
+ 	for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)  
+   		listData = "INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`) VALUES " +
+   					" ('"+ transactionHash + "', '"+ outpointTransactionHash + "', '"+ outpointIndex +"')"::listData
+
+    saveDataToDB     
+
+    return System.currentTimeMillis - startTime  
+  }
+
+  def doSomethingBeautiful: Long =
+  { 
     println("Start")
     println("Reading binaries")
     var savedBlocksSet:Set[String] = Set.empty
@@ -95,7 +112,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 
     nrBlocksToSave += blockCount
     println("Saving blocks from " + blockCount + " to " + nrBlocksToSave)
-    val globalTime = System.currentTimeMillis
+    val startTime = System.currentTimeMillis
     for
     (
       block <- asScalaIterator(loader)
@@ -112,7 +129,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
         saveDataToDB
 
         if (blockCount >= nrBlocksToSave)
-          return System.currentTimeMillis - globalTime
+          return wrapUpAndReturnTimeTaken(startTime)
 
       }
       blockCount += 1
@@ -212,20 +229,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
           outputMap += (transactionHash -> (addressBuffer.toArray -> valueBuffer.toArray))
       }
     }
-    for {(transactionHash, (addresses,values)) <- outputMap
-        i <- 0 to addresses.length }
-      if (values(i) != 0)
-        listData = "INSERT INTO movements (transaction_hash, `index`, address, `value`) VALUES " +
-                	" ('"+ transactionHash + "', '"+ i + "', '" + addresses(i) + "', '"+ values(i) +"')"::listData
-          
-    for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)  
-      listData = "INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`) VALUES " +
-            	" ('"+ transactionHash + "', '"+ outpointTransactionHash + "', '"+ outpointIndex +"')"::listData
-            	// TODO: Check if this code is ever run, simplify exit conditions
-    saveDataToDB     
-    	
-      
-    return 0.toLong
+    return wrapUpAndReturnTimeTaken(startTime)
   }
 
   databaseSession
