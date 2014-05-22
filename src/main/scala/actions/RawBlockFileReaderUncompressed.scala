@@ -174,14 +174,14 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 	                }
 	                else
 	                { // special case because bitcoinJ doesn't support pay-to-IP scripts
-	                  hex2Bytes("0")
+	                  Array.fill(20)(0)
 	                }
                 }
                 catch
                 {
                   case e: ScriptException =>
                   	println("bad transaction: "+transactionHash)
-                  	hex2Bytes("dead")
+                  	Array.fill(20)(1)
                 }
             }
           
