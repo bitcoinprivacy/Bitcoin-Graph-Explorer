@@ -16,7 +16,7 @@ import com.google.bitcoin.store.SPVBlockStore
 import com.google.bitcoin.utils.BlockFileLoader
 import scala.slick.driver.MySQLDriver.simple._
 import Database.threadLocalSession
-import scala.collection.concurrent.TrieMap
+import scala.collection.immutable.TreeMap
 import scala.slick.jdbc.meta.MTable
 import scala.collection.JavaConversions._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
@@ -31,8 +31,28 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   var counter = 0
   var totalOutIn = 0
   var listData:List[String] = Nil
-  val outputMap: TrieMap[Array[Byte],(Array[Byte],Array[Double])] = TrieMap.empty // txhash -> ([address,...],[value,...]) (one entry per index)
-  val outOfOrderInputMap: TrieMap[(Array[Byte],Int),Array[Byte]] = TrieMap.empty //  outpoint -> txhash
+  implicit val arrayOrdering: Ordering[Array[Byte]] = new math.Ordering[Array[Byte]] {
+    def compare(a: Array[Byte], b: Array[Byte]): Int = {
+      if (a eq null) {
+        if (b eq null) 0
+        else -1
+      } else if (b eq null) 1
+      else {
+        val L = math.min(a.length, b.length)
+        var i = 0
+        while (i < L) {
+          if (a(i) < b(i)) return -1
+          else if (b(i) < a(i)) return 1
+          i += 1
+        }
+        if (L < b.length) -1
+        else if (L < a.length) 1
+        else 0
+      }
+    }
+  }
+  var outputMap: TreeMap[Array[Byte],(Array[Byte],Array[Double])] = TreeMap[Array[Byte],(Array[Byte],Array[Double])]() // txhash -> ([address,...],[value,...]) (one entry per index)
+  var outOfOrderInputMap: TreeMap[(Array[Byte],Int),Array[Byte]] = TreeMap.empty //  outpoint -> txhash
   var blockCount = 0
   var ad1Exists = false
   var ad2Exists = false
@@ -63,8 +83,12 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     for (quadruple <- q2) 
     {   
         val (hash,index,address,value) = quadruple
-    	val (oldAddresses,oldValues) = outputMap.getOrElseUpdate(hash,(Array.fill(20*(index+1))(0x00),Array.fill(index+1)(0)))  
-    	outputMap(hash) = (oldAddresses.patch(20*index,address,20),oldValues.patch(index,Seq(value),1))
+        
+    	val (oldAddresses,oldValues):(Array[Byte], Array[Double]) = if (outputMap.contains(hash)) outputMap(hash)
+    		else (Array.fill(20*(index+1))(0x00),Array.fill(index+1)(0))
+    	val newValues = (oldAddresses.patch(20*index,address,20),oldValues.patch(index,Seq(value),1))
+    	   
+    	outputMap = outputMap.updated(hash, newValues)
     }
   }  
     
@@ -80,7 +104,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     for (triple <- q2)
     {
       val (spentTx,hash,index) = triple
-      outOfOrderInputMap((hash,index)) = spentTx
+      outOfOrderInputMap = outOfOrderInputMap.updated((hash,index), spentTx)
     }  
   }  
     
