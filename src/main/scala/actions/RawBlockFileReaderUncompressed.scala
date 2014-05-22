@@ -16,7 +16,7 @@ import com.google.bitcoin.store.SPVBlockStore
 import com.google.bitcoin.utils.BlockFileLoader
 import scala.slick.driver.MySQLDriver.simple._
 import Database.threadLocalSession
-import scala.collection.mutable.HashMap
+import scala.collection.concurrent.TrieMap
 import scala.slick.jdbc.meta.MTable
 import scala.collection.JavaConversions._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
@@ -31,8 +31,8 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   var counter = 0
   var totalOutIn = 0
   var listData:List[String] = Nil
-  val outputMap: HashMap[Array[Byte],(Array[Byte],Array[Double])] = HashMap.empty // txhash -> ([address,...],[value,...]) (one entry per index)
-  val outOfOrderInputMap: HashMap[(Array[Byte],Int),Array[Byte]] = HashMap.empty //  outpoint -> txhash
+  val outputMap: TrieMap[Array[Byte],(Array[Byte],Array[Double])] = TrieMap.empty // txhash -> ([address,...],[value,...]) (one entry per index)
+  val outOfOrderInputMap: TrieMap[(Array[Byte],Int),Array[Byte]] = TrieMap.empty //  outpoint -> txhash
   var blockCount = 0
   var ad1Exists = false
   var ad2Exists = false
