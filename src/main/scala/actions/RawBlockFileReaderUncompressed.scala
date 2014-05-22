@@ -85,10 +85,10 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   def wrapUpAndReturnTimeTaken(startTime: Long): Long =  	
   {
     for {(transactionHash, (addresses,values)) <- outputMap
- 	 		i <- 0 until addresses.length }
+ 	 		i <- 0 until values.length }
     	if (values(i) != 0)
     		listData = "INSERT INTO movements (transaction_hash, `index`, address, `value`) VALUES " +
-    					" ('"+ transactionHash + "', '"+ i + "', '" + addresses(i) + "', '"+ values(i) +"')"::listData
+    					" ('"+ transactionHash + "', '"+ i + "', '" + addresses(i*20) + "', '"+ values(i) +"')"::listData
 
  	for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)  
    		listData = "INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`) VALUES " +
