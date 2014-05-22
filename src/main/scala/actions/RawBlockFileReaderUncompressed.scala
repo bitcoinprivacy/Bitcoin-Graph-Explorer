@@ -50,6 +50,40 @@ class RawBlockFileReaderUncompressed(args:List[String]){
         .map(Integer.parseInt(_, 16).toByte).toArray
   }
 
+  def populateOutputMap = 
+  {
+    val query = """ select transaction_hash, `index`, address, `value` from
+        movements where spent_in_transaction_hash IS NULL order by `index` desc group by transaction_hash; """
+        // now the highest remaining index in a transaction comes first
+    println("Reading utxo Set")
+    
+    implicit val GetByteArr = GetResult(r => r.nextBytes)
+    val q2 = Q.queryNA[(Array[Byte],Int,Array[Byte],Double)](query)
+
+    for (quadruple <- q2) 
+    {   
+        val (hash,index,address,value) = quadruple
+    	val (oldAddresses,oldValues) = outputMap.getOrElseUpdate(hash,(Array.fill(20*(index+1))(0x00),Array.fill(index+1)(0)))  
+    	outputMap(hash) = (oldAddresses.patch(20*index,address,20),oldValues.patch(index,Seq(value),1))
+    }
+  }  
+    
+  def populateOOOInputMap =
+  {
+    val query = """ select spent_in_transaction_hash, transaction_hash, `index` from
+        movements where address IS NULL; """
+    println("Reading Out-Of-Order Input Set")
+    
+    implicit val GetByteArr = GetResult(r => r.nextBytes)
+    val q2 = Q.queryNA[(Array[Byte],Array[Byte],Int)](query)
+    
+    for (triple <- q2)
+    {
+      val (spentTx,hash,index) = triple
+      outOfOrderInputMap((hash,index)) = spentTx
+    }  
+  }  
+    
   def initializeDB: Unit =
   {
     println("Resetting tables of the bitcoin database.")
@@ -113,6 +147,10 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     nrBlocksToSave += blockCount
     println("Saving blocks from " + blockCount + " to " + nrBlocksToSave)
     val startTime = System.currentTimeMillis
+    
+  //  populateOOOInputMap
+    populateOutputMap
+    
     for
     (
       block <- asScalaIterator(loader)

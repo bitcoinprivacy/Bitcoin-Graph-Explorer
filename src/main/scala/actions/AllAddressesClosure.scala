@@ -9,7 +9,6 @@ package actions
  */
 import libs._
 import scala.slick.driver.MySQLDriver.simple._
-import scala.slick.jdbc.GetResult
 import scala.slick.session.Database
 import Database.threadLocalSession
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
