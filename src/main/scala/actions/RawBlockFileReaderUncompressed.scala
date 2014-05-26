@@ -22,13 +22,13 @@ import scala.collection.JavaConversions._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import scala.slick.driver.MySQLDriver.simple._
 import Database.threadLocalSession
+import scala.collection.mutable
 
 class RawBlockFileReaderUncompressed(args:List[String]){
   val params = MainNetParams.get();
   var start = 0
   var end = 0
   val loader = new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList());
-  var counter = 0
   var totalOutIn = 0
   var listData:List[String] = Nil
   implicit val arrayOrdering: Ordering[Array[Byte]] = new math.Ordering[Array[Byte]] {
@@ -51,8 +51,8 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       }
     }
   }
-  var outputMap: TreeMap[Array[Byte],(Array[Byte],Array[Double])] = TreeMap[Array[Byte],(Array[Byte],Array[Double])]() // txhash -> ([address,...],[value,...]) (one entry per index)
-  var outOfOrderInputMap: TreeMap[(Array[Byte],Int),Array[Byte]] = TreeMap.empty //  outpoint -> txhash
+  var outputMap: mutable.HashMap[Array[Byte],(Array[Byte],Array[Double])] = mutable.HashMap[Array[Byte],(Array[Byte],Array[Double])]() // txhash -> ([address,...],[value,...]) (one entry per index)
+  var outOfOrderInputMap: mutable.HashMap[(Array[Byte],Int),Array[Byte]] = mutable.HashMap.empty //  outpoint -> txhash
   var blockCount = 0
   var ad1Exists = false
   var ad2Exists = false
@@ -88,7 +88,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     		else (Array.fill(20*(index+1))(0x00),Array.fill(index+1)(0))
     	val newValues = (oldAddresses.patch(20*index,address,20),oldValues.patch(index,Seq(value),1))
     	   
-    	outputMap = outputMap.updated(hash, newValues)
+    	outputMap.update(hash, newValues)
     }
   }  
     
@@ -104,7 +104,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     for (triple <- q2)
     {
       val (spentTx,hash,index) = triple
-      outOfOrderInputMap = outOfOrderInputMap.updated((hash,index), spentTx)
+      outOfOrderInputMap.update((hash,index), spentTx)
     }  
   }  
     
@@ -123,7 +123,15 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   def saveDataToDB: Unit =
   {
     val startTime = System.currentTimeMillis
-    println("Saving until block nr. " + blockCount + " ...")
+
+    println(
+    """===========================================
+       Blocks readed """ + blockCount + """
+       SQL transaction size: """ + listData.size + """
+       Outputs in memory: """ + outputMap.size + """
+       Inputs in memory: """ + outOfOrderInputMap.size
+    )
+
 
     (Q.u + "BEGIN TRANSACTION").execute
 
@@ -131,27 +139,39 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     {
       (Q.u + line+";").execute
     }
-
     (Q.u + "COMMIT TRANSACTION").execute
 
     listData = Nil
-    counter = 0
     val totalTime = System.currentTimeMillis - startTime
     println("Saved in " + totalTime + "ms")
   }
 
+  def insertInsertIntoList(s:String) =
+  {
+    if (listData.length >= stepPopulate) saveDataToDB
+
+    listData = s::listData
+  }
+
   def wrapUpAndReturnTimeTaken(startTime: Long): Long =  	
   {
-    for {(transactionHash, (addresses,values)) <- outputMap
- 	 		i <- 0 until values.length }
-    	if (values(i) != 0)
-    		listData = "INSERT INTO movements (transaction_hash, `index`, address, `value`) VALUES " +
-    					" ('"+ transactionHash + "', '"+ i + "', '" + addresses(i*20) + "', '"+ values(i) +"')"::listData
-
- 	for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)  
-   		listData = "INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`) VALUES " +
-   					" ('"+ transactionHash + "', '"+ outpointTransactionHash + "', '"+ outpointIndex +"')"::listData
-
+    for {(transactionHash, (addresses,values)) <- outputMap }
+    {
+ 	 		for (i <- 0 until values.length )
+      {
+        if (values(i) != 0)
+        {
+          insertInsertIntoList("INSERT INTO movements (transaction_hash, `index`, address, `value`) VALUES " +
+    					" ('"+ transactionHash + "', '"+ i + "', '" + addresses(i*20) + "', '"+ values(i) +"')")
+        }
+      }
+      outputMap -= transactionHash
+    }
+ 	  for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
+    {
+      insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`) VALUES " +
+   					" ('"+ transactionHash + "', '"+ outpointTransactionHash + "', '"+ outpointIndex +"')")
+    }
     saveDataToDB     
 
     return System.currentTimeMillis - startTime  
@@ -172,7 +192,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     println("Saving blocks from " + blockCount + " to " + nrBlocksToSave)
     val startTime = System.currentTimeMillis
     
-  //  populateOOOInputMap
+    populateOOOInputMap
     populateOutputMap
     
     for
@@ -181,21 +201,18 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       if (!savedBlocksSet.contains(block.getHashAsString()))
     )
       {
-      counter += 1
 
       val blockHash = block.getHashAsString()
       savedBlocksSet += blockHash
 
-      if (counter > stepPopulate || blockCount >= nrBlocksToSave )
+      if ( blockCount >= nrBlocksToSave )
       {
-        saveDataToDB
-
-        if (blockCount >= nrBlocksToSave)
-          return wrapUpAndReturnTimeTaken(startTime)
-
+        return wrapUpAndReturnTimeTaken(startTime)
       }
+
       blockCount += 1
-      listData = "insert into blocks VALUES (" + '"' + blockHash + '"' + ")"::listData
+
+      insertInsertIntoList("insert into blocks VALUES (" + '"' + blockHash + '"' + ")")
 
       for (trans <- block.getTransactions)
       {
@@ -207,19 +224,20 @@ class RawBlockFileReaderUncompressed(args:List[String]){
           {
             val outpointTransactionHash = input.getOutpoint.getHash.getBytes
             val outpointIndex = input.getOutpoint.getIndex.toInt
+
             if (outputMap.contains(outpointTransactionHash))
             {
               val outputTx = outputMap(outpointTransactionHash)
-              listData = "INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
-            	" ('"+ transactionHash + "', '"+ outpointTransactionHash + "', '"+ outpointIndex+"', '"+ outputTx._1(outpointIndex*20) + "', '"+ outputTx._2(outpointIndex) +"')"::listData
+              insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
+            	" ('"+ transactionHash + "', '"+ outpointTransactionHash + "', '"+ outpointIndex+"', '"+ outputTx._1(outpointIndex*20) + "', '"+ outputTx._2(outpointIndex) +"')")
               outputTx._2(outpointIndex) = 0 // a value of 0 marks this output as spent
+
               if (outputTx._2.forall(_ == 0))
                 outputMap -= outpointTransactionHash
             }
             else 
               outOfOrderInputMap += ((outpointTransactionHash, outpointIndex) -> transactionHash)
               
-            counter+=1
             totalOutIn+=1
           }
         }
@@ -272,15 +290,14 @@ class RawBlockFileReaderUncompressed(args:List[String]){
             if (outOfOrderInputMap.contains(transactionHash,index))
             {
               val inputTxHash = outOfOrderInputMap(transactionHash,index)
-              listData = "INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
-            	" ('"+ inputTxHash + "', '"+ transactionHash + "', '"+ index+ "', '" + address + "', '"+ value +"')"::listData
+              insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
+            	" ('"+ inputTxHash + "', '"+ transactionHash + "', '"+ index+ "', '" + address + "', '"+ value +"')")
               outOfOrderInputMap -= (transactionHash -> index)
               valueBuffer += 0
             }  
             else
               valueBuffer += value
               
-            counter+=1
             totalOutIn+=1
             index+=1
             ad1Exists = ad1Exists || (transactionHash == ad1)
