@@ -44,7 +44,6 @@ javaOptions in run += "-Xmx2G"
 javaOptions in run += "-Xms500M"
 
 javaOptions in run += "-XX:-UseGCOverheadLimit"
-
 //javaOptions in run += "-XX:+PrintCommandLineFlags"
 
 //javaOptions in run += "-XX:+PrintGCDetails"
