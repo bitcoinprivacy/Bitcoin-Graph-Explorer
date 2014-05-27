@@ -50,8 +50,8 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       }
     }
   }
-  var outputMap: concurrent.TrieMap[Array[Byte],(Array[Byte],Array[Double])] = concurrent.TrieMap[Array[Byte],(Array[Byte],Array[Double])]() // txhash -> ([address,...],[value,...]) (one entry per index)
-  var outOfOrderInputMap: concurrent.TrieMap[(Array[Byte],Int),Array[Byte]] = concurrent.TrieMap.empty //  outpoint -> txhash
+  var outputMap: mutable.HashMap[Vector[Byte],(Array[Byte],Array[Double])] = mutable.HashMap[Vector[Byte],(Array[Byte],Array[Double])]() // txhash -> ([address,...],[value,...]) (one entry per index)
+  var outOfOrderInputMap: mutable.HashMap[(Vector[Byte],Int),Array[Byte]] = mutable.HashMap.empty //  outpoint -> txhash
   var blockCount = 0
   var ad1Exists = false
   var ad2Exists = false
@@ -83,11 +83,11 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     {   
         val (hash,index,address,value) = quadruple
         
-    	val (oldAddresses,oldValues):(Array[Byte], Array[Double]) = if (outputMap.contains(hash)) outputMap(hash)
+    	val (oldAddresses,oldValues):(Array[Byte], Array[Double]) = if (outputMap.contains(hash)) outputMap(hash.toVector)
     		else (Array.fill(20*(index+1))(0x00),Array.fill(index+1)(0))
     	val newValues = (oldAddresses.patch(20*index,address,20),oldValues.patch(index,Seq(value),1))
     	   
-    	outputMap.update(hash, newValues)
+    	outputMap.update(hash.toVector, newValues)
     }
   }  
     
@@ -103,7 +103,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     for (triple <- q2)
     {
       val (spentTx,hash,index) = triple
-      outOfOrderInputMap.update((hash,index), spentTx)
+      outOfOrderInputMap.update((hash.toVector,index), spentTx)
     }  
   }  
     
@@ -180,7 +180,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 
   def includeInput(input: TransactionInput, transactionHash: Array[Byte]) =
     {
-      val outpointTransactionHash = input.getOutpoint.getHash.getBytes
+      val outpointTransactionHash = input.getOutpoint.getHash.getBytes.toVector
       val outpointIndex = input.getOutpoint.getIndex.toInt
 
       if (outputMap.contains(outpointTransactionHash)) 
@@ -228,11 +228,11 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   
   def includeTransaction(trans: Transaction) =
 	{
-      val transactionHash = trans.getHash.getBytes //trans.getHashAsString
+      val transactionHash = trans.getHash.getBytes.toVector //trans.getHashAsString
 
       if (!trans.isCoinBase) {
         for (input <- trans.getInputs) 
-          includeInput(input,transactionHash)
+          includeInput(input,transactionHash.toArray)
       }
       
       var index = 0
