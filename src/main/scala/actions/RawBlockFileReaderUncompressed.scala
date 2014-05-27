@@ -172,7 +172,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     println("Saving blocks from " + blockCount + " to " + nrBlocksToSave)
     val startTime = System.currentTimeMillis
     
-  //  populateOOOInputMap
+    populateOOOInputMap
     populateOutputMap
     
     for
