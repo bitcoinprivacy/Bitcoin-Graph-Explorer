@@ -16,13 +16,12 @@ import com.google.bitcoin.store.SPVBlockStore
 import com.google.bitcoin.utils.BlockFileLoader
 import scala.slick.driver.MySQLDriver.simple._
 import Database.threadLocalSession
-import scala.collection.immutable.TreeMap
 import scala.slick.jdbc.meta.MTable
 import scala.collection.JavaConversions._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import scala.slick.driver.MySQLDriver.simple._
 import Database.threadLocalSession
-import scala.collection.mutable
+import scala.collection._
 
 class RawBlockFileReaderUncompressed(args:List[String]){
   val params = MainNetParams.get();
@@ -51,8 +50,8 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       }
     }
   }
-  var outputMap: mutable.HashMap[Array[Byte],(Array[Byte],Array[Double])] = mutable.HashMap[Array[Byte],(Array[Byte],Array[Double])]() // txhash -> ([address,...],[value,...]) (one entry per index)
-  var outOfOrderInputMap: mutable.HashMap[(Array[Byte],Int),Array[Byte]] = mutable.HashMap.empty //  outpoint -> txhash
+  var outputMap: concurrent.TrieMap[Array[Byte],(Array[Byte],Array[Double])] = concurrent.TrieMap[Array[Byte],(Array[Byte],Array[Double])]() // txhash -> ([address,...],[value,...]) (one entry per index)
+  var outOfOrderInputMap: concurrent.TrieMap[(Array[Byte],Int),Array[Byte]] = concurrent.TrieMap.empty //  outpoint -> txhash
   var blockCount = 0
   var ad1Exists = false
   var ad2Exists = false
@@ -167,11 +166,13 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       }
       outputMap -= transactionHash
     }
- 	  for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
+    
+ 	for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
     {
       insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`) VALUES " +
    					" ('"+ transactionHash + "', '"+ outpointTransactionHash + "', '"+ outpointIndex +"')")
     }
+ 	
     saveDataToDB     
 
     return System.currentTimeMillis - startTime  
@@ -183,7 +184,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       val outpointIndex = input.getOutpoint.getIndex.toInt
 
       if (outputMap.contains(outpointTransactionHash)) 
-      {
+      { println("hit")
         val outputTx = outputMap(outpointTransactionHash)
         insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
           " ('" + transactionHash + "', '" + outpointTransactionHash + "', '" + outpointIndex + "', '" + outputTx._1(outpointIndex * 20) + "', '" + outputTx._2(outpointIndex) + "')")
