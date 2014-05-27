@@ -126,7 +126,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 
     println(
     """===========================================
-       Blocks readed """ + blockCount + """
+       Blocks read """ + blockCount + """
        SQL transaction size: """ + listData.size + """
        Outputs in memory: """ + outputMap.size + """
        Inputs in memory: """ + outOfOrderInputMap.size
@@ -177,6 +177,89 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     return System.currentTimeMillis - startTime  
   }
 
+  def includeInput(input: TransactionInput, transactionHash: Array[Byte]) =
+    {
+      val outpointTransactionHash = input.getOutpoint.getHash.getBytes
+      val outpointIndex = input.getOutpoint.getIndex.toInt
+
+      if (outputMap.contains(outpointTransactionHash)) 
+      {
+        val outputTx = outputMap(outpointTransactionHash)
+        insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
+          " ('" + transactionHash + "', '" + outpointTransactionHash + "', '" + outpointIndex + "', '" + outputTx._1(outpointIndex * 20) + "', '" + outputTx._2(outpointIndex) + "')")
+        outputTx._2(outpointIndex) = 0 // a value of 0 marks this output as spent
+
+        if (outputTx._2.forall(_ == 0))
+          outputMap -= outpointTransactionHash
+      } 
+      else
+        outOfOrderInputMap += ((outpointTransactionHash, outpointIndex) -> transactionHash)
+
+      totalOutIn += 1
+    }
+
+  def includeTransaction(trans: Transaction) =
+	{
+      val transactionHash = trans.getHash.getBytes //trans.getHashAsString
+
+      if (!trans.isCoinBase) {
+        for (input <- trans.getInputs) 
+          includeInput(input,transactionHash)
+      }
+      var index = 0
+      val addressBuffer = scala.collection.mutable.ArrayBuffer.empty[Byte]
+      val valueBuffer = collection.mutable.ArrayBuffer.empty[Double]
+
+      for (output <- trans.getOutputs) {
+        val address: Array[Byte] =
+          try {
+            output.getScriptPubKey.getToAddress(params).getHash160
+          } catch {
+            case e: ScriptException =>
+              try {
+                val script = output.getScriptPubKey.toString
+                //TODO: 
+                // can we generate an address for pay-to-ip?
+
+                if (script.startsWith("[65]")) {
+                  val pubkeystring = script.substring(4, 134)
+                  import Utils._
+                  val pubkey = hex2Bytes(pubkeystring)
+                  val address = new Address(params, sha256hash160(pubkey))
+                  address.getHash160
+                } else { // special case because bitcoinJ doesn't support pay-to-IP scripts
+                  Array.fill(20)(0)
+                }
+              } catch {
+                case e: ScriptException =>
+                  println("bad transaction: " + transactionHash)
+                  Array.fill(20)(1)
+              }
+          }
+
+        addressBuffer ++= address
+        val value = output.getValue.doubleValue
+
+        if ((transactionHash != ad1 || !ad1Exists) && (transactionHash != ad2 || !ad2Exists)) {
+          if (outOfOrderInputMap.contains(transactionHash, index)) {
+            val inputTxHash = outOfOrderInputMap(transactionHash, index)
+            insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
+              " ('" + inputTxHash + "', '" + transactionHash + "', '" + index + "', '" + address + "', '" + value + "')")
+            outOfOrderInputMap -= (transactionHash -> index)
+            valueBuffer += 0
+          } else
+            valueBuffer += value
+
+          totalOutIn += 1
+          index += 1
+          ad1Exists = ad1Exists || (transactionHash == ad1)
+          ad2Exists = ad2Exists || (transactionHash == ad2)
+        }
+      }
+      if (!valueBuffer.forall(_ == 0))
+        outputMap += (transactionHash -> (addressBuffer.toArray -> valueBuffer.toArray))
+    }
+  
   def doSomethingBeautiful: Long =
   { 
     println("Start")
@@ -215,98 +298,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       insertInsertIntoList("insert into blocks VALUES (" + '"' + blockHash + '"' + ")")
 
       for (trans <- block.getTransactions)
-      {
-        val transactionHash = trans.getHash.getBytes //trans.getHashAsString
-
-        if (!trans.isCoinBase)
-        {
-          for (input <- trans.getInputs)
-          {
-            val outpointTransactionHash = input.getOutpoint.getHash.getBytes
-            val outpointIndex = input.getOutpoint.getIndex.toInt
-
-            if (outputMap.contains(outpointTransactionHash))
-            {
-              val outputTx = outputMap(outpointTransactionHash)
-              insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
-            	" ('"+ transactionHash + "', '"+ outpointTransactionHash + "', '"+ outpointIndex+"', '"+ outputTx._1(outpointIndex*20) + "', '"+ outputTx._2(outpointIndex) +"')")
-              outputTx._2(outpointIndex) = 0 // a value of 0 marks this output as spent
-
-              if (outputTx._2.forall(_ == 0))
-                outputMap -= outpointTransactionHash
-            }
-            else 
-              outOfOrderInputMap += ((outpointTransactionHash, outpointIndex) -> transactionHash)
-              
-            totalOutIn+=1
-          }
-        }
-        var index = 0
-        val addressBuffer = scala.collection.mutable.ArrayBuffer.empty[Byte]   
-        val valueBuffer = collection.mutable.ArrayBuffer.empty[Double]
-
-        for (output <- trans.getOutputs)
-        {
-          val address:Array[Byte] = 
-            try
-            {
-              output.getScriptPubKey.getToAddress(params).getHash160
-            }
-            catch
-            {
-              case e: ScriptException =>
-                try
-                {
-	                val script = output.getScriptPubKey.toString
-	                //TODO: 
-	                // can we generate an address for pay-to-ip?
-	                
-	                if (script.startsWith("[65]"))
-	                {
-	                  val pubkeystring = script.substring(4, 134)
-	                  import Utils._
-	                  val pubkey = hex2Bytes(pubkeystring)
-	                  val address = new Address(params, sha256hash160(pubkey))
-	                  address.getHash160
-	                }
-	                else
-	                { // special case because bitcoinJ doesn't support pay-to-IP scripts
-	                  Array.fill(20)(0)
-	                }
-                }
-                catch
-                {
-                  case e: ScriptException =>
-                  	println("bad transaction: "+transactionHash)
-                  	Array.fill(20)(1)
-                }
-            }
-          
-          addressBuffer ++= address
-          val value = output.getValue.doubleValue
-            
-          if ( (transactionHash != ad1 || !ad1Exists) && (transactionHash != ad2 || !ad2Exists))
-          {          
-            if (outOfOrderInputMap.contains(transactionHash,index))
-            {
-              val inputTxHash = outOfOrderInputMap(transactionHash,index)
-              insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
-            	" ('"+ inputTxHash + "', '"+ transactionHash + "', '"+ index+ "', '" + address + "', '"+ value +"')")
-              outOfOrderInputMap -= (transactionHash -> index)
-              valueBuffer += 0
-            }  
-            else
-              valueBuffer += value
-              
-            totalOutIn+=1
-            index+=1
-            ad1Exists = ad1Exists || (transactionHash == ad1)
-            ad2Exists = ad2Exists || (transactionHash == ad2)
-          }
-        }
-        if (!valueBuffer.forall(_ == 0))
-          outputMap += (transactionHash -> (addressBuffer.toArray -> valueBuffer.toArray))
-      }
+    	  includeTransaction(trans)
     }
     return wrapUpAndReturnTimeTaken(startTime)
   }
