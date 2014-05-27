@@ -198,6 +198,33 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       totalOutIn += 1
     }
 
+  def getAddressFromOutput(output: TransactionOutput): Array[Byte] =
+    try 
+    {
+      output.getScriptPubKey.getToAddress(params).getHash160
+    } 
+    catch 
+    {
+      case e: ScriptException =>
+        try 
+        {
+          val script = output.getScriptPubKey.toString
+          //TODO: 
+          // can we generate an address for pay-to-ip?
+
+          if (script.startsWith("[65]")) {
+            val pubkeystring = script.substring(4, 134)
+            import Utils._
+            val pubkey = hex2Bytes(pubkeystring)
+            val address = new Address(params, sha256hash160(pubkey))
+            address.getHash160
+          } else { // special case because bitcoinJ doesn't support pay-to-IP scripts
+            Array.fill(20)(0)
+          }
+        }
+    }
+
+  
   def includeTransaction(trans: Transaction) =
 	{
       val transactionHash = trans.getHash.getBytes //trans.getHashAsString
@@ -206,55 +233,38 @@ class RawBlockFileReaderUncompressed(args:List[String]){
         for (input <- trans.getInputs) 
           includeInput(input,transactionHash)
       }
+      
       var index = 0
       val addressBuffer = scala.collection.mutable.ArrayBuffer.empty[Byte]
       val valueBuffer = collection.mutable.ArrayBuffer.empty[Double]
 
-      for (output <- trans.getOutputs) {
+      for (output <- trans.getOutputs) 
+      {
         val address: Array[Byte] =
-          try {
-            output.getScriptPubKey.getToAddress(params).getHash160
-          } catch {
+          try { getAddressFromOutput(output: TransactionOutput) }
+          catch {
             case e: ScriptException =>
-              try {
-                val script = output.getScriptPubKey.toString
-                //TODO: 
-                // can we generate an address for pay-to-ip?
-
-                if (script.startsWith("[65]")) {
-                  val pubkeystring = script.substring(4, 134)
-                  import Utils._
-                  val pubkey = hex2Bytes(pubkeystring)
-                  val address = new Address(params, sha256hash160(pubkey))
-                  address.getHash160
-                } else { // special case because bitcoinJ doesn't support pay-to-IP scripts
-                  Array.fill(20)(0)
-                }
-              } catch {
-                case e: ScriptException =>
-                  println("bad transaction: " + transactionHash)
-                  Array.fill(20)(1)
-              }
+              println("bad transaction: " + transactionHash)
+              Array.fill(20)(1)
           }
-
+        
         addressBuffer ++= address
         val value = output.getValue.doubleValue
 
-        if ((transactionHash != ad1 || !ad1Exists) && (transactionHash != ad2 || !ad2Exists)) {
-          if (outOfOrderInputMap.contains(transactionHash, index)) {
-            val inputTxHash = outOfOrderInputMap(transactionHash, index)
-            insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
-              " ('" + inputTxHash + "', '" + transactionHash + "', '" + index + "', '" + address + "', '" + value + "')")
-            outOfOrderInputMap -= (transactionHash -> index)
-            valueBuffer += 0
-          } else
-            valueBuffer += value
+        if (outOfOrderInputMap.contains(transactionHash, index)) 
+        {
+          val inputTxHash = outOfOrderInputMap(transactionHash, index)
+          insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
+            " ('" + inputTxHash + "', '" + transactionHash + "', '" + index + "', '" + address + "', '" + value + "')")
+          outOfOrderInputMap -= (transactionHash -> index)
+          valueBuffer += 0
+        } 
+        else
+          valueBuffer += value
 
-          totalOutIn += 1
-          index += 1
-          ad1Exists = ad1Exists || (transactionHash == ad1)
-          ad2Exists = ad2Exists || (transactionHash == ad2)
-        }
+        totalOutIn += 1
+        index += 1
+
       }
       if (!valueBuffer.forall(_ == 0))
         outputMap += (transactionHash -> (addressBuffer.toArray -> valueBuffer.toArray))
@@ -283,7 +293,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       block <- asScalaIterator(loader)
       if (!savedBlocksSet.contains(block.getHashAsString()))
     )
-      {
+    {
 
       val blockHash = block.getHashAsString()
       savedBlocksSet += blockHash
@@ -297,8 +307,16 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 
       insertInsertIntoList("insert into blocks VALUES (" + '"' + blockHash + '"' + ")")
 
-      for (trans <- block.getTransactions)
+      for (trans <- block.getTransactions) 
+      { 
+        val transactionHash = trans.getHash.getBytes
+        if ((transactionHash != ad1 || !ad1Exists) && (transactionHash != ad2 || !ad2Exists))
+        {
     	  includeTransaction(trans)
+    	  ad1Exists = ad1Exists || (transactionHash == ad1)
+          ad2Exists = ad2Exists || (transactionHash == ad2)
+        }
+      }
     }
     return wrapUpAndReturnTimeTaken(startTime)
   }
