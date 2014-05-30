@@ -183,9 +183,9 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       val outpointTransactionHash = input.getOutpoint.getHash.getBytes
       val outpointIndex = input.getOutpoint.getIndex.toInt
 
-      if (outputMap.contains(outpointTransactionHash)) 
-      { println("hit")
-        val outputTx = outputMap(outpointTransactionHash)
+      if (outputMap.contains(outpointTransactionHash))
+      { 
+    	val outputTx = outputMap(outpointTransactionHash)
         insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
           " ('" + transactionHash + "', '" + outpointTransactionHash + "', '" + outpointIndex + "', '" + outputTx._1(outpointIndex * 20) + "', '" + outputTx._2(outpointIndex) + "')")
         outputTx._2(outpointIndex) = 0 // a value of 0 marks this output as spent
