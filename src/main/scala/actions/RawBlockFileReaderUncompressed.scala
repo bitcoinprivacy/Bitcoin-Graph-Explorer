@@ -29,7 +29,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   var end = 0
   val loader = new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList());
   var totalOutIn = 0
-  var listData:List[String] = Nil
+  var listData:Vector[String] = Vector()
   implicit val arrayOrdering: Ordering[Array[Byte]] = new math.Ordering[Array[Byte]] {
     def compare(a: Array[Byte], b: Array[Byte]): Int = {
       if (a eq null) {
@@ -140,7 +140,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     }
     (Q.u + "COMMIT TRANSACTION").execute
 
-    listData = Nil
+    listData = Vector()
     val totalTime = System.currentTimeMillis - startTime
     println("Saved in " + totalTime + "ms")
   }
@@ -149,7 +149,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   {
     if (listData.length >= stepPopulate) saveDataToDB
 
-    listData = s::listData
+    listData +:= s
   }
 
   def wrapUpAndReturnTimeTaken(startTime: Long): Long =  	
