@@ -23,8 +23,6 @@ import scala.slick.driver.MySQLDriver.simple._
 import Database.threadLocalSession
 import scala.collection._
 
-case class hashableArray(val arr: Array[Byte]) extends AnyVal 
-
 class RawBlockFileReaderUncompressed(args:List[String]){
   val params = MainNetParams.get();
   var start = 0
@@ -52,9 +50,8 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       }
     }
   }
- 
-  var outputMap: mutable.HashMap[hashableArray,(Array[Byte],Array[Double])] = mutable.HashMap[hashableArray,(Array[Byte],Array[Double])]() // txhash -> ([address,...],[value,...]) (one entry per index)
-  var outOfOrderInputMap: mutable.HashMap[(hashableArray,Int),Array[Byte]] = mutable.HashMap.empty //  outpoint -> txhash
+  var outputMap: immutable.TreeMap[Array[Byte],(Array[Byte],Array[Double])] = immutable.TreeMap() // txhash -> ([address,...],[value,...]) (one entry per index)
+  var outOfOrderInputMap: immutable.TreeMap[(Array[Byte],Int),Array[Byte]] = immutable.TreeMap() //  outpoint -> txhash
   var blockCount = 0
   var ad1Exists = false
   var ad2Exists = false
@@ -86,11 +83,11 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     {   
         val (hash,index,address,value) = quadruple
         
-    	val (oldAddresses,oldValues):(Array[Byte], Array[Double]) = if (outputMap.contains(hash)) outputMap(hashableArray(hash))
+    	val (oldAddresses,oldValues):(Array[Byte], Array[Double]) = if (outputMap.contains(hash)) outputMap(hash)
     		else (Array.fill(20*(index+1))(0x00),Array.fill(index+1)(0))
     	val newValues = (oldAddresses.patch(20*index,address,20),oldValues.patch(index,Seq(value),1))
     	   
-    	outputMap.update(hashableArray(hash), newValues)
+    	outputMap += (hash -> newValues)
     }
   }  
     
@@ -106,7 +103,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     for (triple <- q2)
     {
       val (spentTx,hash,index) = triple
-      outOfOrderInputMap.update((hashableArray(hash),index), spentTx)
+      outOfOrderInputMap += ((hash,index) -> spentTx)
     }  
   }  
     
@@ -183,11 +180,11 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 
   def includeInput(input: TransactionInput, transactionHash: Array[Byte]) =
     {
-      val outpointTransactionHash = hashableArray(input.getOutpoint.getHash.getBytes)
+      val outpointTransactionHash = input.getOutpoint.getHash.getBytes
       val outpointIndex = input.getOutpoint.getIndex.toInt
 
       if (outputMap.contains(outpointTransactionHash)) 
-      {
+      { println("hit")
         val outputTx = outputMap(outpointTransactionHash)
         insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
           " ('" + transactionHash + "', '" + outpointTransactionHash + "', '" + outpointIndex + "', '" + outputTx._1(outpointIndex * 20) + "', '" + outputTx._2(outpointIndex) + "')")
@@ -231,11 +228,11 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   
   def includeTransaction(trans: Transaction) =
 	{
-      val transactionHash = trans.getHash.getBytes
+      val transactionHash = trans.getHash.getBytes 
 
       if (!trans.isCoinBase) {
         for (input <- trans.getInputs) 
-          includeInput(input,transactionHash)
+          includeInput(input,transactionHash.toArray)
       }
       
       var index = 0
@@ -257,10 +254,10 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 
         if (outOfOrderInputMap.contains(transactionHash, index)) 
         {
-          val inputTxHash = outOfOrderInputMap(hashableArray(transactionHash), index)
+          val inputTxHash = outOfOrderInputMap(transactionHash, index)
           insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
             " ('" + inputTxHash + "', '" + transactionHash + "', '" + index + "', '" + address + "', '" + value + "')")
-          outOfOrderInputMap -= (hashableArray(transactionHash) -> index)
+          outOfOrderInputMap -= (transactionHash -> index)
           valueBuffer += 0
         } 
         else
@@ -271,7 +268,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 
       }
       if (!valueBuffer.forall(_ == 0))
-        outputMap += (hashableArray(transactionHash) -> (addressBuffer.toArray -> valueBuffer.toArray))
+        outputMap += (transactionHash -> (addressBuffer.toArray -> valueBuffer.toArray))
     }
   
   def doSomethingBeautiful: Long =
