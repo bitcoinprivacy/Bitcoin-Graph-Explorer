@@ -27,13 +27,14 @@ object RawOutputs extends Table[(String, String, Int, Double)]("outputs") {
 //  def pk = primaryKey("pk_myTable2", (transaction_hash, index) )
 }
 
-object RawInputs extends Table[(String, Int, String)]("inputs") {
+object RawInputs extends Table[(String, Int, String, Int)]("inputs") {
 
+  def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
   def output_transaction_hash = column[String]("output_transaction_hash")
   def output_index = column[Int]("output_index")
   def transaction_hash = column[String]("transaction_hash")
   //def fkMyTable1 = foreignKey("myTable1_fk", output_transaction_hash ~ output_index, RawOutputs)( _.xa )
-  def * = output_transaction_hash ~ output_index ~ transaction_hash
+  def * = output_transaction_hash ~ output_index ~ transaction_hash ~ id
 }
 
 object Addresses extends Table[(String, String, Double)]("addresses") {
@@ -42,5 +43,16 @@ object Addresses extends Table[(String, String, Double)]("addresses") {
   def representant = column[String]("representant")
   def balance= column[Double]("balance")
   def * = hash ~ representant ~ balance
+}
+
+object Outputs extends Table[(Array[Byte], Array[Byte], Array[Byte], Int, Double)]("movements") {
+
+  def transaction_hash = column[Array[Byte]]("transaction_hash", O.Nullable)
+  def address = column[Array[Byte]]("address", O.Nullable)
+  def index = column[Int]("index", O.Nullable)
+  def value = column[Double]("value", O.Nullable)
+  def spent_in_transaction_hash = column[Array[Byte]]("spent_in_transaction_hash", O.Nullable)
+
+  def * = spent_in_transaction_hash ~ transaction_hash ~ address ~ index ~ value
 }
 

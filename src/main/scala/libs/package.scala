@@ -9,35 +9,33 @@ import scala.slick.jdbc.{StaticQuery => Q}
 
 
 package object libs
-{
-  var db_file = "blockchain/bitcoin.db"
+{  
   val conf = ConfigFactory.load()
 
+  var databaseFile = conf.getString("databaseFile") //"blockchain/bitcoin.db"
   var stepClosure = conf.getInt("closureStep")
   var stepPopulate = conf.getInt("populateStep");
+  
 
-  def databaseSession(f: => Unit): Unit = {
+  def databaseSession(f: => Unit): Unit =
+  {
     Database.forURL(
-      url = "jdbc:sqlite:"+db_file,
+      url = "jdbc:sqlite:"+databaseFile,
       driver = "org.sqlite.JDBC"
-     // user = "root",
-      //password = "12345"
     ) withSession
     {
-      (Q.u + "PRAGMA main.page_size = 4096;  ").execute
-      (Q.u + "PRAGMA main.cache_size=10000;          ").execute
-      (Q.u + "PRAGMA main.locking_mode=EXCLUSIVE;").execute
-      (Q.u + "PRAGMA main.synchronous=NORMAL;").execute
-      (Q.u + "PRAGMA main.journal_mode=WAL;").execute
-      //(Q.u + "PRAGMA main.cache_size=5000;").execute
-     // (Q.u + "PRAGMA temp_store=OFF").execute
-   //   (Q.u + "PRAGMA page_size = 39600;").execute
-   //   (Q.u + "PRAGMA journal_mode=off;").execute
-  //    (Q.u + "PRAGMA synchronous=0;").execute
-//      (Q.u + "PRAGMA cache_size= 39600;").execute
+      (Q.u + "PRAGMA main.page_size = 4096;           ").execute
+      (Q.u + "PRAGMA main.cache_size=10000;           ").execute
+      (Q.u + "PRAGMA main.locking_mode=NORMAL;     ").execute
+      (Q.u + "PRAGMA main.synchronous=OFF;         ").execute
+      (Q.u + "PRAGMA main.journal_mode=OFF;           ").execute
       f
-    }
-
+    }    
+  }
+  
+  def countInputs: Int =
+  {
+    Q.queryNA[Int]("""select count(*) from inputs""").list.head
   }
 
 

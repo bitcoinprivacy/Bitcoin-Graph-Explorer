@@ -2,9 +2,9 @@ organization := "sagesex"
 
 name := "Bitcoin Graph Explorer"
 
-version := "0.7"
+version := "0.8"
 
-scalaVersion := "2.10.3"
+scalaVersion := "2.10.4"
 
 // additional libraries
 libraryDependencies ++= Seq(
@@ -24,7 +24,7 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.2.1",
       //"com.typesafe.play" %% "play" % "2.2.0"
       "org.scalacheck" %% "scalacheck" % "1.11.3" % "test",
-      "org.scalatest" %% "scalatest" % "2.1.5" % "test"   
+      "org.scalatest" %% "scalatest" % "2.1.5" % "test" 
 )
 
 
@@ -39,12 +39,11 @@ resolvers += "bitcoinj" at "http://distribution.bitcoinj.googlecode.com/git/rele
 
 resolvers += "scala-tools" at "https://oss.sonatype.org/content/groups/scala-tools"
 
-javaOptions in run += "-Xmx1G"
+javaOptions in run += "-Xmx2G"
 
 javaOptions in run += "-Xms500M"
 
 javaOptions in run += "-XX:-UseGCOverheadLimit"
-
 //javaOptions in run += "-XX:+PrintCommandLineFlags"
 
 //javaOptions in run += "-XX:+PrintGCDetails"

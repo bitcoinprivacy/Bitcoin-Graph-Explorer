@@ -2,8 +2,8 @@
 
 case "$1" in
       start)
-            cd /home/webdeveloper/Bitcoin-Graph-Explorer
-            command="sbt \"run all 270000 init\" >> output.log &"
+            cd /home/btc/Bitcoin-Graph-Explorer
+            command="ionice -c 3 nice sbt \"run all 300000 init\" >> output.log &"
             eval $command
             ;;
       stop)
