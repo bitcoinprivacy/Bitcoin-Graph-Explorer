@@ -17,10 +17,11 @@ import scala.collection.mutable.HashMap
 
 class AllAddressesClosure(args:List[String]){
 
-  def generateTree (firstElement: Int, elements: Int): HashMap[String, DisjointSetOfAddresses]  =
+  def generateTree (firstElement: Int, elements: Int): HashMap[Array[Byte], DisjointSetOfAddresses]  =
   {
-    val mapDSOA:HashMap[String, DisjointSetOfAddresses] = HashMap.empty
-    val mapAddresses:HashMap[String, Array[String]] = HashMap.empty
+
+    val mapDSOA:HashMap[Array[Byte], DisjointSetOfAddresses] = HashMap.empty
+    val mapAddresses:HashMap[Array[Byte], Array[Array[Byte]]] = HashMap.empty
     var startTime = System.currentTimeMillis
 
     val query = """ select spent_in_transaction_hash, address from
@@ -28,11 +29,12 @@ class AllAddressesClosure(args:List[String]){
         
     println("Reading " +elements+ " elements")
 
-    val q2 = Q.queryNA[(String,String)](query)
+    implicit val GetByteArr = GetResult(r => r.nextBytes())
+    val q2 = Q.queryNA[(Array[Byte],Array[Byte])](query)
 
     for (t <- q2) if (t._2 != "0")
     {
-      val list:Array[String] = mapAddresses.getOrElse(t._1, Array()  )
+      val list:Array[Array[Byte]] = mapAddresses.getOrElse(t._1, Array()  )
       mapAddresses.update(t._1, list :+ t._2 )
     }
 
@@ -59,11 +61,13 @@ class AllAddressesClosure(args:List[String]){
 
   }
 
-  def adaptTreeToDB(mapDSOA: HashMap[String, DisjointSetOfAddresses]): HashMap[String, DisjointSetOfAddresses] =
+  def adaptTreeToDB(mapDSOA: HashMap[Array[Byte], DisjointSetOfAddresses]): HashMap[Array[Byte], DisjointSetOfAddresses] =
   {
     for ( (address, dsoa) <- mapDSOA)
     {
-      Q.queryNA[String]("""select representant from addresses where hash= """"+address+"""";""").list match
+      // weird trick to allow slick using Array Bytes
+      implicit val GetByteArr = GetResult(r => r.nextBytes())
+      Q.queryNA[Array[Byte]]("""select representant from addresses where hash= """"+address+"""";""").list match
       {
         case representant::xs =>
           dsoa.find.parent = Some(DisjointSetOfAddresses(representant))
@@ -75,14 +79,15 @@ class AllAddressesClosure(args:List[String]){
     mapDSOA
   }
 
-  def saveTree(mapDSOA: HashMap[String, DisjointSetOfAddresses]): Unit =
+  def saveTree(mapDSOA: HashMap[Array[Byte], DisjointSetOfAddresses]): Unit =
   {
-    val values = (mapDSOA map ( p => ('"'+ p._1 + '"' , '"' + p._2.find.address +'"', 0.toDouble))).toList
+    val values = (mapDSOA map ( p => ('"'+ p._1.toString + '"' , '"' + p._2.find.address.toString +'"', 0.toDouble))).toList
     println("Copying results to the database...")
     (Q.u + "BEGIN TRANSACTION;").execute
 
     for (value <- values )
     {
+      println(value)
       (Q.u + """insert into addresses values """+ value.toString +""";""").execute
     }
 
