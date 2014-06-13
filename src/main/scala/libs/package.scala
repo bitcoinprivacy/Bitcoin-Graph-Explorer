@@ -35,7 +35,7 @@ package object libs
   
   def countInputs: Int =
   {
-    Q.queryNA[Int]("""select count(*) from inputs""").list.head
+    Q.queryNA[Int]("""select count(*) from movements""").list.head
   }
 
 

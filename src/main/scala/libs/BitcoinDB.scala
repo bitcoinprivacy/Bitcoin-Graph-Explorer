@@ -16,32 +16,12 @@ object RawBlocks extends Table[(String)]("blocks") {
   def * =  hash
 }
 
-object RawOutputs extends Table[(String, String, Int, Double)]("outputs") {
+object Addresses extends Table[(Array[Byte], Array[Byte], Double)]("addresses") {
 
-  def transaction_hash = column[String]("transaction_hash")
-  def address = column[String]("address")
-  def index = column[Int]("index")
-  def value = column[Double]("value")
-  def * = transaction_hash ~ address ~ index ~ value
-  def xa = transaction_hash ~ index
-//  def pk = primaryKey("pk_myTable2", (transaction_hash, index) )
-}
-
-object RawInputs extends Table[(String, Int, String, Int)]("inputs") {
-
-  def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
-  def output_transaction_hash = column[String]("output_transaction_hash")
-  def output_index = column[Int]("output_index")
-  def transaction_hash = column[String]("transaction_hash")
-  //def fkMyTable1 = foreignKey("myTable1_fk", output_transaction_hash ~ output_index, RawOutputs)( _.xa )
-  def * = output_transaction_hash ~ output_index ~ transaction_hash ~ id
-}
-
-object Addresses extends Table[(String, String, Double)]("addresses") {
-
-  def hash= column[String]("hash")
-  def representant = column[String]("representant")
+  def hash= column[Array[Byte]]("hash")
+  def representant = column[Array[Byte]]("representant")
   def balance= column[Double]("balance")
+
   def * = hash ~ representant ~ balance
 }
 
@@ -55,4 +35,3 @@ object Outputs extends Table[(Array[Byte], Array[Byte], Array[Byte], Int, Double
 
   def * = spent_in_transaction_hash ~ transaction_hash ~ address ~ index ~ value
 }
-

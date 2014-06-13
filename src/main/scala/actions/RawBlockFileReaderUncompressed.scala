@@ -112,9 +112,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     println("Resetting tables of the bitcoin database.")
     var tableList = MTable.getTables.list;
     var tableMap = tableList.map{t => (t.name.name, t)}.toMap;
-    (RawOutputs.ddl).create
     ( Outputs.ddl).create
-    (RawInputs.ddl).create
     (RawBlocks.ddl).create
     (Addresses.ddl).create
   }
@@ -335,9 +333,9 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       blockCount = Query(RawBlocks.length).first
     }
 
-    if (Q.queryNA[Int]("""select count(*) from outputs where transaction_hash = """"+ad1+"""";""").list.head == 1)
+    if (Q.queryNA[Int]("""select count(*) from movements where transaction_hash = """"+ad1+"""";""").list.head == 1)
       ad1Exists = true
-    if (Q.queryNA[Int]("""select count(*) from outputs where transaction_hash = """"+ad2+"""";""").list.head == 1)
+    if (Q.queryNA[Int]("""select count(*) from movements where transaction_hash = """"+ad2+"""";""").list.head == 1)
       ad2Exists = true
 
     //(Q.u + "PRAGMA foreign_keys=OFF;").execute
