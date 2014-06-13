@@ -10,7 +10,7 @@ package libs
 
 import collection.mutable.HashSet
 
-case class DisjointSetOfAddresses(address: Array[Byte]) {
+case class DisjointSetOfAddresses(address: Hash) {
 
   var rank = 0
   var parent: Option[DisjointSetOfAddresses] = None

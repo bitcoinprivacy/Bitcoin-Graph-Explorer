@@ -22,6 +22,7 @@ import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import scala.slick.driver.MySQLDriver.simple._
 import Database.threadLocalSession
 import scala.collection._
+import javax.sql.rowset.serial.SerialBlob
 
 class RawBlockFileReaderUncompressed(args:List[String]){
   val params = MainNetParams.get();
@@ -30,44 +31,20 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   val loader = new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList());
   var totalOutIn = 0
   var listData:Vector[String] = Vector()
-  implicit val arrayOrdering: Ordering[Array[Byte]] = new math.Ordering[Array[Byte]] {
-    def compare(a: Array[Byte], b: Array[Byte]): Int = {
-      if (a eq null) {
-        if (b eq null) 0
-        else -1
-      } else if (b eq null) 1
-      else {
-        val L = math.min(a.length, b.length)
-        var i = 0
-        while (i < L) {
-          if (a(i) < b(i)) return -1
-          else if (b(i) < a(i)) return 1
-          i += 1
-        }
-        if (L < b.length) -1
-        else if (L < a.length) 1
-        else 0
-      }
-    }
-  }
-  var outputMap: immutable.TreeMap[Array[Byte],(Array[Byte],Array[Double])] = immutable.TreeMap() // txhash -> ([address,...],[value,...]) (one entry per index)
-  var outOfOrderInputMap: immutable.TreeMap[(Array[Byte],Int),Array[Byte]] = immutable.TreeMap() //  outpoint -> txhash
+  
+  val outputMap: mutable.HashMap[Hash,(Array[Hash],Array[Double])] = mutable.HashMap() // txhash -> ([address,...],[value,...]) (one entry per index)
+  val outOfOrderInputMap: mutable.HashMap[(Hash,Int),Hash] = mutable.HashMap() //  outpoint -> txhash
   var blockCount = 0
   var ad1Exists = false
   var ad2Exists = false
   // We need to capture these two transactions because they are repeated.
-  val ad1 = hex2Bytes("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599")
-  val ad2 = hex2Bytes("e3bf3d07d4b0375638d5f1db5255fe07ba2c4cb067cd81b84ee974b6585fb468")
+  val ad1 = Hash("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599")
+  val ad2 = Hash("e3bf3d07d4b0375638d5f1db5255fe07ba2c4cb067cd81b84ee974b6585fb468")
+  
+  
   var nrBlocksToSave = if (args.length > 0) args(0).toInt else 1000
   if (args.length > 1 && args(1) == "init" )   new File(databaseFile).delete
 
-
-  def hex2Bytes(hex: String): Array[Byte] =
-  {
-    (for {i <- 0 to hex.length - 1 by 2 if i > 0 || !hex.startsWith("0x")}
-      yield hex.substring(i, i + 2))
-        .map(Integer.parseInt(_, 16).toByte).toArray
-  }
 
   def populateOutputMap = 
   {
@@ -81,11 +58,16 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 
     for (quadruple <- q2) 
     {   
-        val (hash,index,address,value) = quadruple
+        val (hashArray,index,addressArray,value) = quadruple
+        val hash = Hash(hashArray)
+        val address = Hash(addressArray)
         
-    	val (oldAddresses,oldValues):(Array[Byte], Array[Double]) = if (outputMap.contains(hash)) outputMap(hash)
-    		else (Array.fill(20*(index+1))(0x00),Array.fill(index+1)(0))
-    	val newValues = (oldAddresses.patch(20*index,address,20),oldValues.patch(index,Seq(value),1))
+    	val (oldAddresses,oldValues):(Array[Hash], Array[Double]) = 
+    	  if (outputMap.contains(hash)) 
+    		outputMap(hash)
+    	  else 
+    	    (Array.fill(index+1)(Hash.zero(20)),Array.fill(index+1)(0))
+    	val newValues = (oldAddresses.updated(index,address),oldValues.updated(index,value))
     	   
     	outputMap += (hash -> newValues)
     }
@@ -103,16 +85,14 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     for (triple <- q2)
     {
       val (spentTx,hash,index) = triple
-      outOfOrderInputMap += ((hash,index) -> spentTx)
+      outOfOrderInputMap += ((Hash(hash),index) -> Hash(spentTx))
     }  
   }  
     
   def initializeDB: Unit =
   {
     println("Resetting tables of the bitcoin database.")
-    var tableList = MTable.getTables.list;
-    var tableMap = tableList.map{t => (t.name.name, t)}.toMap;
-    ( Outputs.ddl).create
+    (Outputs.ddl).create
     (RawBlocks.ddl).create
     (Addresses.ddl).create
   }
@@ -159,7 +139,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
         if (values(i) != 0)
         {
           insertInsertIntoList("INSERT INTO movements (transaction_hash, `index`, address, `value`) VALUES " +
-    					" ('"+ transactionHash + "', '"+ i + "', '" + addresses(i*20) + "', '"+ values(i) +"')")
+    					" ("+ transactionHash + ", "+ i + ", " + addresses(i) + ", "+ values(i) +")")
         }
       }
       outputMap -= transactionHash
@@ -168,7 +148,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
  	for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
     {
       insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`) VALUES " +
-   					" ('"+ transactionHash + "', '"+ outpointTransactionHash + "', '"+ outpointIndex +"')")
+   					" ("+ transactionHash + ", "+ outpointTransactionHash + ", "+ outpointIndex +")")
     }
  	
     saveDataToDB     
@@ -176,16 +156,17 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     return System.currentTimeMillis - startTime  
   }
 
-  def includeInput(input: TransactionInput, transactionHash: Array[Byte]) =
+  def includeInput(input: TransactionInput, transactionHash: Hash) =
     {
-      val outpointTransactionHash = input.getOutpoint.getHash.getBytes
+      val outpointTransactionHash = Hash(input.getOutpoint.getHash.getBytes)
       val outpointIndex = input.getOutpoint.getIndex.toInt
 
       if (outputMap.contains(outpointTransactionHash))
       { 
+        println("hit"+outpointTransactionHash)
     	val outputTx = outputMap(outpointTransactionHash)
         insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
-          " ('" + transactionHash + "', '" + outpointTransactionHash + "', '" + outpointIndex + "', '" + outputTx._1(outpointIndex * 20) + "', '" + outputTx._2(outpointIndex) + "')")
+          " (" + transactionHash + ", " + outpointTransactionHash + ", " + outpointIndex + ", " + outputTx._1(outpointIndex) + ", " + outputTx._2(outpointIndex) + ")")
         outputTx._2(outpointIndex) = 0 // a value of 0 marks this output as spent
 
         if (outputTx._2.forall(_ == 0))
@@ -197,8 +178,8 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       totalOutIn += 1
     }
 
-  def getAddressFromOutput(output: TransactionOutput): Array[Byte] =
-    try 
+  def getAddressFromOutput(output: TransactionOutput): Hash =
+    Hash(try 
     {
       output.getScriptPubKey.getToAddress(params).getHash160
     } 
@@ -214,47 +195,47 @@ class RawBlockFileReaderUncompressed(args:List[String]){
           if (script.startsWith("[65]")) {
             val pubkeystring = script.substring(4, 134)
             import Utils._
-            val pubkey = hex2Bytes(pubkeystring)
+            val pubkey = Hash(pubkeystring).array
             val address = new Address(params, sha256hash160(pubkey))
             address.getHash160
           } else { // special case because bitcoinJ doesn't support pay-to-IP scripts
-            Array.fill(20)(0)
+            Array.fill(20)(0.toByte)
           }
         }
-    }
+    })
 
   
   def includeTransaction(trans: Transaction) =
 	{
-      val transactionHash = trans.getHash.getBytes 
+      val transactionHash = Hash(trans.getHash.getBytes) 
 
       if (!trans.isCoinBase) {
         for (input <- trans.getInputs) 
-          includeInput(input,transactionHash.toArray)
+          includeInput(input,transactionHash)
       }
       
       var index = 0
-      val addressBuffer = scala.collection.mutable.ArrayBuffer.empty[Byte]
+      val addressBuffer = scala.collection.mutable.ArrayBuffer.empty[Hash]
       val valueBuffer = collection.mutable.ArrayBuffer.empty[Double]
 
       for (output <- trans.getOutputs) 
       {
-        val address: Array[Byte] =
+        val address: Hash =
           try { getAddressFromOutput(output: TransactionOutput) }
           catch {
             case e: ScriptException =>
               println("bad transaction: " + transactionHash)
-              Array.fill(20)(1)
+              Hash(Array.fill(20)(1.toByte))
           }
         
-        addressBuffer ++= address
+        addressBuffer += address
         val value = output.getValue.doubleValue
 
         if (outOfOrderInputMap.contains(transactionHash, index)) 
         {
           val inputTxHash = outOfOrderInputMap(transactionHash, index)
           insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
-            " ('" + inputTxHash + "', '" + transactionHash + "', '" + index + "', '" + address + "', '" + value + "')")
+            " (" + inputTxHash + ", " + transactionHash + ", " + index + ", " + address+ ", " + value + "')")
           outOfOrderInputMap -= (transactionHash -> index)
           valueBuffer += 0
         } 
@@ -266,7 +247,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 
       }
       if (!valueBuffer.forall(_ == 0))
-        outputMap += (transactionHash -> (addressBuffer.toArray -> valueBuffer.toArray))
+        outputMap += (transactionHash -> (addressBuffer.toArray, valueBuffer.toArray))
     }
   
   def doSomethingBeautiful: Long =
@@ -308,7 +289,7 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 
       for (trans <- block.getTransactions) 
       { 
-        val transactionHash = trans.getHash.getBytes
+        val transactionHash = Hash(trans.getHash.getBytes)
         if ((transactionHash != ad1 || !ad1Exists) && (transactionHash != ad2 || !ad2Exists))
         {
     	  includeTransaction(trans)
@@ -319,10 +300,9 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     }
     return wrapUpAndReturnTimeTaken(startTime)
   }
-
+  
   databaseSession
   {
-
     if (args.length > 1 && args(1) == "init" )
     {
       initializeDB
@@ -332,10 +312,10 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     {
       blockCount = Query(RawBlocks.length).first
     }
-
-    if (Q.queryNA[Int]("""select count(*) from movements where transaction_hash = """"+ad1+"""";""").list.head == 1)
+    
+    if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+ad1+";").list.head == 1)
       ad1Exists = true
-    if (Q.queryNA[Int]("""select count(*) from movements where transaction_hash = """"+ad2+"""";""").list.head == 1)
+    if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+ad2+";").list.head == 1)
       ad2Exists = true
 
     //(Q.u + "PRAGMA foreign_keys=OFF;").execute
@@ -347,6 +327,6 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     println("Total time to save movements = " + totalTime + " ms")
     println("Total of movements = " + totalOutIn)
     println("Time required pro movement = " + totalTime.toDouble/totalOutIn +" ms")
-    println("Wir sind sehr geil!")
+    println("Wir sind mega geil!")
   }
 }

@@ -38,5 +38,4 @@ package object libs
     Q.queryNA[Int]("""select count(*) from movements""").list.head
   }
 
-
 }
