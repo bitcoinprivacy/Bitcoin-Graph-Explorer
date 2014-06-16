@@ -38,9 +38,9 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   var ad1Exists = false
   var ad2Exists = false
   // We need to capture these two transactions because they are repeated.
-  val ad1 = Hash("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599")
-  val ad2 = Hash("e3bf3d07d4b0375638d5f1db5255fe07ba2c4cb067cd81b84ee974b6585fb468")
-  
+  val duplicatedTx1 = Hash("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599")
+  val duplicatedTx2 = Hash("e3bf3d07d4b0375638d5f1db5255fe07ba2c4cb067cd81b84ee974b6585fb468")
+  				 
   
   var nrBlocksToSave = if (args.length > 0) args(0).toInt else 1000
   if (args.length > 1 && args(1) == "init" )   new File(databaseFile).delete
@@ -163,8 +163,16 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 
       if (outputMap.contains(outpointTransactionHash))
       { 
-        println("hit"+outpointTransactionHash)
     	val outputTx = outputMap(outpointTransactionHash)
+    	if (outpointIndex >= outputTx._1.length)
+    	{  println(outputTx._1.deep)
+    	  println(outpointIndex)
+    	  println(outpointTransactionHash)
+    	}  
+    	if (outpointIndex >= outputTx._2.length)
+    	{  println(outputTx._2.deep)
+    	  println(outpointIndex)
+    	}
         insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
           " (" + transactionHash + ", " + outpointTransactionHash + ", " + outpointIndex + ", " + outputTx._1(outpointIndex) + ", " + outputTx._2(outpointIndex) + ")")
         outputTx._2(outpointIndex) = 0 // a value of 0 marks this output as spent
@@ -208,8 +216,9 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   def includeTransaction(trans: Transaction) =
 	{
       val transactionHash = Hash(trans.getHash.getBytes) 
-
-      if (!trans.isCoinBase) {
+      
+      if (!trans.isCoinBase) 
+      {
         for (input <- trans.getInputs) 
           includeInput(input,transactionHash)
       }
@@ -290,11 +299,11 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       for (trans <- block.getTransactions) 
       { 
         val transactionHash = Hash(trans.getHash.getBytes)
-        if ((transactionHash != ad1 || !ad1Exists) && (transactionHash != ad2 || !ad2Exists))
+        if ((transactionHash != duplicatedTx1 || !ad1Exists) && (transactionHash != duplicatedTx2 || !ad2Exists))
         {
     	  includeTransaction(trans)
-    	  ad1Exists = ad1Exists || (transactionHash == ad1)
-          ad2Exists = ad2Exists || (transactionHash == ad2)
+    	  ad1Exists = ad1Exists || (transactionHash == duplicatedTx1)
+          ad2Exists = ad2Exists || (transactionHash == duplicatedTx2)
         }
       }
     }
@@ -313,9 +322,9 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       blockCount = Query(RawBlocks.length).first
     }
     
-    if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+ad1+";").list.head == 1)
+    if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx1+";").list.head == 1)
       ad1Exists = true
-    if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+ad2+";").list.head == 1)
+    if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx2+";").list.head == 1)
       ad2Exists = true
 
     //(Q.u + "PRAGMA foreign_keys=OFF;").execute

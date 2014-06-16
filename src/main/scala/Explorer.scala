@@ -16,6 +16,7 @@ object Explorer extends App{
       val populater = new RawBlockFileReaderUncompressed(if (rest.isEmpty) List("100000", "init") else rest)
       new CreateIndex(List())
       new AllAddressesClosure(List(populater.start.toString, populater.end.toString))
+      new AllAddressesBalance(rest)
     case "createindexes"::rest        => new CreateIndex(rest)
     case _=> println
     ("""

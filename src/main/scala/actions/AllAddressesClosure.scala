@@ -48,7 +48,6 @@ class AllAddressesClosure(args:List[String]){
 
     for (t <- mapAddresses)
     {
-      println(t._2.deep)
       val dSOAs= t._2 map(a => mapDSOA.getOrElseUpdate(a, {DisjointSetOfAddresses(a)}) )
 
       def union(l:Array[DisjointSetOfAddresses]): Unit = l match
@@ -72,7 +71,7 @@ class AllAddressesClosure(args:List[String]){
     {
       // weird trick to allow slick using Array Bytes
       implicit val GetByteArr = GetResult(r => r.nextBytes())
-      Q.queryNA[Array[Byte]]("""select representant from addresses where hash= """"+address+"""";""").list match
+      Q.queryNA[Array[Byte]]("select representant from addresses where hash= "+address+";").list match
       {
         case representant::xs =>
           dsoa.find.parent = Some(DisjointSetOfAddresses(Hash(representant)))
@@ -92,8 +91,7 @@ class AllAddressesClosure(args:List[String]){
 
     for (value <- values )
     {
-      println("insert into addresses values ("+ value +");")
-      (Q.u + "insert into addresses values ("+ value +");").execute
+      (Q.u + "insert into addresses (`hash`, `representant`, `balance`) values ("+ value +");").execute
     }
 
     (Q.u + "COMMIT TRANSACTION;").execute

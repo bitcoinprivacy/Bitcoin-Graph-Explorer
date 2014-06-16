@@ -4,21 +4,26 @@ class Hash(val array: Array[Byte])
 {
 	assert(array != null, "Hash(null) ist not defined!")
 	
-	def deep = array.deep
+	lazy val _hashCode = java.util.Arrays.hashCode(array.asInstanceOf[Array[Byte]])	
 	override def toString: String = 
 	{
 	    "X'" + array.map("%02X" format _).mkString +"'"
 	}
 	
-	def equals(that: Hash) =
-	{
-	  this.deep == that.deep
+	override def equals(that: Any) =
+	that match {
+	  case t:Hash =>
+	  	this.array.deep == t.array.deep
+	  case _ => 
+	    false
 	}
 	
 	override def hashCode =
 	{	  
-	  deep.hashCode	
+	  _hashCode
 	}  
+	
+
 }
 
 object Hash   

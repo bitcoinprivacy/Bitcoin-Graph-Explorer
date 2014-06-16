@@ -11,9 +11,13 @@ import scala.slick.jdbc.{GetResult, StaticQuery => Q}
  */
 
 // TODO: do you really need me? if yes rewrite me plz, else remove
-class AllAddressesBalance(args:List[String]){
-  /*databaseSession {
-    val values = Q.queryNA[(String,String)]("""SELECT SUM(o.value) as suma, o.address as address FROM outputs o LEFT OUTER JOIN inputs i ON o.transaction_hash = i.output_transaction_hash AND i.output_index = o.`index` where i.transaction_hash IS NULL group by o.address""")
+class AllAddressesBalance(args:List[String])
+{
+  databaseSession 
+  {
+    implicit val GetByteArr = GetResult(r => r.nextBytes())
+    
+    val values = Q.queryNA[(Double, Array[Byte])]("SELECT SUM(value) as suma, address FROM movements m where spent_in_transaction_hash IS NULL group by address")
 
     println("Reading Data...")
     var counter = 0
@@ -31,16 +35,11 @@ class AllAddressesBalance(args:List[String]){
         (Q.u + "COMMIT TRANSACTION").execute
         counter = 0
       }
-      arrQueries = """
-      update
-        addresses
-      set
-        balance = """ + value._1 + """
-      where
-        hash = """" + value._2 + """""""::arrQueries
+      
+      arrQueries = "update addresses set balance = " + value._1 + " where hash = " + Hash(value._2)::arrQueries
       counter += 1
-
     }
+
     println ("Copying remaining data :D")
     (Q.u + "BEGIN TRANSACTION").execute
     for (query <- arrQueries)    (Q.u + query).execute
@@ -48,5 +47,5 @@ class AllAddressesBalance(args:List[String]){
 
     println("Wir sind ultra geil!")
 
-  }*/
+  }
 }
