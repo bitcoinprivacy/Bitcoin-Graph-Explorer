@@ -5,3 +5,4 @@ project/plugins/
 .idea/
 *.log
 neodb/
+src/main/resources/application.conf

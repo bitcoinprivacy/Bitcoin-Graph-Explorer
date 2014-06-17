@@ -11,7 +11,7 @@ class RawReaderPropertySuite extends PropSpec with ShouldMatchers with PropertyC
   {
    forAll (choose(0,280000), minSuccessful(1)) { (n:Int) =>
   	 {
-      val populater = new RawBlockFileReaderUncompressed(List(n.toString,"init"))
+      val populater = new BlocksReader(List(n.toString,"init"))
       populater.start should be(0) 
       populater.end should be (n) // TODO: This is not true. We need the number of blocks available and this is also at least a problem when 0 is given
   	 }

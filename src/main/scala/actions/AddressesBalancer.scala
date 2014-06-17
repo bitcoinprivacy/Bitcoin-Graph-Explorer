@@ -11,28 +11,33 @@ import scala.slick.jdbc.{GetResult, StaticQuery => Q}
  */
 
 // TODO: do you really need me? if yes rewrite me plz, else remove
-class AllAddressesBalance(args:List[String])
+class AddressesBalancer(args:List[String])
 {
-  databaseSession 
+  var timeStart = System.currentTimeMillis
+  databaseSession
   {
     implicit val GetByteArr = GetResult(r => r.nextBytes())
     
     val values = Q.queryNA[(Double, Array[Byte])]("SELECT SUM(value) as suma, address FROM movements m where spent_in_transaction_hash IS NULL group by address")
 
-    println("Reading Data...")
+    println("Calculating balance...")
     var counter = 0
     var arrQueries:List[String] = List()
 
 
     for (value <- values)
     {
-      if (counter == 50000)
+      if (counter == stepBalance)
       {
-        println ("Copying elements to Database")
+        println("=============================================")
+        var timeStart = System.currentTimeMillis
+        println ("       Copying " + arrQueries.length + " elements to the Database")
+
         (Q.u + "BEGIN TRANSACTION").execute
         for (query <- arrQueries)    (Q.u + query).execute
         arrQueries = List()
         (Q.u + "COMMIT TRANSACTION").execute
+        println ("       Copied elements in " + (System.currentTimeMillis - timeStart) + " ms ")
         counter = 0
       }
       
@@ -40,12 +45,19 @@ class AllAddressesBalance(args:List[String])
       counter += 1
     }
 
-    println ("Copying remaining data :D")
+    println("=============================================")
+    var timeStart = System.currentTimeMillis
+    println ("       Copying " + arrQueries.length + " elements to the Database")
     (Q.u + "BEGIN TRANSACTION").execute
     for (query <- arrQueries)    (Q.u + query).execute
     (Q.u + "COMMIT TRANSACTION").execute
-
-    println("Wir sind ultra geil!")
+    println ("       Copied elements in " + (System.currentTimeMillis - timeStart) + " ms ")
+    println("=============================================")
+    println
+    println("/////////////////////////////////////////////")
+    println("Balance generated in " + (System.currentTimeMillis - timeStart) + " ms ")
+    println("/////////////////////////////////////////////")
+    println
 
   }
 }

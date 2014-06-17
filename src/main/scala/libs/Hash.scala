@@ -3,25 +3,24 @@ package libs
 class Hash(val array: Array[Byte]) 
 {
 	assert(array != null, "Hash(null) ist not defined!")
-	
-	lazy val _hashCode = java.util.Arrays.hashCode(array.asInstanceOf[Array[Byte]])	
+
 	override def toString: String = 
 	{
 	    "X'" + array.map("%02X" format _).mkString +"'"
 	}
-	
-	override def equals(that: Any) =
+
+	override def equals(that: Any): Boolean =
 	that match {
 	  case t:Hash =>
-	  	this.array.deep == t.array.deep
-	  case _ => 
+      array.deep == t.array.deep
+    case _ =>
 	    false
 	}
 	
 	override def hashCode =
-	{	  
-	  _hashCode
-	}  
+	{
+    java.util.Arrays.hashCode(array.asInstanceOf[Array[Byte]])
+	}
 	
 
 }

@@ -15,7 +15,7 @@ package object libs
   var databaseFile = conf.getString("databaseFile") //"blockchain/bitcoin.db"
   var stepClosure = conf.getInt("closureStep")
   var stepPopulate = conf.getInt("populateStep");
-  
+  var stepBalance = conf.getInt("balanceStep")
 
   def databaseSession(f: => Unit): Unit =
   {
@@ -24,11 +24,11 @@ package object libs
       driver = "org.sqlite.JDBC"
     ) withSession
     {
-      (Q.u + "PRAGMA main.page_size = 4096;           ").execute
-      (Q.u + "PRAGMA main.cache_size=10000;           ").execute
-      (Q.u + "PRAGMA main.locking_mode=NORMAL;     ").execute
-      (Q.u + "PRAGMA main.synchronous=OFF;         ").execute
-      (Q.u + "PRAGMA main.journal_mode=OFF;           ").execute
+      (Q.u + "PRAGMA main.page_size = 4096;"    ).execute
+      (Q.u + "PRAGMA main.cache_size=10000;"    ).execute
+      (Q.u + "PRAGMA main.locking_mode=NORMAL;" ).execute
+      (Q.u + "PRAGMA main.synchronous=OFF;"     ).execute
+      (Q.u + "PRAGMA main.journal_mode=OFF;"    ).execute
       f
     }    
   }
@@ -37,5 +37,4 @@ package object libs
   {
     Q.queryNA[Int]("""select count(*) from movements""").list.head
   }
-
 }

@@ -15,8 +15,10 @@ import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import scala.slick.jdbc.meta.MTable
 import scala.collection.mutable.HashMap
 
-class AllAddressesClosure(args:List[String]){
-
+class AddressesClosurer(args:List[String]){
+  var representantsCount = 0
+  var start = 0
+  var end = 0
   def generateTree (firstElement: Int, elements: Int): HashMap[Hash, DisjointSetOfAddresses]  =
   {
     val mapDSOA:HashMap[Hash, DisjointSetOfAddresses] = HashMap.empty
@@ -26,7 +28,7 @@ class AllAddressesClosure(args:List[String]){
     val query = """ select spent_in_transaction_hash, address from
         movements where spent_in_transaction_hash NOT NULL and address NOT NULL limit """ + firstElement + ',' + elements + """ ; """
         
-    println("Reading " +elements+ " elements")
+
 
     implicit val GetByteArr = GetResult(r => r.nextBytes())
     val q2 = Q.queryNA[(Array[Byte],Array[Byte])](query)
@@ -42,8 +44,8 @@ class AllAddressesClosure(args:List[String]){
       }
     }
 
-    println("Data read in "+ (System.currentTimeMillis - startTime )+" ms")
-    println("Calculating address dependencies...")
+    println("       Data read in "+ (System.currentTimeMillis - startTime )+" ms")
+    println("       Calculating address dependencies...")
     startTime = System.currentTimeMillis
 
     for (t <- mapAddresses)
@@ -60,7 +62,7 @@ class AllAddressesClosure(args:List[String]){
       union(dSOAs)
     }
 
-    println("")
+    println("       Dependencies calculated in " + (System.currentTimeMillis - startTime) + " ms ")
     mapDSOA
 
   }
@@ -86,29 +88,41 @@ class AllAddressesClosure(args:List[String]){
   def saveTree(mapDSOA: HashMap[Hash, DisjointSetOfAddresses]): Unit =
   {
     val values = (mapDSOA map ( p => p._1 + " , " + p._2.find.address + ", " + 0.toDouble)).toList
-    println("Copying results to the database...")
+    val timeStart = System.currentTimeMillis
+    println("       Copying results to the database...")
     (Q.u + "BEGIN TRANSACTION;").execute
 
     for (value <- values )
     {
       (Q.u + "insert into addresses (`hash`, `representant`, `balance`) values ("+ value +");").execute
     }
-
+    println("       Results copied in " + (System.currentTimeMillis - timeStart) + " ms ")
     (Q.u + "COMMIT TRANSACTION;").execute
   }
 
   databaseSession
   {
-    val start = if (args.length>0) args(0).toInt else 0
-    val end = if (args.length>1) args(1).toInt else countInputs
-    var i = start
+    println("Calculating closure of existing addresses")
+    start = if (args.length>0) args(0).toInt else 0
+    end = if (args.length>1) args(1).toInt else countInputs
+    val timeStart = System.currentTimeMillis
 
     for (i <- start to end by stepClosure)
     {
-      println("Closuring inputs from " + i + " to " + ( i + stepClosure ) )
+      val startTime = System.currentTimeMillis
+      println("=============================================")
+      println("       Closuring inputs from " + i + " to " + ( i + stepClosure ) + " / " + end )
+      println("       Elements closured in " + (System.currentTimeMillis - startTime) + " ms ")
       saveTree(adaptTreeToDB(generateTree(i, stepClosure)))
     }
 
-    println("Wir sind supergeil!!!")
+
+    println("=============================================")
+    println
+    println("/////////////////////////////////////////////")
+    println("Addresses closured in " + (System.currentTimeMillis - timeStart) + " ms ")
+    println("/////////////////////////////////////////////")
+    println
+
   }
 }

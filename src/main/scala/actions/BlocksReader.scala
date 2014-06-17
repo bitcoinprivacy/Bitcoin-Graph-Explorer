@@ -24,14 +24,14 @@ import Database.threadLocalSession
 import scala.collection._
 import javax.sql.rowset.serial.SerialBlob
 
-class RawBlockFileReaderUncompressed(args:List[String]){
+class BlocksReader(args:List[String]){
   val params = MainNetParams.get();
   var start = 0
   var end = 0
   val loader = new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList());
   var totalOutIn = 0
   var listData:Vector[String] = Vector()
-  
+  var readTime = System.currentTimeMillis;
   val outputMap: mutable.HashMap[Hash,(Array[Hash],Array[Double])] = mutable.HashMap() // txhash -> ([address,...],[value,...]) (one entry per index)
   val outOfOrderInputMap: mutable.HashMap[(Hash,Int),Hash] = mutable.HashMap() //  outpoint -> txhash
   var blockCount = 0
@@ -100,13 +100,15 @@ class RawBlockFileReaderUncompressed(args:List[String]){
   def saveDataToDB: Unit =
   {
     val startTime = System.currentTimeMillis
+    val timeUntilLastSave = startTime - readTime ;
 
     println(
-    """===========================================
+      """       Read in """ + timeUntilLastSave + """ ms
        Blocks read """ + blockCount + """
        SQL transaction size: """ + listData.size + """
        Outputs in memory: """ + outputMap.size + """
-       Inputs in memory: """ + outOfOrderInputMap.size
+       Inputs in memory: """ + outOfOrderInputMap.size + """
+       Saving blocks ... """
     )
 
 
@@ -120,7 +122,12 @@ class RawBlockFileReaderUncompressed(args:List[String]){
 
     listData = Vector()
     val totalTime = System.currentTimeMillis - startTime
-    println("Saved in " + totalTime + "ms")
+    println(
+      """       Saved in """ + totalTime + """ ms
+=============================================
+       Reading blocks ..."""
+    )
+    readTime = System.currentTimeMillis
   }
 
   def insertInsertIntoList(s:String) =
@@ -259,9 +266,8 @@ class RawBlockFileReaderUncompressed(args:List[String]){
         outputMap += (transactionHash -> (addressBuffer.toArray, valueBuffer.toArray))
     }
   
-  def doSomethingBeautiful: Long =
+  def processBlockHash: Long =
   { 
-    println("Start")
     println("Reading binaries")
     var savedBlocksSet:Set[String] = Set.empty
     val savedBlocks =
@@ -271,12 +277,17 @@ class RawBlockFileReaderUncompressed(args:List[String]){
       savedBlocksSet = savedBlocksSet + c
 
     nrBlocksToSave += blockCount
-    println("Saving blocks from " + blockCount + " to " + nrBlocksToSave)
+
     val startTime = System.currentTimeMillis
     
     populateOOOInputMap
     populateOutputMap
-    
+
+    println("Saving blocks from " + blockCount + " to " + nrBlocksToSave)
+    println("""=============================================
+       Reading blocks ..."""
+    )
+
     for
     (
       block <- asScalaIterator(loader)
@@ -316,7 +327,6 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     {
       initializeDB
     }
-
     else
     {
       blockCount = Query(RawBlocks.length).first
@@ -327,15 +337,19 @@ class RawBlockFileReaderUncompressed(args:List[String]){
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx2+";").list.head == 1)
       ad2Exists = true
 
-    //(Q.u + "PRAGMA foreign_keys=OFF;").execute
+
     start = countInputs
-    val totalTime = doSomethingBeautiful
+    val totalTime = processBlockHash
     end = countInputs
     //(Q.u + "PRAGMA foreign_keys=ON;").execute
-
+    println("       Blocks processed!")
+    println("=============================================")
+    println()
+    println("/////////////////////////////////////////////")
     println("Total time to save movements = " + totalTime + " ms")
     println("Total of movements = " + totalOutIn)
     println("Time required pro movement = " + totalTime.toDouble/totalOutIn +" ms")
-    println("Wir sind mega geil!")
+    println("/////////////////////////////////////////////")
+    println()
   }
 }

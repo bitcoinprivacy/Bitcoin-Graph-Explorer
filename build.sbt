@@ -27,8 +27,6 @@ libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % "2.1.5" % "test" 
 )
 
-
-
 resolvers += "Local Maven Repository" at "file:///"+Path.userHome.absolutePath+"/.m2/repository"
 
 resolvers += "Fakod Snapshots" at "https://raw.github.com/FaKod/fakod-mvn-repo/master/snapshots"
@@ -39,9 +37,9 @@ resolvers += "bitcoinj" at "http://distribution.bitcoinj.googlecode.com/git/rele
 
 resolvers += "scala-tools" at "https://oss.sonatype.org/content/groups/scala-tools"
 
-javaOptions in run += "-Xmx2G"
+javaOptions in run += "-Xmx5G"
 
-javaOptions in run += "-Xms500M"
+javaOptions in run += "-Xms1G"
 
 javaOptions in run += "-XX:-UseGCOverheadLimit"
 //javaOptions in run += "-XX:+PrintCommandLineFlags"

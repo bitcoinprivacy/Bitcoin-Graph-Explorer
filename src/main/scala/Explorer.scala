@@ -9,15 +9,15 @@ import actions._
  */
 object Explorer extends App{
   args.toList match{
-    case "populate"::rest             => new RawBlockFileReaderUncompressed(rest)
-    case "closure"::rest              => new AllAddressesClosure(rest)
-    case "balance"::rest              => new AllAddressesBalance(rest)
+    case "populate"::rest             => new BlocksReader(rest)
+    case "closure"::rest              => new AddressesClosurer(rest)
+    case "balance"::rest              => new AddressesBalancer(rest)
     case "all"::rest                  =>
-      val populater = new RawBlockFileReaderUncompressed(if (rest.isEmpty) List("100000", "init") else rest)
-      new CreateIndex(List())
-      new AllAddressesClosure(List(populater.start.toString, populater.end.toString))
-      new AllAddressesBalance(rest)
-    case "createindexes"::rest        => new CreateIndex(rest)
+      val populater = new BlocksReader(if (rest.isEmpty) List("100000", "init") else rest)
+      new IndexCreator(List())
+      new AddressesClosurer(List(populater.start.toString, populater.end.toString))
+      new AddressesBalancer(rest)
+    case "createindexes"::rest        => new IndexCreator(rest)
     case _=> println
     ("""
       Available commands:
