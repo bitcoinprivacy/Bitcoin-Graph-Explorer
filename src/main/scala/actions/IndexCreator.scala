@@ -23,8 +23,9 @@ class IndexCreator(args:List[String])
 
       """create index if not exists address on movements (address)""",
       """create index if not exists representant on addresses (representant)""",
-      """create unique index if not exists hash_a on addresses (hash)""",
+      """create unique index if not exists hash on addresses (hash)""",
       """create index if not exists transaction_hash_i on movements (transaction_hash, `index`)""",
+      """create index if not exists spent_in_transaction_hash on movements (transaction_hash, spent_in_transaction_hash)""",
       """analyze;"""
     )
     for (query <- queries)

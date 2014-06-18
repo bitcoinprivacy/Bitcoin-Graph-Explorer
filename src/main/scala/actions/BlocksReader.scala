@@ -103,7 +103,7 @@ class BlocksReader(args:List[String]){
     val timeUntilLastSave = startTime - readTime ;
 
     println(
-      """       Read in """ + timeUntilLastSave + """ ms
+      """     Read in """ + timeUntilLastSave + """ ms
        Blocks read """ + blockCount + """
        SQL transaction size: """ + listData.size + """
        Outputs in memory: """ + outputMap.size + """
@@ -123,7 +123,7 @@ class BlocksReader(args:List[String]){
     listData = Vector()
     val totalTime = System.currentTimeMillis - startTime
     println(
-      """       Saved in """ + totalTime + """ ms
+      """     Saved in """ + totalTime + """ ms
 =============================================
        Reading blocks ..."""
     )
@@ -283,7 +283,7 @@ class BlocksReader(args:List[String]){
     populateOOOInputMap
     populateOutputMap
 
-    println("Saving blocks from " + blockCount + " to " + nrBlocksToSave)
+    println("Saving blocks from %s to %s" format (blockCount, nrBlocksToSave))
     println("""=============================================
        Reading blocks ..."""
     )
@@ -323,15 +323,18 @@ class BlocksReader(args:List[String]){
   
   databaseSession
   {
+
     if (args.length > 1 && args(1) == "init" )
     {
       initializeDB
+      (Q.u + "analyze;"                         ).execute
     }
     else
     {
       blockCount = Query(RawBlocks.length).first
     }
-    
+
+
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx1+";").list.head == 1)
       ad1Exists = true
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx2+";").list.head == 1)
@@ -342,7 +345,7 @@ class BlocksReader(args:List[String]){
     val totalTime = processBlockHash
     end = countInputs
     //(Q.u + "PRAGMA foreign_keys=ON;").execute
-    println("       Blocks processed!")
+    println("     Blocks processed!")
     println("=============================================")
     println()
     println("/////////////////////////////////////////////")

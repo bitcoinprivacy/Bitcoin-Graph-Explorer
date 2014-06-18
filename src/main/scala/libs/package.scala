@@ -14,7 +14,7 @@ package object libs
 
   var databaseFile = conf.getString("databaseFile") //"blockchain/bitcoin.db"
   var stepClosure = conf.getInt("closureStep")
-  var stepPopulate = conf.getInt("populateStep");
+  var stepPopulate = conf.getInt("populateStep")
   var stepBalance = conf.getInt("balanceStep")
 
   def databaseSession(f: => Unit): Unit =
@@ -37,4 +37,5 @@ package object libs
   {
     Q.queryNA[Int]("""select count(*) from movements""").list.head
   }
+
 }
