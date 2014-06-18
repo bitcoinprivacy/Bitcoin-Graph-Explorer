@@ -124,6 +124,7 @@ class AddressesClosurer(args:List[String]){
     (Q.u + "delete from addresses;").execute
     val start = if (args.length>0) args(0).toInt else 0
     val end = if (args.length>1) args(1).toInt else countInputs
+    println("Searching in inputs from %s to %s" format (start, end))
     var counterTotal = 0
 
     for (i <- start to end by stepClosure)
