@@ -32,15 +32,15 @@ class BlocksReader(args:List[String]){
   var totalOutIn = 0
   var listData:Vector[String] = Vector()
   var readTime = System.currentTimeMillis;
-  val outputMap: mutable.HashMap[Hash,(Array[Hash],Array[Double])] = mutable.HashMap() // txhash -> ([address,...],[value,...]) (one entry per index)
-  val outOfOrderInputMap: mutable.HashMap[(Hash,Int),Hash] = mutable.HashMap() //  outpoint -> txhash
+  var outputMap: immutable.HashMap[Hash,(Array[Hash],Array[Double])] = immutable.HashMap() // txhash -> ([address,...],[value,...]) (one entry per index)
+  var outOfOrderInputMap: immutable.HashMap[(Hash,Int),Hash] = immutable.HashMap() //  outpoint -> txhash
   var blockCount = 0
-  var ad1Exists = false
-  var ad2Exists = false
-  // We need to capture these two transactions because they are repeated.
+  
+  // We need to watch out for these two transactions because they are repeated in the blockchain.
   val duplicatedTx1 = Hash("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599")
   val duplicatedTx2 = Hash("e3bf3d07d4b0375638d5f1db5255fe07ba2c4cb067cd81b84ee974b6585fb468")
-  				 
+  var duplicatedTx1Exists = false
+  var duplicatedTx2Exists = false				 
   
   var nrBlocksToSave = if (args.length > 0) args(0).toInt else 1000
   if (args.length > 1 && args(1) == "init" )   new File(databaseFile).delete
@@ -171,15 +171,6 @@ class BlocksReader(args:List[String]){
       if (outputMap.contains(outpointTransactionHash))
       { 
     	val outputTx = outputMap(outpointTransactionHash)
-    	if (outpointIndex >= outputTx._1.length)
-    	{  println(outputTx._1.deep)
-    	  println(outpointIndex)
-    	  println(outpointTransactionHash)
-    	}  
-    	if (outpointIndex >= outputTx._2.length)
-    	{  println(outputTx._2.deep)
-    	  println(outpointIndex)
-    	}
         insertInsertIntoList("INSERT INTO movements (spent_in_transaction_hash, transaction_hash, `index`, address, `value`) VALUES " +
           " (" + transactionHash + ", " + outpointTransactionHash + ", " + outpointIndex + ", " + outputTx._1(outpointIndex) + ", " + outputTx._2(outpointIndex) + ")")
         outputTx._2(outpointIndex) = 0 // a value of 0 marks this output as spent
@@ -210,7 +201,7 @@ class BlocksReader(args:List[String]){
           if (script.startsWith("[65]")) {
             val pubkeystring = script.substring(4, 134)
             import Utils._
-            val pubkey = Hash(pubkeystring).array
+            val pubkey = Hash(pubkeystring).array.toArray
             val address = new Address(params, sha256hash160(pubkey))
             address.getHash160
           } else { // special case because bitcoinJ doesn't support pay-to-IP scripts
@@ -266,7 +257,7 @@ class BlocksReader(args:List[String]){
         outputMap += (transactionHash -> (addressBuffer.toArray, valueBuffer.toArray))
     }
   
-  def processBlockHash: Long =
+  def readBlocksfromFile: Long =
   { 
     println("Reading binaries")
     var savedBlocksSet:Set[String] = Set.empty
@@ -310,11 +301,11 @@ class BlocksReader(args:List[String]){
       for (trans <- block.getTransactions) 
       { 
         val transactionHash = Hash(trans.getHash.getBytes)
-        if ((transactionHash != duplicatedTx1 || !ad1Exists) && (transactionHash != duplicatedTx2 || !ad2Exists))
+        if ((transactionHash != duplicatedTx1 || !duplicatedTx1Exists) && (transactionHash != duplicatedTx2 || !duplicatedTx2Exists))
         {
     	  includeTransaction(trans)
-    	  ad1Exists = ad1Exists || (transactionHash == duplicatedTx1)
-          ad2Exists = ad2Exists || (transactionHash == duplicatedTx2)
+    	  duplicatedTx1Exists = duplicatedTx1Exists || (transactionHash == duplicatedTx1)
+          duplicatedTx2Exists = duplicatedTx2Exists || (transactionHash == duplicatedTx2)
         }
       }
     }
@@ -336,13 +327,13 @@ class BlocksReader(args:List[String]){
 
 
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx1+";").list.head == 1)
-      ad1Exists = true
+      duplicatedTx1Exists = true
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx2+";").list.head == 1)
-      ad2Exists = true
+      duplicatedTx2Exists = true
 
 
     start = countInputs
-    val totalTime = processBlockHash
+    val totalTime = readBlocksfromFile
     end = countInputs
     //(Q.u + "PRAGMA foreign_keys=ON;").execute
     println("     Blocks processed!")
