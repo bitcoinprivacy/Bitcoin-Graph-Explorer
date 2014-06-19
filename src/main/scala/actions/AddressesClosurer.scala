@@ -49,7 +49,7 @@ class AddressesClosurer(args:List[String]){
   {
     val mapDSOA:HashMap[Hash, DisjointSetOfAddresses] = HashMap.empty
     val timeStart = System.currentTimeMillis
-    println("     Generating dependence tree ...")
+    println("     Generating dependency tree ...")
 
     for (t <- mapAddresses)
     {
@@ -72,8 +72,6 @@ class AddressesClosurer(args:List[String]){
 
   def adaptTreeToDB(mapDSOA: HashMap[Hash, DisjointSetOfAddresses]): HashMap[Hash, DisjointSetOfAddresses] =
   {
-    // weird trick to allow slick using Array Bytes
-    implicit val GetByteArr = GetResult(r => r.nextBytes())
     val timeStart = System.currentTimeMillis
     println("     Adapting tree to database ...")
 
@@ -120,8 +118,10 @@ class AddressesClosurer(args:List[String]){
   databaseSession
   {
     val timeStart = System.currentTimeMillis
-    println("Calculating closure of existing addresses")
-    (Q.u + "delete from addresses;").execute
+    println("Calculating closure of existing addresses ...")
+    println("Dropping and recreating address database")
+    (Addresses.ddl).drop
+    (Addresses.ddl).create
     val start = if (args.length>0) args(0).toInt else 0
     val end = if (args.length>1) args(1).toInt else countInputs
     println("Searching in inputs from %s to %s" format (start, end))
@@ -133,7 +133,17 @@ class AddressesClosurer(args:List[String]){
       val amount = if (i + stepClosure > end) end - i else stepClosure
       println("=============================================")
       println("     Closuring using inputs from %s to %s" format (i, i + amount))
-      val counter = saveTree(adaptTreeToDB(generateTree(getAddressesFromMovements(i, amount))))
+      val counter = 
+        if (i==0) {
+        	val counter = saveTree(generateTree(getAddressesFromMovements(i, amount)))
+        	new IndexCreator(List(
+    		  """create index if not exists representant on addresses (representant)""",
+    		  """analyze;"""
+        	  ))
+        	counter
+        }
+      	else 
+      	  saveTree(adaptTreeToDB(generateTree(getAddressesFromMovements(i, amount))))
       counterTotal += counter
       val timeTotal = System.currentTimeMillis - timeStart
       println("     Closured %s elements in %s s" format (counter, timeTotal / 1000))
@@ -141,6 +151,10 @@ class AddressesClosurer(args:List[String]){
 
     val timeTotal = (System.currentTimeMillis - timeStart)
     val timePerAddress = if (counterTotal != 0) 1000*timeTotal/counterTotal else timeTotal
+    new IndexCreator(List(
+    """create unique index if not exists hash on addresses (hash)""",
+    """analyze;"""
+        	  ))
     println("=============================================")
     println
     println("/////////////////////////////////////////////")

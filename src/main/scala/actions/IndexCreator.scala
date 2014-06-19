@@ -19,19 +19,11 @@ class IndexCreator(args:List[String])
     println("=============================================")
     var timeStart = System.currentTimeMillis;
 
-    val queries:List[String] = List(
-
-      """create index if not exists address on movements (address)""",
-      """create index if not exists representant on addresses (representant)""",
-      """create unique index if not exists hash on addresses (hash)""",
-      """create index if not exists transaction_hash_i on movements (transaction_hash, `index`)""",
-      """create index if not exists spent_in_transaction_hash on movements (transaction_hash, spent_in_transaction_hash)""",
-      """analyze;"""
-    )
-    for (query <- queries)
+    
+    for (query <- args)
     {
-      println("       Index created: " + query)
       (Q.u + query + ";").execute
+      println("       Index created: " + query)
     }
     println("=============================================")
     println()

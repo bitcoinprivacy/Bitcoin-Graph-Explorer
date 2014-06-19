@@ -91,9 +91,9 @@ class BlocksReader(args:List[String]){
     
   def initializeDB: Unit =
   {
-    println("Resetting tables of the bitcoin database.")
+    println("Resetting tables of the bitcoin database: Outputs, Blocks, Addresses")
     (Outputs.ddl).create
-    (RawBlocks.ddl).create
+    (Blocks.ddl).create    
     (Addresses.ddl).create
   }
 
@@ -262,7 +262,7 @@ class BlocksReader(args:List[String]){
     println("Reading binaries")
     var savedBlocksSet:Set[String] = Set.empty
     val savedBlocks =
-      for (b <- RawBlocks)
+      for (b <- Blocks)
         yield (b.hash)
     for (c <- savedBlocks)
       savedBlocksSet = savedBlocksSet + c
@@ -318,11 +318,10 @@ class BlocksReader(args:List[String]){
     if (args.length > 1 && args(1) == "init" )
     {
       initializeDB
-      (Q.u + "analyze;"                         ).execute
     }
     else
     {
-      blockCount = Query(RawBlocks.length).first
+      blockCount = Query(Blocks.length).first
     }
 
 

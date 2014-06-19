@@ -10,7 +10,7 @@ package libs
 
 import scala.slick.driver.SQLiteDriver.simple._
 
-object RawBlocks extends Table[(String)]("blocks") {
+object Blocks extends Table[(String)]("blocks") {
 
   def hash= column[String]("hash")
   def * =  hash
