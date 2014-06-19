@@ -344,5 +344,13 @@ class BlocksReader(args:List[String]){
     println("Time required pro movement = " + totalTime.toDouble/totalOutIn +" ms")
     println("/////////////////////////////////////////////")
     println()
+    
+    val queries:List[String] = List(
+    		  """create index if not exists address on movements (address)""",
+    		  """create index if not exists transaction_hash_i on movements (transaction_hash, `index`)""",
+    		  """create index if not exists spent_in_transaction_hash on movements (transaction_hash, spent_in_transaction_hash)""",
+    		  """analyze;"""
+    		  )
+   new IndexCreator(queries)
   }
 }
