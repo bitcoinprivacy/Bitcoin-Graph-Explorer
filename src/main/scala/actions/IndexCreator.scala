@@ -23,8 +23,9 @@ class IndexCreator(args:List[String])
     for (query <- args)
     {
       (Q.u + query + ";").execute
-      println("       Index created: " + query)
+      println("       Creatin index: " + query)
     }
+
     println("=============================================")
     println()
     println("/////////////////////////////////////////////")

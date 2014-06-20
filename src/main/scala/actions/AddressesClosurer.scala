@@ -15,8 +15,9 @@ import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import scala.slick.jdbc.meta.MTable
 import scala.collection.mutable.HashMap
 
-class AddressesClosurer(args:List[String]){
-
+class AddressesClosurer(args:List[String])
+{
+  val tree:HashMap[Hash, DisjointSetOfAddresses] = HashMap.empty
   def getAddressesFromMovements(firstElement: Int, elements: Int): HashMap[Hash, Array[Hash]] =
   {
     // weird trick to allow slick using Array Bytes
@@ -45,6 +46,7 @@ class AddressesClosurer(args:List[String]){
     mapAddresses
   }
 
+  // Deprecated: we use a member tree and insert elements in a loop instead of generate multiple trees!
   def generateTree (mapAddresses: HashMap[Hash, Array[Hash]]): HashMap[Hash, DisjointSetOfAddresses]  =
   {
     val mapDSOA:HashMap[Hash, DisjointSetOfAddresses] = HashMap.empty
@@ -70,6 +72,32 @@ class AddressesClosurer(args:List[String]){
     mapDSOA
   }
 
+  def insertIntoTree (mapAddresses: HashMap[Hash, Array[Hash]]): Int  =
+  {
+    val timeStart = System.currentTimeMillis
+    println("     Generating dependency tree ...")
+    var counter = 0
+    for (t <- mapAddresses)
+    {
+      val dSOAs= t._2 map(a => tree.getOrElseUpdate(a, {DisjointSetOfAddresses(a)}) )
+
+      def union(l:Array[DisjointSetOfAddresses]): Unit = l match
+      {
+        case Array() =>
+        case Array(x) =>
+        case ar => ar(0).union(ar(1)) ; union(ar.drop(1))
+      }
+
+      counter += 1
+      union(dSOAs)
+    }
+
+    println("     Dependencies generated in %s ms" format (System.currentTimeMillis - timeStart))
+
+    counter
+  }
+
+  // we will use later for updates
   def adaptTreeToDB(mapDSOA: HashMap[Hash, DisjointSetOfAddresses]): HashMap[Hash, DisjointSetOfAddresses] =
   {
     val timeStart = System.currentTimeMillis
@@ -98,34 +126,50 @@ class AddressesClosurer(args:List[String]){
   {
     val timeStart = System.currentTimeMillis
     println("     Saving tree to database ...")
-    val values = (mapDSOA map ( p => p._1 + " , " + p._2.find.address + ", " + 0.toDouble)).toList
+    val values = (mapDSOA map ( p => p._1 + " , " + p._2.find.address)).toList
     var count = 0
-    (Q.u + "BEGIN TRANSACTION;").execute
+    var queries: List[String] = List.empty
 
     for (value <- values )
     {
+      val query = "insert into addresses (`hash`, `representant`) values (%s)" format value
+      queries = query::queries
       count += 1
-      (Q.u + ("insert into addresses (`hash`, `representant`, `balance`) values (%s)" format value)).execute
+
+      if (count == stepClosure)
+      {
+        println("Saving %s elements " format (stepClosure))
+        (Q.u + "BEGIN TRANSACTION;").execute
+        var cont = 0
+
+        for (query <- queries)
+        {
+          try {(Q.u + query).execute; cont += 1}
+          catch {case e: Exception => /*println(query)*/}
+        }
+
+        count = 0
+        queries = List.empty
+        (Q.u + "COMMIT TRANSACTION;").execute
+        println("Saved %s elements from %s" format (cont, stepClosure))
+      }
     }
 
-    (Q.u + "COMMIT TRANSACTION;").execute
     val timeInvested = System.currentTimeMillis - timeStart
     println("     Tree saved in %s ms" format (timeInvested))
 
-    count
+    values.length
   }
 
   databaseSession
   {
-    val timeStart = System.currentTimeMillis
+    val globalTimeStart = System.currentTimeMillis
     println("Calculating closure of existing addresses ...")
     println("Dropping and recreating address database")
-    (Addresses.ddl).drop
-    (Addresses.ddl).create
     val start = if (args.length>0) args(0).toInt else 0
     val end = if (args.length>1) args(1).toInt else countInputs
     println("Searching in inputs from %s to %s" format (start, end))
-    var counterTotal = 0
+
 
     for (i <- start to end by stepClosure)
     {
@@ -133,33 +177,26 @@ class AddressesClosurer(args:List[String]){
       val amount = if (i + stepClosure > end) end - i else stepClosure
       println("=============================================")
       println("     Closuring using inputs from %s to %s" format (i, i + amount))
-      val counter = 
-        if (i==0) {
-        	val counter = saveTree(generateTree(getAddressesFromMovements(i, amount)))
-        	new IndexCreator(List(
-    		  """create index if not exists representant on addresses (representant)""",
-    		  """analyze;"""
-        	  ))
-        	counter
-        }
-      	else 
-      	  saveTree(adaptTreeToDB(generateTree(getAddressesFromMovements(i, amount))))
-      counterTotal += counter
+      val counter = insertIntoTree(getAddressesFromMovements(i, amount))
       val timeTotal = System.currentTimeMillis - timeStart
       println("     Closured %s elements in %s s" format (counter, timeTotal / 1000))
     }
 
-    val timeTotal = (System.currentTimeMillis - timeStart)
-    val timePerAddress = if (counterTotal != 0) 1000*timeTotal/counterTotal else timeTotal
-    new IndexCreator(List(
-    """create unique index if not exists hash on addresses (hash)""",
-    """analyze;"""
-        	  ))
+    var counter = saveTree(tree)
+
+    val globalTimeTotal = (System.currentTimeMillis - globalTimeStart)
+    val timePerAddress = if (counter != 0) 1000*globalTimeTotal/counter else globalTimeTotal
+
     println("=============================================")
     println
     println("/////////////////////////////////////////////")
-    println("Total of %s addresses processed in %s s, %s µs per address" format (counterTotal, timeTotal/1000, timePerAddress));
+    println("Total of %s addresses processed in %s s, %s µs per address" format (counter, globalTimeTotal/1000, timePerAddress));
     println("/////////////////////////////////////////////")
     println
+
+    new IndexCreator(List(
+      "create index if not exists representant on addresses (representant)",
+      "create unique index if not exists hash on addresses (hash)"
+    ))
   }
 }
