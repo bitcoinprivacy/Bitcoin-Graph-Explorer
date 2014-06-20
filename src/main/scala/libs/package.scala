@@ -11,7 +11,6 @@ import scala.slick.jdbc.{StaticQuery => Q}
 package object libs
 {  
   val conf = ConfigFactory.load()
-
   var databaseFile = conf.getString("databaseFile") //"blockchain/bitcoin.db"
   var closureTransactionSize = conf.getInt("closureTransactionSize")
   var populateTransactionSize = conf.getInt("populateTransactionSize")
@@ -24,15 +23,6 @@ package object libs
       driver = "org.sqlite.JDBC"
     ) withSession
     {
-      /*
-      Test if exclusive lock and journal WAL helps.
-      Someone in stackoverflow told he works with up to 120GB database with these config
-      (Q.u + "PRAGMA main.page_size = 4096;"    ).execute
-      (Q.u + "PRAGMA main.cache_size=10000;"    ).execute
-      (Q.u + "PRAGMA main.locking_mode=EXCLUSIVE;"    ).execute
-      (Q.u + "PRAGMA main.synchronous=NORMAL;"    ).execute
-      (Q.u + "PRAGMA main.journal_mode=WAL;"    ).execute
-      (Q.u + "PRAGMA main.cache_size=5000;"    ).execute*/
       (Q.u + "PRAGMA main.page_size = 4096;"    ).execute
       (Q.u + "PRAGMA main.cache_size=10000;"    ).execute
       (Q.u + "PRAGMA main.locking_mode=NORMAL;" ).execute
