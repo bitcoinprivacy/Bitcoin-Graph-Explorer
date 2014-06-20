@@ -301,7 +301,8 @@ class BlocksReader(args:List[String]){
       for (trans <- block.getTransactions) 
       { 
         val transactionHash = Hash(trans.getHash.getBytes)
-        if ((transactionHash != duplicatedTx1 || !duplicatedTx1Exists) && (transactionHash != duplicatedTx2 || !duplicatedTx2Exists))
+        if ((transactionHash != duplicatedTx1 || !duplicatedTx1Exists) &&
+            (transactionHash != duplicatedTx2 || !duplicatedTx2Exists))
         {
     	  includeTransaction(trans)
     	  duplicatedTx1Exists = duplicatedTx1Exists || (transactionHash == duplicatedTx1)
@@ -309,12 +310,14 @@ class BlocksReader(args:List[String]){
         }
       }
     }
+
     return wrapUpAndReturnTimeTaken(startTime)
   }
-  
+
+  var outputs: List[String] = List.empty
+
   databaseSession
   {
-
     if (args.length > 1 && args(1) == "init" )
     {
       initializeDB
@@ -324,33 +327,29 @@ class BlocksReader(args:List[String]){
       blockCount = Query(Blocks.length).first
     }
 
-
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx1+";").list.head == 1)
       duplicatedTx1Exists = true
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx2+";").list.head == 1)
       duplicatedTx2Exists = true
 
-
     start = countInputs
     val totalTime = readBlocksfromFile
     end = countInputs
-    //(Q.u + "PRAGMA foreign_keys=ON;").execute
     println("     Blocks processed!")
     println("=============================================")
-    println()
-    println("/////////////////////////////////////////////")
-    println("Total time to save movements = " + totalTime + " ms")
-    println("Total of movements = " + totalOutIn)
-    println("Time required pro movement = " + totalTime.toDouble/totalOutIn +" ms")
-    println("/////////////////////////////////////////////")
-    println()
-    
-    val queries:List[String] = List(
-    		  """create index if not exists address on movements (address)""",
-    		  """create index if not exists transaction_hash_i on movements (transaction_hash, `index`)""",
-    		  """create index if not exists spent_in_transaction_hash on movements (transaction_hash, spent_in_transaction_hash)""",
-    		  """analyze;"""
-    		  )
-   new IndexCreator(queries)
+    outputs = ("Total time to save movements %s s" format (totalTime/1000))::outputs
+    outputs = ("Total of movements = " format (totalOutIn))::outputs
+    outputs = ("Time required pro movement %s µs " format (1000 * totalTime/totalOutIn))::outputs
   }
+  // We perform that here since IndexCreator call a databaseSession himself
+  println
+  new IndexCreator(List(
+    """create index if not exists address on movements (address)""",
+    """create index if not exists transaction_hash_i on movements (transaction_hash, `index`)""",
+    """create index if not exists spent_in_transaction_hash on movements (transaction_hash, spent_in_transaction_hash)""",
+    """analyze;"""
+  ))
+
+  for (line <- outputs) println(line)
+  println("/////////////////////////////////////////////")
 }
