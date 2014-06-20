@@ -50,10 +50,10 @@ class AddressesClosurer(args:List[String])
     val tree:HashMap[Hash, DisjointSetOfAddresses] = HashMap.empty
     val timeStart = System.currentTimeMillis
 
-    for (i <- start to end by stepClosure)
+    for (i <- start to end by closureTransactionSize)
     {
       println("=============================================")
-      val amount = if (i + stepClosure > end) end - i else stepClosure
+      val amount = if (i + closureTransactionSize > end) end - i else closureTransactionSize
       val (databaseResults) = getAddressesFromMovements(i, amount)
       insertValuesIntoTree(databaseResults, tree)
     }
@@ -125,7 +125,7 @@ class AddressesClosurer(args:List[String])
         (value._1, value._2.find.address, 0))::queries
       counter += 1
       counterTotal += 1
-      if (counter == stepClosure)
+      if (counter == closureTransactionSize)
       {
         println("=============================================")
         println("     Saving until element %s" format (counterTotal))

@@ -13,9 +13,9 @@ package object libs
   val conf = ConfigFactory.load()
 
   var databaseFile = conf.getString("databaseFile") //"blockchain/bitcoin.db"
-  var stepClosure = conf.getInt("closureStep")
-  var stepPopulate = conf.getInt("populateStep")
-  var stepBalance = conf.getInt("balanceStep")
+  var closureTransactionSize = conf.getInt("closureTransactionSize")
+  var populateTransactionSize = conf.getInt("populateTransactionSize")
+  var balanceTransactionSize = conf.getInt("balanceTransactionSize")
 
   def databaseSession(f: => Unit): Unit =
   {

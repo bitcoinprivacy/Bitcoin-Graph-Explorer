@@ -17,9 +17,9 @@ class AddressesBalancer(args:List[String])
     // weird trick to allow slick using Array Bytes
     implicit val GetByteArr = GetResult(r => r.nextBytes())
     val timeStart = System.currentTimeMillis
-    println ("     Reading " + stepBalance + " elements from the Database")
+    println ("     Reading " + balanceTransactionSize + " elements from the Database")
     val query = "SELECT SUM(value) as s, address as a FROM movements m where spent_in_transaction_hash IS NULL group by a limit %s, %s"
-    val elements = Q.queryNA[(Double, Array[Byte])](query format (start, stepBalance))
+    val elements = Q.queryNA[(Double, Array[Byte])](query format (start, balanceTransactionSize))
     println ("     Read elements in " + (System.currentTimeMillis - timeStart) + " ms ")
 
     elements
@@ -64,10 +64,10 @@ class AddressesBalancer(args:List[String])
     val end = if (args.length>1) args(1).toInt else countInputs
     var counter = 0
     println("Searching in inputs from %s to %s" format (start, end))
-    for (i <- start to end by stepBalance)
+    for (i <- start to end by balanceTransactionSize)
     {
       println("=============================================")
-      counter += saveQueryListToDatabase(convertToQueryList(readElements(i, stepBalance)))
+      counter += saveQueryListToDatabase(convertToQueryList(readElements(i, balanceTransactionSize)))
       println("=============================================")
     }
 

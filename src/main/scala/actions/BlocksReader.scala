@@ -132,7 +132,7 @@ class BlocksReader(args:List[String]){
 
   def insertInsertIntoList(s:String) =
   {
-    if (listData.length >= stepPopulate) saveDataToDB
+    if (listData.length >= populateTransactionSize) saveDataToDB
 
     listData +:= s
   }
