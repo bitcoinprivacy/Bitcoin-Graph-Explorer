@@ -17,20 +17,18 @@ class IndexCreator(args:List[String])
   {
     println("Building indexes...")
     println("=============================================")
-    var timeStart = System.currentTimeMillis;
+    val timeStart = System.currentTimeMillis
 
-    
     for (query <- args)
     {
+      println("     Creating index: " + query + " ..." )
       (Q.u + query + ";").execute
-      println("       Creatin index: " + query)
+      println("     Index created!")
     }
 
     println("=============================================")
-    println()
+    println
     println("/////////////////////////////////////////////")
-    println("Indexes created in " + (System.currentTimeMillis - timeStart) + " ms ")
-    println("/////////////////////////////////////////////")
-    println()
+    println("Total of %s indexes created in %s s" format (args.length, (System.currentTimeMillis - timeStart) / 1000))
   }
 }
