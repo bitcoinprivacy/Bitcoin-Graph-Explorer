@@ -13,8 +13,6 @@ import scala.slick.jdbc.{GetResult, StaticQuery => Q}
  */
 class IndexCreator(args:List[String])
 {
-  databaseSession
-  {
     println("Building indexes...")
     println("=============================================")
     val timeStart = System.currentTimeMillis
@@ -30,5 +28,4 @@ class IndexCreator(args:List[String])
     println
     println("/////////////////////////////////////////////")
     println("Total of %s indexes created in %s s" format (args.length, (System.currentTimeMillis - timeStart) / 1000))
-  }
 }
