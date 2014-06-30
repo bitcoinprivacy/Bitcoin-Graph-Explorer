@@ -145,10 +145,10 @@ class BlocksReader(args:List[String]){
       outputMap -= transactionHash
     }
     
- 	for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
-  {
-    insertInsertIntoList((transactionHash.array.toArray, outpointTransactionHash.array.toArray, arrayNull, outpointIndex, 0.0))
-  }
+    for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
+    {
+      insertInsertIntoList((transactionHash.array.toArray, outpointTransactionHash.array.toArray, arrayNull, outpointIndex, 0.0))
+    }
  	
     saveDataToDB     
 
@@ -246,7 +246,6 @@ class BlocksReader(args:List[String]){
   
   def readBlocksfromFile: Long =
   {
-
     var savedBlocksSet:Set[Hash] = Set.empty
     val savedBlocks = for (b <- Blocks) yield (b.hash)
     for (c <- savedBlocks) savedBlocksSet = savedBlocksSet + Hash(c)
@@ -269,6 +268,7 @@ class BlocksReader(args:List[String]){
       if (!savedBlocksSet.contains(Hash(block.getHashAsString())) && longestChain.contains(Hash(block.getHashAsString())))
     )
     {
+      // TODO: fix populate over existing data, there is a not unique error!s
       val blockHash = Hash(block.getHashAsString())
       savedBlocksSet += blockHash
 
