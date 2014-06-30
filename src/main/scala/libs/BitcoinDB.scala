@@ -10,17 +10,17 @@ package libs
 
 import scala.slick.driver.SQLiteDriver.simple._
 
-object Blocks extends Table[(String)]("blocks") {
+object Blocks extends Table[(Array[Byte])]("blocks") {
 
-  def hash= column[String]("hash")
+  def hash= column[Array[Byte]]("hash")
   def * =  hash
 }
 
 object Addresses extends Table[(Array[Byte], Array[Byte], Double)]("addresses") {
 
-  def hash= column[Array[Byte]]("hash")
-  def representant = column[Array[Byte]]("representant")
-  def balance= column[Double]("balance")
+  def hash= column[Array[Byte]]("hash", O.Nullable)
+  def representant = column[Array[Byte]]("representant", O.Nullable)
+  def balance= column[Double]("balance", O.Nullable)
 
   def * = hash ~ representant ~ balance
 }

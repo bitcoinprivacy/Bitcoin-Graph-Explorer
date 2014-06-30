@@ -14,6 +14,7 @@ package object libs
   var transactionsDatabaseFile = conf.getString("transactionsDatabaseFile") //"blockchain/bitcoin.db"
   var addressesDatabaseFile = conf.getString("addressesDatabaseFile") //"blockchain/bitcoin.db"
   var closureTransactionSize = conf.getInt("closureTransactionSize")
+  var closureReadSize = conf.getInt("closureReadSize")
   var populateTransactionSize = conf.getInt("populateTransactionSize")
   var balanceTransactionSize = conf.getInt("balanceTransactionSize")
 
@@ -49,17 +50,18 @@ package object libs
       }
   }
 
-  def getCurrentLongestBlockChainHashes(): Set[Hash] =
-  {
-    Set(
-      Hash("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"),
-      Hash("00000000839a8e6886ab5951d76f411475428afc90947ee320161bbf18eb6048")
-    )
-  }
+  val arrayNull = Hash.zero(1).array.toArray
 
   def countInputs: Int =
   {
     Q.queryNA[Int]("""select count(*) from movements""").list.head
   }
 
+  def getLongestBlockChainHashSet: Set[Hash] =
+  {
+    val lines = scala.io.Source.fromFile("blockchain/blocklist.txt").getLines
+    val hashes = for (line <- lines) yield Hash(line)
+
+    hashes.toSet
+  }
 }
