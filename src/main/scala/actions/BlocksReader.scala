@@ -45,11 +45,10 @@ class BlocksReader(args:List[String]){
 
   def populateOutputMap = 
   {
-    val query = """ select transaction_hash, `index`, address, `value` from
-        movements where spent_in_transaction_hash IS NULL order by `index` desc ; """
-        // now the highest remaining index in a transaction comes first
+    val query = " select transaction_hash, `index`, address, `value` from " +
+        "movements where spent_in_transaction_hash == " + Hash.zero(1).toString + " order by `index` desc ; "
+    // now the highest remaining index in a transaction comes first
     println("Reading utxo Set")
-    
     implicit val GetByteArr = GetResult(r => r.nextBytes)
     val q2 = Q.queryNA[(Array[Byte],Int,Array[Byte],Double)](query)
 
@@ -72,10 +71,9 @@ class BlocksReader(args:List[String]){
     
   def populateOOOInputMap =
   {
-    val query = """ select spent_in_transaction_hash, transaction_hash, `index` from
-        movements where address IS NULL; """
+    val query = " select spent_in_transaction_hash, transaction_hash, `index` from " +
+        " movements where address == " + Hash.zero(1).toString
     println("Reading Out-Of-Order Input Set")
-    
     implicit val GetByteArr = GetResult(r => r.nextBytes)
     val q2 = Q.queryNA[(Array[Byte],Array[Byte],Int)](query)
     
@@ -88,7 +86,6 @@ class BlocksReader(args:List[String]){
     
   def initializeDB: Unit =
   {
-    println("Resetting tables of the bitcoin database: Outputs, Blocks, Addresses")
     (Outputs.ddl).create
     (Blocks.ddl).create    
     (Addresses.ddl).create
@@ -99,35 +96,24 @@ class BlocksReader(args:List[String]){
     val startTime = System.currentTimeMillis
     val timeUntilLastSave = startTime - readTime ;
 
-    println(
-      """     Read in """ + timeUntilLastSave + """ ms
-       Blocks read """ + blockCount + """
-       SQL transaction size: """ + vectorMovements.size + """
-       Outputs in memory: """ + outputMap.size + """
-       Inputs in memory: """ + outOfOrderInputMap.size + """
-       Saving blocks ... """
-    )
+    println("     Read in " + timeUntilLastSave + " ms"          )
+    println("     Blocks read " + blockCount                     )
+    println("     SQL transaction size: " + vectorMovements.size )
+    println("     Outputs in memory: " + outputMap.size          )
+    println("     Inputs in memory: " + outOfOrderInputMap.size  )
+    println("     Saving blocks ..."                             )
 
-
-    //(Q.u + "BEGIN TRANSACTION").execute
     Blocks.insertAll(vectorBlocks: _*)
     Outputs.insertAll(vectorMovements: _*)
-
-    //for (line <- listData)
-    //{
-    //  (Q.u + line+";").execute
-    //}
-    //(Q.u + "COMMIT TRANSACTION").execute
 
     vectorMovements = Vector()
     vectorBlocks = Vector()
 
     val totalTime = System.currentTimeMillis - startTime
-    println(
-      """     Saved in """ + totalTime + """ ms
-=============================================
-       Reading blocks ..."""
-    )
+    println("     Saved in " + totalTime + " ms"           )
+    println("=============================================")
+    println("     Reading blocks ..."                      )
+
     readTime = System.currentTimeMillis
   }
 
@@ -213,66 +199,62 @@ class BlocksReader(args:List[String]){
         }
     })
 
-  
   def includeTransaction(trans: Transaction) =
 	{
-      val transactionHash = Hash(trans.getHash.getBytes) 
-      
-      if (!trans.isCoinBase) 
-      {
-        for (input <- trans.getInputs) 
-          includeInput(input,transactionHash)
-      }
-      
-      var index = 0
-      val addressBuffer = scala.collection.mutable.ArrayBuffer.empty[Hash]
-      val valueBuffer = collection.mutable.ArrayBuffer.empty[Double]
+    val transactionHash = Hash(trans.getHash.getBytes)
 
-      for (output <- trans.getOutputs) 
-      {
-        val address: Hash =
-          try { getAddressFromOutput(output: TransactionOutput) }
-          catch {
-            case e: ScriptException =>
-              println("bad transaction: " + transactionHash)
-              Hash(Array.fill(20)(1.toByte))
-          }
-        
-        addressBuffer += address
-        val value = output.getValue.doubleValue
-
-        if (outOfOrderInputMap.contains(transactionHash, index)) 
-        {
-          val inputTxHash = outOfOrderInputMap(transactionHash, index)
-          insertInsertIntoList((inputTxHash.array.toArray, transactionHash.array.toArray, address.array.toArray, index, value))
-          outOfOrderInputMap -= (transactionHash -> index)
-          valueBuffer += 0
-        } 
-        else
-          valueBuffer += value
-
-        totalOutIn += 1
-        index += 1
-
-      }
-      if (!valueBuffer.forall(_ == 0))
-        outputMap += (transactionHash -> (addressBuffer.toArray, valueBuffer.toArray))
+    if (!trans.isCoinBase)
+    {
+      for (input <- trans.getInputs)
+        includeInput(input,transactionHash)
     }
+
+    var index = 0
+    val addressBuffer = scala.collection.mutable.ArrayBuffer.empty[Hash]
+    val valueBuffer = collection.mutable.ArrayBuffer.empty[Double]
+
+    for (output <- trans.getOutputs)
+    {
+      val address: Hash =
+        try { getAddressFromOutput(output: TransactionOutput) }
+        catch {
+          case e: ScriptException =>
+            println("bad transaction: " + transactionHash)
+            Hash(Array.fill(20)(1.toByte))
+        }
+
+      addressBuffer += address
+      val value = output.getValue.doubleValue
+
+      if (outOfOrderInputMap.contains(transactionHash, index))
+      {
+        val inputTxHash = outOfOrderInputMap(transactionHash, index)
+        insertInsertIntoList((inputTxHash.array.toArray, transactionHash.array.toArray, address.array.toArray, index, value))
+        outOfOrderInputMap -= (transactionHash -> index)
+        valueBuffer += 0
+      }
+      else
+        valueBuffer += value
+
+      totalOutIn += 1
+      index += 1
+    }
+
+    if (!valueBuffer.forall(_ == 0))
+      outputMap += (transactionHash -> (addressBuffer.toArray, valueBuffer.toArray))
+  }
   
   def readBlocksfromFile: Long =
-  { 
-    println("Reading binaries")
+  {
+
     var savedBlocksSet:Set[Hash] = Set.empty
-    val savedBlocks =
-      for (b <- Blocks)
-        yield (b.hash)
-    for (c <- savedBlocks)
-      savedBlocksSet = savedBlocksSet + Hash(c)
-
+    val savedBlocks = for (b <- Blocks) yield (b.hash)
+    for (c <- savedBlocks) savedBlocksSet = savedBlocksSet + Hash(c)
     nrBlocksToSave += blockCount
-
+    startLogger("populate_"+blockCount+"_"+nrBlocksToSave)
     val startTime = System.currentTimeMillis
-    
+    println("Reading binaries")
+
     populateOOOInputMap
     populateOutputMap
 
@@ -287,17 +269,12 @@ class BlocksReader(args:List[String]){
       if (!savedBlocksSet.contains(Hash(block.getHashAsString())) && longestChain.contains(Hash(block.getHashAsString())))
     )
     {
-
       val blockHash = Hash(block.getHashAsString())
       savedBlocksSet += blockHash
 
-      if ( blockCount >= nrBlocksToSave )
-      {
-        return wrapUpAndReturnTimeTaken(startTime)
-      }
+      if ( blockCount >= nrBlocksToSave )   return wrapUpAndReturnTimeTaken(startTime)
 
       blockCount += 1
-
       insertInsertIntoList(blockHash.array.toArray)
 
       for (trans <- block.getTransactions) 
@@ -320,39 +297,31 @@ class BlocksReader(args:List[String]){
 
   transactionsDBSession
   {
-    if (args.length > 1 && args(1) == "init" )
-    {
-      initializeDB
-    }
-    else
-    {
-      blockCount = Query(Blocks.length).first
-    }
-
+    if (args.length > 1 && args(1) == "init" )  initializeDB
+    else                                        blockCount = Query(Blocks.length).first
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx1+";").list.head == 1)
       duplicatedTx1Exists = true
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx2+";").list.head == 1)
       duplicatedTx2Exists = true
-
     start = countInputs
     val totalTime = readBlocksfromFile
     end = countInputs
     println("     Blocks processed!")
     println("=============================================")
-    outputs = ("Total time to save movements %s s" format (totalTime/1000))::outputs
-    outputs = ("Total of movements = %s" format (totalOutIn))::outputs
-    outputs = ("Time required pro movement %s µs " format (1000 * totalTime/totalOutIn))::outputs
-
-    new IndexCreator(List(
-      "create index if not exists address on movements (address)",
-      "create unique index if not exists transaction_hash_i on movements (transaction_hash, `index`)",
-      "create index if not exists spent_in_transaction_hash on movements (spent_in_transaction_hash)"
-      //,
-      //"""analyze;"""
-    ))
-
+    println("     Creating indexes ...")
+    var clockIndex = System.currentTimeMillis
+    //(Q.u + "create index if not exists address on movements (address)" + ";").execute
+    (Q.u + "create unique index if not exists transaction_hash_i on movements (transaction_hash, `index`)" + ";").execute
+    (Q.u + "create index if not exists spent_in_transaction_hash on movements (spent_in_transaction_hash)" + ";").execute
+    println("     Indices created")
+    println("=============================================")
+    println("")
+    clockIndex = System.currentTimeMillis - clockIndex
+    println("/////////////////////////////////////////////")
+    println("Indexes created in %s" format (clockIndex/1000))
+    println("Total time to save movements %s s" format (totalTime/1000))
+    println("Total of movements = %s" format (totalOutIn))
+    println("Time required pro movement %s µs " format (1000 * totalTime/totalOutIn))
+    println("/////////////////////////////////////////////")
   }
-
-  for (line <- outputs) println(line)
-  println("/////////////////////////////////////////////")
 }

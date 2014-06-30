@@ -71,10 +71,10 @@ class AddressesBalancer(args:List[String])
       println("=============================================")
     }
 
-    println
+    println("")
     println("/////////////////////////////////////////////")
     println("Balance generated in " + (System.currentTimeMillis - timeStart) + " ms ")
     println("/////////////////////////////////////////////")
-    println
+    println("")
   }
 }

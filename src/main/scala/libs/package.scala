@@ -6,7 +6,7 @@ import com.typesafe.config.ConfigFactory
 import scala.slick.driver.SQLiteDriver.simple._
 import Database.threadLocalSession
 import scala.slick.jdbc.{StaticQuery => Q}
-
+import java.io._
 
 package object libs
 {  
@@ -64,4 +64,22 @@ package object libs
 
     hashes.toSet
   }
+
+  private var filename: String = null
+  private var logfile: File = null
+  private var writer: FileWriter = null
+  def println(s: String) = if (filename != null) writeLogger(s) else System.out.print(s)
+  def startLogger(s: String) =
+  {
+    filename = s
+    logfile = new File("logs/"+filename+".log")
+    writer = new FileWriter(logfile)
+  }
+  private def writeLogger(s: String): Unit =
+  {
+    writer = new FileWriter(logfile, true)
+    writer.write(s+"\n")
+    writer.close()
+  }
+  def stopLogger() = {filename = null}
 }

@@ -14,6 +14,8 @@ import scala.slick.session.Database
 import Database.threadLocalSession
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import scala.collection.mutable.HashMap
+import libs.DisjointSetOfAddresses
+import scala.Some
 
 class AddressesClosurer(args:List[String])
 {
@@ -22,23 +24,27 @@ class AddressesClosurer(args:List[String])
     // weird trick to allow slick using Array Bytes
     implicit val GetByteArr = GetResult(r => r.nextBytes())
     var nullHash = Hash.zero(1).toString
+    var zeroHash = Hash.zero(20)
     val timeStart = System.currentTimeMillis
     println("     Reading until input %s" format (firstElement + elements))
     val mapAddresses:HashMap[Hash, Array[Hash]] = HashMap.empty
-    val query = "select spent_in_transaction_hash as a, address as b from movements where a != " + nullHash +
-      " AND b != " + nullHash + " limit %s, %s;" format (firstElement, elements)
-    val q2 = Q.queryNA[(Array[Byte],Array[Byte])](query)
-    val emptyArray = Hash.zero(20)
-
-    for (q <- q2)
+    val movements = for
     {
-      val t = (Hash(q._1), Hash(q._2))
+      o <- Outputs.filter(!_.spent_in_transaction_hash.equals(Hash.zero(1))).
+          filter(!_.spent_in_transaction_hash.equals(Hash.zero(20))).
+            filter(!_.address.equals(Hash.zero(1))).
+              drop(firstElement).
+                take(elements)
+    }
+    yield(o.spent_in_transaction_hash, o.address)
 
-      if (t._2 != emptyArray)
-      {
-        val list:Array[Hash] = mapAddresses.getOrElse(t._1, Array()  )
-        mapAddresses.update(t._1, list :+ t._2 )
-      }
+    for (m <- movements)
+    {
+        mapAddresses.update(
+          Hash(m._2),
+          mapAddresses.getOrElse(Hash(m._1), Array()):+
+            Hash(m._1)
+        )
     }
 
     println("     Read elements in %s ms" format (System.currentTimeMillis - timeStart))
@@ -133,7 +139,7 @@ class AddressesClosurer(args:List[String])
     val totalElements = tree.size
     var counter = 0
     var counterTotal = 0
-    println
+    println("")
     println("Saving tree to database")
 
     for (value <- tree)
@@ -177,13 +183,9 @@ class AddressesClosurer(args:List[String])
 
   transactionsDBSession
   {
-    println("Calculating closure of existing addresses ...")
-    println("Dropping and recreating address database")
-
     val start = if (args.length>0) args(0).toInt else 0
     val end = if (args.length>1) args(1).toInt else countInputs
-
-
+    startLogger("closure_"+start+"_"+end);
     println("Reading inputs from %s to %s" format (start, end))
 
     var (tree, countTree, timeTree) = generateTree(start, end)
@@ -200,23 +202,25 @@ class AddressesClosurer(args:List[String])
         tree = adaptTreeToDB(tree)
       }
       val (countSave, timeSave) = saveTree(tree)
-      outputs = ("Total of %s addresses saved in %s s, %s µs per address" format
-        (countSave, timeSave/1000, 1000*timeSave/(countSave+1)))::outputs
-      outputs = ("Total of %s addresses processed in %s s, %s µs per address" format
-        (countTree, timeTree/1000, 1000*timeTree/(countTree+1)))::outputs
 
-      println
-      /*new IndexCreator(List(
-        "create index if not exists representant on addresses (representant)",
-        "create unique index if not exists hash on addresses (hash)",
-        "analyze"
-      )) */
+      var clockIndex = System.currentTimeMillis
+      println("Creating indexes ...")
+      //(Q.u + "create index if not exists representant on addresses (representant)").execute
+      //(Q.u + "create unique index if not exists hash on addresses (hash)").execute
+      println("=============================================")
+      println("")
+      clockIndex = System.currentTimeMillis - clockIndex
+      println("/////////////////////////////////////////////")
+      println("Indices created in %s s" format (clockIndex/1000))
+      println("Total of %s addresses saved in %s s, %s µs per address" format
+        (countSave, timeSave/1000, 1000*timeSave/(countSave+1)))
+      println("Total of %s addresses processed in %s s, %s µs per address" format
+        (countTree, timeTree/1000, 1000*timeTree/(countTree+1)))
+      println("/////////////////////////////////////////////")
     }
 
 
   }
 
-  for (line <- outputs) println(line)
-  println("/////////////////////////////////////////////")
-  println
+  stopLogger
 }
