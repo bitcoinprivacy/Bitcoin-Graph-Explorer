@@ -16,14 +16,12 @@ object Explorer extends App{
       val populater = new BlocksReader(if (rest.isEmpty) List("100000", "init") else rest)
       new AddressesClosurer(List(populater.start.toString, populater.end.toString))
       // new AddressesBalancer(rest) isn't really needed and just bloats database
-    case "createindexes"::rest        => new IndexCreator(rest)
     case _=> println
     ("""
       Available commands:
       populate [number of blocks] [init]
       balance
       closure
-      createindexes
       all [number of blocks]
     """)
   }
