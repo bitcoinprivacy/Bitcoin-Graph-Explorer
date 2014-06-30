@@ -55,7 +55,7 @@ class AddressesBalancer(args:List[String])
     length
    }
 
-  databaseSession
+  transactionsDBSession
   {
     implicit val GetByteArr = GetResult(r => r.nextBytes())
     val timeStart = System.currentTimeMillis
