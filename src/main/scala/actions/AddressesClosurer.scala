@@ -9,13 +9,13 @@ package actions
  */
 import libs._
 import java.io._
-import scala.slick.driver.MySQLDriver.simple._
-import scala.slick.session.Database
-import Database.threadLocalSession
+import scala.slick.driver.SQLiteDriver.simple._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import scala.collection.mutable.HashMap
 import libs.DisjointSetOfAddresses
-import scala.Some
+import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
+
+
 
 class AddressesClosurer(args:List[String])
 {
@@ -23,28 +23,30 @@ class AddressesClosurer(args:List[String])
   {
     // weird trick to allow slick using Array Bytes
     implicit val GetByteArr = GetResult(r => r.nextBytes())
-    var nullHash = Hash.zero(1).toString
-    var zeroHash = Hash.zero(20)
     val timeStart = System.currentTimeMillis
     println("     Reading until input %s" format (firstElement + elements))
     val mapAddresses:HashMap[Hash, Array[Hash]] = HashMap.empty
-    val movements = for
-    {
-      o <- Outputs.filter(!_.spent_in_transaction_hash.equals(Hash.zero(1))).
-          filter(!_.spent_in_transaction_hash.equals(Hash.zero(20))).
-            filter(!_.address.equals(Hash.zero(1))).
-              drop(firstElement).
-                take(elements)
-    }
-    yield(o.spent_in_transaction_hash, o.address)
+    // val query = "select spent_in_transaction_hash as a, address as b from movements where a " +
+    //  "NOT NULL and b NOT NULL limit %s, %s;" format (firstElement, elements)
+    // val q2 = Q.queryNA[(Array[Byte],Array[Byte])](query)
+    val emptyArray = Hash.zero(20).array.toArray
+    
+    val queried = for {
+      q <- outputs.filter(q => q.spent_in_transaction_hash.isNotNull && q.address.isNotNull).
+      				filter(_.spent_in_transaction_hash =!= emptyArray).
+      				drop(firstElement).take(elements)          				
+    } yield (q.spent_in_transaction_hash,q.address)
 
-    for (m <- movements)
+    for {q <- queried
+    	 sTx <- q._1
+    	 ad <- q._2}
     {
-        mapAddresses.update(
-          Hash(m._2),
-          mapAddresses.getOrElse(Hash(m._1), Array()):+
-            Hash(m._1)
-        )
+      val spentInTx = Hash(sTx)
+      val addr = Hash(ad)
+
+      assert(ad != emptyArray,"=!= doesn't work")
+      val list:Array[Hash] = mapAddresses.getOrElse(spentInTx, Array()  )
+      mapAddresses.update(spentInTx, list :+ addr )
     }
 
     println("     Read elements in %s ms" format (System.currentTimeMillis - timeStart))
@@ -135,7 +137,7 @@ class AddressesClosurer(args:List[String])
   def saveTree(tree: HashMap[Hash, DisjointSetOfAddresses]): (Int, Long) =
   {
     val timeStart = System.currentTimeMillis
-    var queries: Vector[(Array[Byte], Array[Byte], Double)] = Vector()
+    var queries: Vector[(Array[Byte], Array[Byte], Option[Double])] = Vector()
     val totalElements = tree.size
     var counter = 0
     var counterTotal = 0
@@ -144,7 +146,7 @@ class AddressesClosurer(args:List[String])
 
     for (value <- tree)
     {
-      queries +:= (value._1.array.toArray, value._2.find.address.array.toArray, 0.0)
+      queries +:= (value._1.array.toArray, value._2.find.address.array.toArray, None)
       counter += 1
       counterTotal += 1
       if (counter == closureTransactionSize)
@@ -165,11 +167,11 @@ class AddressesClosurer(args:List[String])
     (totalElements, System.currentTimeMillis - timeStart)
   }
 
-  def saveElementsToDatabase(queries: Vector[(Array[Byte], Array[Byte], Double)], counter: Int): Unit =
+  def saveElementsToDatabase(queries: Vector[(Array[Byte], Array[Byte], Option[Double])], counter: Int): Unit =
   {
     val start = System.currentTimeMillis
     println("     Save transaction of %s ..." format (counter))
-    Addresses.insertAll(queries: _*)
+    addresses.insertAll(queries: _*)
     //(Q.u + "BEGIN TRANSACTION;").execute
     //for (query <- queries) Addresses.insertAll((query._1.array.toArray, query._2.array.toArray, 0.0))
 
@@ -178,8 +180,6 @@ class AddressesClosurer(args:List[String])
     //(Q.u + "COMMIT TRANSACTION;").execute
     println("     Saved in %s ms" format (System.currentTimeMillis - start))
   }
-
-  var outputs: List[String] = List.empty
 
   transactionsDBSession
   {
@@ -195,7 +195,7 @@ class AddressesClosurer(args:List[String])
     {
       if (start == 0) // Do only if we start closuring
       {
-        (Addresses.ddl).create
+        addresses.ddl.create
       }
       else
       {

@@ -13,11 +13,11 @@ import java.io._
 import com.google.bitcoin.core._
 import com.google.bitcoin.params.MainNetParams
 import com.google.bitcoin.utils.BlockFileLoader
-import scala.slick.driver.MySQLDriver.simple._
+import scala.slick.driver.SQLiteDriver.simple._
 import scala.collection.JavaConversions._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
-import scala.slick.driver.MySQLDriver.simple._
-import Database.threadLocalSession
+import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
+// TODO: find out about static vs dynamic sessions
 import scala.collection._
 
 class BlocksReader(args:List[String]){
@@ -26,7 +26,8 @@ class BlocksReader(args:List[String]){
   var end = 0
   val loader = new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList());
   var totalOutIn = 0
-  var vectorMovements:Vector[(Array[Byte], Array[Byte], Array[Byte], Int, Double)] = Vector()
+  var vectorMovements:
+	  Vector[(Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Double])] = Vector()
   var vectorBlocks:Vector[Array[Byte]] = Vector()
   var readTime = System.currentTimeMillis;
   var outputMap: immutable.HashMap[Hash,(Array[Hash],Array[Double])] = immutable.HashMap() // txhash -> ([address,...],[value,...]) (one entry per index)
@@ -86,9 +87,9 @@ class BlocksReader(args:List[String]){
     
   def initializeDB: Unit =
   {
-    (Outputs.ddl).create
-    (Blocks.ddl).create    
-    (Addresses.ddl).create
+    outputs.ddl.create
+    blocks.ddl.create    
+    addresses.ddl.create
   }
 
   def saveDataToDB: Unit =
@@ -103,8 +104,8 @@ class BlocksReader(args:List[String]){
     println("     Inputs in memory: " + outOfOrderInputMap.size  )
     println("     Saving blocks ..."                             )
 
-    Blocks.insertAll(vectorBlocks: _*)
-    Outputs.insertAll(vectorMovements: _*)
+    blocks.insertAll(vectorBlocks: _*)
+    outputs.insertAll(vectorMovements: _*)
 
     vectorMovements = Vector()
     vectorBlocks = Vector()
@@ -124,7 +125,8 @@ class BlocksReader(args:List[String]){
     vectorBlocks +:= s
   }
 
-  def insertInsertIntoList(s: (Array[Byte], Array[Byte], Array[Byte], Int, Double)) =
+  def insertInsertIntoList
+  	(s: (Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Double])) =
   {
     if (vectorMovements.length + vectorBlocks.length >= populateTransactionSize) saveDataToDB
 
@@ -139,7 +141,7 @@ class BlocksReader(args:List[String]){
       {
         if (values(i) != 0)
         {
-          insertInsertIntoList((arrayNull, transactionHash.array.toArray,addresses(i).array.toArray,i,values(i)))
+          insertInsertIntoList((None, transactionHash.toSomeArray,addresses(i).toSomeArray,Some(i),Some(values(i))))
         }
       }
       outputMap -= transactionHash
@@ -147,7 +149,7 @@ class BlocksReader(args:List[String]){
     
     for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
     {
-      insertInsertIntoList((transactionHash.array.toArray, outpointTransactionHash.array.toArray, arrayNull, outpointIndex, 0.0))
+      insertInsertIntoList((transactionHash.toSomeArray, outpointTransactionHash.toSomeArray, None, Some(outpointIndex), None))
     }
  	
     saveDataToDB     
@@ -163,7 +165,7 @@ class BlocksReader(args:List[String]){
       if (outputMap.contains(outpointTransactionHash))
       { 
     	  val outputTx = outputMap(outpointTransactionHash)
-        insertInsertIntoList((transactionHash.array.toArray, outpointTransactionHash.array.toArray, outputTx._1(outpointIndex).array.toArray, outpointIndex, outputTx._2(outpointIndex)))
+        insertInsertIntoList((transactionHash.toSomeArray, outpointTransactionHash.toSomeArray, outputTx._1(outpointIndex).toSomeArray, Some(outpointIndex), Some(outputTx._2(outpointIndex))))
         outputTx._2(outpointIndex) = 0 // a value of 0 marks this output as spent
         if (outputTx._2.forall(_ == 0)) outputMap -= outpointTransactionHash
       } 
@@ -229,7 +231,8 @@ class BlocksReader(args:List[String]){
       if (outOfOrderInputMap.contains(transactionHash, index))
       {
         val inputTxHash = outOfOrderInputMap(transactionHash, index)
-        insertInsertIntoList((inputTxHash.array.toArray, transactionHash.array.toArray, address.array.toArray, index, value))
+        insertInsertIntoList(
+            (inputTxHash.toSomeArray, transactionHash.toSomeArray, address.toSomeArray, Some(index), Some(value)))
         outOfOrderInputMap -= (transactionHash -> index)
         valueBuffer += 0
       }
@@ -247,7 +250,7 @@ class BlocksReader(args:List[String]){
   def readBlocksfromFile: Long =
   {
     var savedBlocksSet:Set[Hash] = Set.empty
-    val savedBlocks = for (b <- Blocks) yield (b.hash)
+    val savedBlocks = for (b <- blocks) yield (b.hash)
     for (c <- savedBlocks) savedBlocksSet = savedBlocksSet + Hash(c)
     nrBlocksToSave += blockCount
     startLogger("populate_"+blockCount+"_"+nrBlocksToSave)
@@ -263,13 +266,14 @@ class BlocksReader(args:List[String]){
     )
 
     for
-    (
+    {
       block <- asScalaIterator(loader)
-      if (!savedBlocksSet.contains(Hash(block.getHashAsString())) && longestChain.contains(Hash(block.getHashAsString())))
-    )
+      val blockHash = Hash(block.getHash.getBytes)
+      if (!savedBlocksSet.contains(blockHash) && longestChain.contains(blockHash))
+    }
     {
       // TODO: fix populate over existing data, there is a not unique error!s
-      val blockHash = Hash(block.getHashAsString())
+
       savedBlocksSet += blockHash
 
       if ( blockCount >= nrBlocksToSave )   return wrapUpAndReturnTimeTaken(startTime)
@@ -293,12 +297,10 @@ class BlocksReader(args:List[String]){
     return wrapUpAndReturnTimeTaken(startTime)
   }
 
-  var outputs: List[String] = List.empty
-
   transactionsDBSession
   {
     if (args.length > 1 && args(1) == "init" )  initializeDB
-    else                                        blockCount = Query(Blocks.length).first
+    else blockCount = blocks.size.asInstanceOf[Int]
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx1+";").list.head == 1)
       duplicatedTx1Exists = true
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx2+";").list.head == 1)

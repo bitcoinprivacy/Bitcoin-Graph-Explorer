@@ -4,8 +4,8 @@
 
 import com.typesafe.config.ConfigFactory
 import scala.slick.driver.SQLiteDriver.simple._
-import Database.threadLocalSession
 import scala.slick.jdbc.{StaticQuery => Q}
+import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import java.io._
 
 package object libs
@@ -18,12 +18,16 @@ package object libs
   var populateTransactionSize = conf.getInt("populateTransactionSize")
   var balanceTransactionSize = conf.getInt("balanceTransactionSize")
 
+  val blocks = TableQuery[Blocks]
+  val addresses = TableQuery[Addresses]
+  val outputs = TableQuery[Outputs]
+  
   def transactionsDBSession(f: => Unit): Unit =
   {
     Database.forURL(
       url = "jdbc:sqlite:"+transactionsDatabaseFile,
       driver = "org.sqlite.JDBC"
-    ) withSession
+    ) withDynSession
     {
       (Q.u + "PRAGMA main.page_size = 4962;"    ).execute
       (Q.u + "PRAGMA main.cache_size=10000;"    ).execute
@@ -39,7 +43,7 @@ package object libs
     Database.forURL(
       url = "jdbc:sqlite:"+addressesDatabaseFile,
       driver = "org.sqlite.JDBC"
-    ) withSession
+    ) withDynSession
       {
         (Q.u + "PRAGMA main.page_size = 4962;"    ).execute
       (Q.u + "PRAGMA main.cache_size=10000;"    ).execute

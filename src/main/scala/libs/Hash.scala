@@ -29,6 +29,8 @@ class Hash (val array: mutable.WrappedArray[Byte]) extends AnyVal
 		else
 			('a'.asInstanceOf[Int] + (b-10)).asInstanceOf[Char]
 	}
+	
+	def toSomeArray = Some(array.toArray)
 }
 
 object Hash   
