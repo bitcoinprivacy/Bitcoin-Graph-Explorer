@@ -30,7 +30,7 @@ class BlocksReader(args:List[String]){
 	  Vector[(Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Double])] = Vector()
   var vectorBlocks:Vector[Array[Byte]] = Vector()
   var readTime = System.currentTimeMillis;
-  var outputMap: immutable.HashMap[Hash,(Array[Hash],Array[Double])] = immutable.HashMap() // txhash -> ([address,...],[value,...]) (one entry per index)
+  var outputMap: immutable.HashMap[Hash,immutable.HashMap[Int,(Hash,Double)]] = immutable.HashMap() // txhash -> ([address,...],[value,...]) (one entry per index)
   var outOfOrderInputMap: immutable.HashMap[(Hash,Int),Hash] = immutable.HashMap() //  outpoint -> txhash
   var blockCount = 0
   val longestChain = getLongestBlockChainHashSet
@@ -47,8 +47,8 @@ class BlocksReader(args:List[String]){
   def populateOutputMap = 
   {
     val query = " select transaction_hash, `index`, address, `value` from " +
-        "movements where spent_in_transaction_hash == " + Hash.zero(1).toString + " order by `index` desc ; "
-    // now the highest remaining index in a transaction comes first
+        "movements where spent_in_transaction_hash IS NULL; "
+   
     println("Reading utxo Set")
     implicit val GetByteArr = GetResult(r => r.nextBytes)
     val q2 = Q.queryNA[(Array[Byte],Int,Array[Byte],Double)](query)
@@ -59,14 +59,11 @@ class BlocksReader(args:List[String]){
         val hash = Hash(hashArray)
         val address = Hash(addressArray)
         
-    	val (oldAddresses,oldValues):(Array[Hash], Array[Double]) = 
-    	  if (outputMap.contains(hash)) 
-    		outputMap(hash)
-    	  else 
-    	    (Array.fill(index+1)(Hash.zero(20)),Array.fill(index+1)(0))
-    	val newValues = (oldAddresses.updated(index,address),oldValues.updated(index,value))
+    	val oldMap = outputMap.getOrElse(hash,immutable.HashMap())
+    	  
+    	val newMap = oldMap + (index -> (address,value))
     	   
-    	outputMap += (hash -> newValues)
+    	outputMap += (hash -> newMap)
     }
   }  
     
@@ -135,22 +132,16 @@ class BlocksReader(args:List[String]){
 
   def wrapUpAndReturnTimeTaken(startTime: Long): Long =  	
   {
-    for {(transactionHash, (addresses,values)) <- outputMap }
-    {
- 	 		for (i <- 0 until values.length )
+    for ((transactionHash, indexMap) <- outputMap)
       {
-        if (values(i) != 0)
-        {
-          insertInsertIntoList((None, transactionHash.toSomeArray, addresses(i).toSomeArray, Some(i), Some(values(i))))
-        }
-      }
+      for ((index, (address, value)) <- indexMap)
+    	  insertInsertIntoList((None, transactionHash.toSomeArray, address.toSomeArray, Some(index), Some(value)))       
       outputMap -= transactionHash
-    }
+      }
     
-    for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
-    {
+   for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
       insertInsertIntoList((transactionHash.toSomeArray, outpointTransactionHash.toSomeArray, None, Some(outpointIndex), None))
-    }
+    
  	
     saveDataToDB     
 
@@ -162,12 +153,16 @@ class BlocksReader(args:List[String]){
       val outpointTransactionHash = Hash(input.getOutpoint.getHash.getBytes)
       val outpointIndex = input.getOutpoint.getIndex.toInt
 
-      if (outputMap.contains(outpointTransactionHash))
+      if (outputMap.contains(outpointTransactionHash) && outputMap(outpointTransactionHash).contains(outpointIndex))
       { 
-    	  val outputTx = outputMap(outpointTransactionHash)
-        insertInsertIntoList((transactionHash.toSomeArray, outpointTransactionHash.toSomeArray, outputTx._1(outpointIndex).toSomeArray, Some(outpointIndex), Some(outputTx._2(outpointIndex))))
-        outputTx._2(outpointIndex) = 0 // a value of 0 marks this output as spent
-        if (outputTx._2.forall(_ == 0)) outputMap -= outpointTransactionHash
+    	val outputTxMap = outputMap(outpointTransactionHash)
+        insertInsertIntoList(
+            (transactionHash.toSomeArray, outpointTransactionHash.toSomeArray, outputTxMap(outpointIndex)._1.toSomeArray, Some(outpointIndex), Some(outputTxMap(outpointIndex)._2)))
+        val updatedTxMap = outputTxMap - outpointIndex
+        if (updatedTxMap.isEmpty) 
+          outputMap -= outpointTransactionHash
+        else
+          outputMap += (outpointTransactionHash -> updatedTxMap)
       } 
       else
         outOfOrderInputMap += ((outpointTransactionHash, outpointIndex) -> transactionHash)
@@ -175,10 +170,10 @@ class BlocksReader(args:List[String]){
       totalOutIn += 1
     }
 
-  def getAddressFromOutput(output: TransactionOutput): Hash =
-    Hash(try
+  def getAddressFromOutput(output: TransactionOutput): Option[Array[Byte]] =
+    try
     {
-      output.getScriptPubKey.getToAddress(params).getHash160
+      Some(output.getScriptPubKey.getToAddress(params).getHash160)
     } 
     catch 
     {
@@ -194,12 +189,18 @@ class BlocksReader(args:List[String]){
             import Utils._
             val pubkey = Hash(pubkeystring).array.toArray
             val address = new Address(params, sha256hash160(pubkey))
-            address.getHash160
+            Some(address.getHash160)
           } else { // special case because bitcoinJ doesn't support pay-to-IP scripts
-            Array.fill(20)(0.toByte)
+            None
           }
         }
-    })
+        catch {
+          case e: ScriptException =>
+            println("bad transaction output: " + output)
+            None
+        }
+      
+    }
 
   def includeTransaction(trans: Transaction) =
 	{
@@ -212,39 +213,34 @@ class BlocksReader(args:List[String]){
     }
 
     var index = 0
-    val addressBuffer = scala.collection.mutable.ArrayBuffer.empty[Hash]
-    val valueBuffer = collection.mutable.ArrayBuffer.empty[Double]
+    var outputBuffer = immutable.HashMap[Int,(Hash,Double)]()
 
     for (output <- trans.getOutputs)
     {
-      val address: Hash =
-        try { getAddressFromOutput(output: TransactionOutput) }
-        catch {
-          case e: ScriptException =>
-            println("bad transaction: " + transactionHash)
-            Hash(Array.fill(20)(1.toByte))
-        }
-
-      addressBuffer += address
+      val addressOption: Option[Array[Byte]] = getAddressFromOutput(output: TransactionOutput) 
+      val value = output.getValue.doubleValue
+      
+      for (address <- addressOption)
+      {
       val value = output.getValue.doubleValue
 
       if (outOfOrderInputMap.contains(transactionHash, index))
       {
         val inputTxHash = outOfOrderInputMap(transactionHash, index)
         insertInsertIntoList(
-            (inputTxHash.toSomeArray, transactionHash.toSomeArray, address.toSomeArray, Some(index), Some(value)))
+            (inputTxHash.toSomeArray, transactionHash.toSomeArray, addressOption, Some(index), Some(value)))
         outOfOrderInputMap -= (transactionHash -> index)
-        valueBuffer += 0
       }
       else
-        valueBuffer += value
+        outputBuffer += (index -> (Hash(address), value))
+      }
 
       totalOutIn += 1
       index += 1
     }
 
-    if (!valueBuffer.forall(_ == 0))
-      outputMap += (transactionHash -> (addressBuffer.toArray, valueBuffer.toArray))
+    if (!outputBuffer.isEmpty)
+      outputMap += (transactionHash -> outputBuffer)
   }
   
   def readBlocksfromFile: Long =

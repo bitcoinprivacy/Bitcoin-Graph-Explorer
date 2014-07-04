@@ -44,7 +44,7 @@ class AddressesClosurer(args:List[String])
       val spentInTx = Hash(sTx)
       val addr = Hash(ad)
 
-      assert(ad != emptyArray,"=!= doesn't work")
+      assert(addr != Hash(emptyArray),"=!= doesn't work")
       val list:Array[Hash] = mapAddresses.getOrElse(spentInTx, Array()  )
       mapAddresses.update(spentInTx, list :+ addr )
     }
