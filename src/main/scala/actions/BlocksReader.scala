@@ -312,7 +312,7 @@ class BlocksReader(args:List[String]){
     println("=============================================")
     println("     Creating indexes ...")
     var clockIndex = System.currentTimeMillis
-    //(Q.u + "create index if not exists address on movements (address)" + ";").execute
+    (Q.u + "create index if not exists address on movements (address)" + ";").execute
     (Q.u + "create unique index if not exists transaction_hash_i on movements (transaction_hash, `index`)" + ";").execute
     (Q.u + "create index if not exists spent_in_transaction_hash on movements (spent_in_transaction_hash)" + ";").execute
     println("     Indices created")

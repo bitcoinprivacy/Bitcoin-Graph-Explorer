@@ -205,8 +205,8 @@ class AddressesClosurer(args:List[String])
 
       var clockIndex = System.currentTimeMillis
       println("Creating indexes ...")
-      //(Q.u + "create index if not exists representant on addresses (representant)").execute
-      //(Q.u + "create unique index if not exists hash on addresses (hash)").execute
+      (Q.u + "create index if not exists representant on addresses (representant)").execute
+      (Q.u + "create unique index if not exists hash on addresses (hash)").execute
       println("=============================================")
       println("")
       clockIndex = System.currentTimeMillis - clockIndex
