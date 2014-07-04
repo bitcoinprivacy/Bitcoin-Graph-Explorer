@@ -176,9 +176,9 @@ class BlocksReader(args:List[String]){
     }
 
   def getAddressFromOutput(output: TransactionOutput): Hash =
-    try
+    Hash(try
     {
-      Hash(output.getScriptPubKey.getToAddress(params).toString)
+      output.getScriptPubKey.getToAddress(params).getHash160
     } 
     catch 
     {
@@ -194,12 +194,12 @@ class BlocksReader(args:List[String]){
             import Utils._
             val pubkey = Hash(pubkeystring).array.toArray
             val address = new Address(params, sha256hash160(pubkey))
-            Hash(address.toString)
+            address.getHash160
           } else { // special case because bitcoinJ doesn't support pay-to-IP scripts
-            Hash(Array.fill(20)(0.toByte))
+            Array.fill(20)(0.toByte)
           }
         }
-    }
+    })
 
   def includeTransaction(trans: Transaction) =
 	{
