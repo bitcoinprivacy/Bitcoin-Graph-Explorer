@@ -86,7 +86,6 @@ class BlocksReader(args:List[String]){
       outOfOrderInputMap += ((Hash(hash),index) -> Hash(spentTx))
     }
     
-    query.delete
   }  
     
   def initializeDB: Unit =
@@ -158,23 +157,28 @@ class BlocksReader(args:List[String]){
     {
       val outpointTransactionHash = Hash(input.getOutpoint.getHash.getBytes)
       val outpointIndex = input.getOutpoint.getIndex.toInt
-
-      if (outputMap.contains(outpointTransactionHash) && outputMap(outpointTransactionHash).contains(outpointIndex))
-      { 
-    	val outputTxMap = outputMap(outpointTransactionHash)
+      
+      if (outputMap.contains(outpointTransactionHash))
+      	{   	
+        val outputTxMap = outputMap(outpointTransactionHash)
+        if (outputTxMap.contains(outpointIndex))
+        { 
         insertInsertIntoList(
-            (transactionHash.toSomeArray, outpointTransactionHash.toSomeArray, outputTxMap(outpointIndex)._1.toSomeArray, Some(outpointIndex), Some(outputTxMap(outpointIndex)._2)))
+        	(transactionHash.toSomeArray, outpointTransactionHash.toSomeArray, outputTxMap(outpointIndex)._1.toSomeArray, Some(outpointIndex), Some(outputTxMap(outpointIndex)._2)))
         val updatedTxMap = outputTxMap - outpointIndex
         if (updatedTxMap.isEmpty) 
           outputMap -= outpointTransactionHash
         else
           outputMap += (outpointTransactionHash -> updatedTxMap)
-      } 
+      }} 
       else
+      {
         outOfOrderInputMap += ((outpointTransactionHash, outpointIndex) -> transactionHash)
+      }
 
       totalOutIn += 1
     }
+      
 
   def getAddressFromOutput(output: TransactionOutput): Option[Array[Byte]] =
     try
@@ -225,10 +229,6 @@ class BlocksReader(args:List[String]){
     {
       val addressOption: Option[Array[Byte]] = getAddressFromOutput(output: TransactionOutput) 
       val value = output.getValue.doubleValue
-      
-      for (address <- addressOption)
-      {
-      val value = output.getValue.doubleValue
 
       if (outOfOrderInputMap.contains(transactionHash, index))
       {
@@ -238,9 +238,13 @@ class BlocksReader(args:List[String]){
         outOfOrderInputMap -= (transactionHash -> index)
       }
       else
-        outputBuffer += (index -> (Hash(address), value))
-      }
-
+      { val address = addressOption match {
+          case Some(address) => Hash(address) 
+          case _ => Hash.zero(0) 
+          }
+        outputBuffer += (index -> (address, value))
+        }
+      
       totalOutIn += 1
       index += 1
     }

@@ -35,14 +35,3 @@ class Outputs(tag:Tag) extends Table[(Option[Array[Byte]], Option[Array[Byte]], 
 
   def * = (spent_in_transaction_hash,transaction_hash,address,index,value)
 }
-
-class UnmatchedOutputs(tag:Tag) extends Table[(Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Double])](tag, "movements") {
-
-  def transaction_hash = column[Option[Array[Byte]]]("transaction_hash", O.Nullable)
-  def address = column[Option[Array[Byte]]]("address", O.Nullable)
-  def index = column[Option[Int]]("index", O.Nullable)
-  def value = column[Option[Double]]("value", O.Nullable)
-  def spent_in_transaction_hash = column[Option[Array[Byte]]]("spent_in_transaction_hash", O.Nullable)
-
-  def * = (spent_in_transaction_hash,transaction_hash,address,index,value)
-}

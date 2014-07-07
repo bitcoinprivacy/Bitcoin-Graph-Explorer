@@ -29,7 +29,7 @@ class AddressesClosurer(args:List[String])
     // val query = "select spent_in_transaction_hash as a, address as b from movements where a " +
     //  "NOT NULL and b NOT NULL limit %s, %s;" format (firstElement, elements)
     // val q2 = Q.queryNA[(Array[Byte],Array[Byte])](query)
-    val emptyArray = Hash.zero(20).array.toArray
+    val emptyArray = Hash.zero(0).array.toArray
     
     val queried = for {
       q <- outputs.filter(q => q.spent_in_transaction_hash.isNotNull && q.address.isNotNull).
