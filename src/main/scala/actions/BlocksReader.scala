@@ -46,18 +46,19 @@ class BlocksReader(args:List[String]){
 
   def populateOutputMap = 
   {
-    val query = " select transaction_hash, `index`, address, `value` from " +
-        "movements where spent_in_transaction_hash IS NULL; "
+    val query = outputs.filter(_.spent_in_transaction_hash.isNull)
+    val q2 = query.map(q => (q.transaction_hash,q.index,q.address,q.value))
    
     println("Reading utxo Set")
-    implicit val GetByteArr = GetResult(r => r.nextBytes)
-    val q2 = Q.queryNA[(Array[Byte],Int,Array[Byte],Double)](query)
-
-    for (quadruple <- q2) 
+   
+    for {row <-q2
+      	hashArray <- row._1
+      	index <- row._2
+      	addressArray <- row._3
+      	value <- row._4} 
     {   
-        val (hashArray,index,addressArray,value) = quadruple
-        val hash = Hash(hashArray)
         val address = Hash(addressArray)
+        val hash = Hash(hashArray)
         
     	val oldMap = outputMap.getOrElse(hash,immutable.HashMap())
     	  
@@ -65,21 +66,27 @@ class BlocksReader(args:List[String]){
     	   
     	outputMap += (hash -> newMap)
     }
+    
+    query.delete
+    
   }  
     
   def populateOOOInputMap =
   {
-    val query = " select spent_in_transaction_hash, transaction_hash, `index` from " +
-        " movements where address == " + Hash.zero(1).toString
+    val query = outputs.filter(_.address.isNull)
+    val q2 = query.map(q => (q.spent_in_transaction_hash,q.transaction_hash,q.index))
+   
     println("Reading Out-Of-Order Input Set")
-    implicit val GetByteArr = GetResult(r => r.nextBytes)
-    val q2 = Q.queryNA[(Array[Byte],Array[Byte],Int)](query)
-    
-    for (triple <- q2)
+     
+    for {row <- q2
+      	spentTx <- row._1
+      	hash <- row._2
+      	index <- row._3}
     {
-      val (spentTx,hash,index) = triple
       outOfOrderInputMap += ((Hash(hash),index) -> Hash(spentTx))
-    }  
+    }
+    
+    query.delete
   }  
     
   def initializeDB: Unit =
@@ -131,20 +138,19 @@ class BlocksReader(args:List[String]){
   }
 
   def wrapUpAndReturnTimeTaken(startTime: Long): Long =  	
-  {
+  {        
     for ((transactionHash, indexMap) <- outputMap)
       {
       for ((index, (address, value)) <- indexMap)
-    	  insertInsertIntoList((None, transactionHash.toSomeArray, address.toSomeArray, Some(index), Some(value)))       
+    	  insertInsertIntoList (None, transactionHash.toSomeArray, address.toSomeArray, Some(index), Some(value))       
       outputMap -= transactionHash
       }
     
-   for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
-      insertInsertIntoList((transactionHash.toSomeArray, outpointTransactionHash.toSomeArray, None, Some(outpointIndex), None))
-    
- 	
-    saveDataToDB     
+    for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
+      insertInsertIntoList (transactionHash.toSomeArray, outpointTransactionHash.toSomeArray, None, Some(outpointIndex), None)        
 
+   saveDataToDB
+    
     return System.currentTimeMillis - startTime  
   }
 
@@ -296,7 +302,7 @@ class BlocksReader(args:List[String]){
   transactionsDBSession
   {
     if (args.length > 1 && args(1) == "init" )  initializeDB
-    else blockCount = blocks.size.asInstanceOf[Int]
+    else blockCount = blocks.size.run
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx1+";").list.head == 1)
       duplicatedTx1Exists = true
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx2+";").list.head == 1)
