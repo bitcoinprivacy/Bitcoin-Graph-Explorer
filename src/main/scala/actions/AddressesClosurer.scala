@@ -32,7 +32,7 @@ class AddressesClosurer(args:List[String])
     val emptyArray = Hash.zero(0).array.toArray
     
     val queried = for {
-      q <- outputs.filter(q => q.spent_in_transaction_hash.isNotNull && q.address.isNotNull).
+      q <- outputs.filter(q => q.spent_in_transaction_hash.isDefined && q.address.isDefined).
       				filter(_.spent_in_transaction_hash =!= emptyArray).
       				drop(firstElement).take(elements)          				
     } yield (q.spent_in_transaction_hash,q.address)

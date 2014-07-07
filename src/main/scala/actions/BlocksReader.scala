@@ -46,7 +46,7 @@ class BlocksReader(args:List[String]){
 
   def populateOutputMap = 
   {
-    val query = outputs.filter(_.spent_in_transaction_hash.isNull)
+    val query = outputs.filter(_.spent_in_transaction_hash.isEmpty)
     val q2 = query.map(q => (q.transaction_hash,q.index,q.address,q.value))
    
     println("Reading utxo Set")
@@ -73,7 +73,7 @@ class BlocksReader(args:List[String]){
     
   def populateOOOInputMap =
   {
-    val query = outputs.filter(_.address.isNull)
+    val query = outputs.filter(_.address.isEmpty)
     val q2 = query.map(q => (q.spent_in_transaction_hash,q.transaction_hash,q.index))
    
     println("Reading Out-Of-Order Input Set")
@@ -274,7 +274,7 @@ class BlocksReader(args:List[String]){
     for
     {
       block <- asScalaIterator(loader)
-      val blockHash = Hash(block.getHash.getBytes)
+      blockHash = Hash(block.getHash.getBytes)
       if (!savedBlocksSet.contains(blockHash) && longestChain.contains(blockHash))
     }
     {
