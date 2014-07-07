@@ -42,51 +42,6 @@ class BlocksReader(args:List[String]){
   
   var nrBlocksToSave = if (args.length > 0) args(0).toInt else 1000
   if (args.length > 1 && args(1) == "init" )   new File(transactionsDatabaseFile).delete
-
-
-  def populateOutputMap = 
-  {
-    val query = outputs.filter(_.spent_in_transaction_hash.isEmpty)
-    val q2 = query.map(q => (q.transaction_hash,q.index,q.address,q.value))
-   
-    println("Reading utxo Set")
-   
-    for {row <-q2
-      	hashArray <- row._1
-      	index <- row._2
-      	addressArray <- row._3
-      	value <- row._4} 
-    {   
-        val address = Hash(addressArray)
-        val hash = Hash(hashArray)
-        
-    	val oldMap = outputMap.getOrElse(hash,immutable.HashMap())
-    	  
-    	val newMap = oldMap + (index -> (address,value))
-    	   
-    	outputMap += (hash -> newMap)
-    }
-    
-    query.delete
-    
-  }  
-    
-  def populateOOOInputMap =
-  {
-    val query = outputs.filter(_.address.isEmpty)
-    val q2 = query.map(q => (q.spent_in_transaction_hash,q.transaction_hash,q.index))
-   
-    println("Reading Out-Of-Order Input Set")
-     
-    for {row <- q2
-      	spentTx <- row._1
-      	hash <- row._2
-      	index <- row._3}
-    {
-      outOfOrderInputMap += ((Hash(hash),index) -> Hash(spentTx))
-    }
-    
-  }  
     
   def initializeDB: Unit =
   {
@@ -263,9 +218,6 @@ class BlocksReader(args:List[String]){
     val startTime = System.currentTimeMillis
     println("Reading binaries")
 
-    populateOOOInputMap
-    populateOutputMap
-
     println("Saving blocks from %s to %s" format (blockCount, nrBlocksToSave))
     println("""=============================================
        Reading blocks ..."""
@@ -305,8 +257,7 @@ class BlocksReader(args:List[String]){
 
   transactionsDBSession
   {
-    if (args.length > 1 && args(1) == "init" )  initializeDB
-    else blockCount = blocks.size.run
+    initializeDB
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx1+";").list.head == 1)
       duplicatedTx1Exists = true
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx2+";").list.head == 1)
