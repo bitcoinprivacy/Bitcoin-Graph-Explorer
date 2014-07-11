@@ -1,7 +1,8 @@
 #!/bin/bash
-blocks=$(bitcoind -rpcuser=user -rpcpassword=pass getblockcount)
+fromblocks=$(cat blockchain/blocklist.txt | wc -l) 
+blocks=$(bitcoind getblockcount)
 
-for i in $(seq 0 $blocks)
+for i in $(seq $fromblocks $blocks)
 do
-   bitcoind -rpcuser=user -rpcpassword=pass getblockhash $i
+    bitcoind getblockhash $i >> blockchain/blocklist.txt
 done

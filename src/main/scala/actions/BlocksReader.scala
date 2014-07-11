@@ -161,7 +161,7 @@ class BlocksReader(args:List[String]){
         }
         catch {
           case e: ScriptException =>
-            println("bad transaction output: " + output)
+            println("bad transaction output: " + output.getParentTransaction.getHash)
             None
         }
       
