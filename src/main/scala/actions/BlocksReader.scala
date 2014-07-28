@@ -43,37 +43,7 @@ class BlocksReader(args:List[String]){
 
   var nrBlocksToSave = if (args.length > 0) args(0).toInt else 1000
   if (args.length > 1 && args(1) == "init" )   new File(transactionsDatabaseFile).delete
-<<<<<<< HEAD
 
-
-
-  def populateOutputMap = 
-  {
-    val query = outputs.filter(_.spent_in_transaction_hash.isNull)
-    val q2 = query.map(q => (q.transaction_hash,q.index,q.address,q.value))
-   
-    println("Reading utxo Set")
-   
-    for {row <-q2
-      	hashArray <- row._1
-      	index <- row._2
-      	addressArray <- row._3
-      	value <- row._4} 
-    {   
-        val address = Hash(addressArray)
-        val hash = Hash(hashArray)
-        
-    	val oldMap = outputMap.getOrElse(hash,immutable.HashMap())
-    	  
-    	val newMap = oldMap + (index -> (address,value))
-    	   
-    	outputMap += (hash -> newMap)
-    }
-    
-    query.delete
-    
-  }  
-    
   def populateOOOInputMap =
   {
     val query = outputs.filter(_.address.isNull)
@@ -90,9 +60,7 @@ class BlocksReader(args:List[String]){
     }
     
   }  
-=======
->>>>>>> fb3347cc5cbf1a128b98789207d64c16188742a5
-    
+
   def initializeDB: Unit =
   {
     outputs.ddl.create
@@ -281,17 +249,11 @@ class BlocksReader(args:List[String]){
     val startTime = System.currentTimeMillis
     println("Reading binaries")
 
-<<<<<<< HEAD
-    // For resume we dont save outputs anymore, instead of it we just check for each input, if there
-    // exists an output in the DB.
-    // => delete me: populateOutputMap
-
     // Inputs are just a few, so we will not have problems reading all at once.
-    populateOOOInputMap
+    if (resuming)
+      populateOOOInputMap
 
 
-=======
->>>>>>> fb3347cc5cbf1a128b98789207d64c16188742a5
     println("Saving blocks from %s to %s" format (blockCount, nrBlocksToSave))
     println("""=============================================
        Reading blocks ..."""
