@@ -61,6 +61,14 @@ package object libs
     Q.queryNA[Int]("""select count(*) from movements""").list.head
   }
 
+  def existsOutput(transactionHash: Hash, index: Int): Boolean =
+  {
+    Q.queryNA[Int]("""
+        select count(*) from movements where
+        transaction_hash = """ + transactionHash + """ and
+        `index` = """ + index).list.head > 0
+  }
+
   def getLongestBlockChainHashSet: Set[Hash] =
   {
     val lines = scala.io.Source.fromFile("blockchain/blocklist.txt").getLines

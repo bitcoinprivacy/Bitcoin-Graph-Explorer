@@ -14,7 +14,6 @@ object Explorer extends App{
     case "all"::rest                  =>
       val populater = new BlocksReader(if (rest.isEmpty) List("100000", "init") else rest)
       new AddressesClosurer(List(populater.start.toString, populater.end.toString))
-      // new AddressesBalancer(rest) isn't really needed and just bloats database
     case _=> println
     ("""
       Available commands:

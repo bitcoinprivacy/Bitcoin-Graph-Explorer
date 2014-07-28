@@ -39,9 +39,11 @@ class BlocksReader(args:List[String]){
   val duplicatedTx2 = Hash("e3bf3d07d4b0375638d5f1db5255fe07ba2c4cb067cd81b84ee974b6585fb468")
   var duplicatedTx1Exists = false
   var duplicatedTx2Exists = false				 
-  
+  var resuming = false;
+
   var nrBlocksToSave = if (args.length > 0) args(0).toInt else 1000
   if (args.length > 1 && args(1) == "init" )   new File(transactionsDatabaseFile).delete
+
 
 
   def populateOutputMap = 
@@ -154,30 +156,42 @@ class BlocksReader(args:List[String]){
   }
 
   def includeInput(input: TransactionInput, transactionHash: Hash) =
+  {
+    val outpointTransactionHash = Hash(input.getOutpoint.getHash.getBytes)
+    val outpointIndex = input.getOutpoint.getIndex.toInt
+
+    if (resuming && existsOutput(outpointTransactionHash, outpointIndex))
     {
-      val outpointTransactionHash = Hash(input.getOutpoint.getHash.getBytes)
-      val outpointIndex = input.getOutpoint.getIndex.toInt
-      
-      if (outputMap.contains(outpointTransactionHash))
-      	{   	
-        val outputTxMap = outputMap(outpointTransactionHash)
-        if (outputTxMap.contains(outpointIndex))
-        { 
+      // Here we should update that transaction
+      val q = for { o <- outputs if o.transaction_hash === input.getOutpoint.getHash.getBytes && o.index === outpointIndex }
+        yield o.spent_in_transaction_hash
+      q.update(transactionHash.toSomeArray)
+
+      val statement = q.updateStatement
+      val invoker = q.updateInvoker
+    }
+    else if (outputMap.contains(outpointTransactionHash))
+    {
+      val outputTxMap = outputMap(outpointTransactionHash)
+      if (outputTxMap.contains(outpointIndex))
+      {
         insertInsertIntoList(
-        	(transactionHash.toSomeArray, outpointTransactionHash.toSomeArray, outputTxMap(outpointIndex)._1.toSomeArray, Some(outpointIndex), Some(outputTxMap(outpointIndex)._2)))
+        (transactionHash.toSomeArray, outpointTransactionHash.toSomeArray, outputTxMap(outpointIndex)._1.toSomeArray, Some(outpointIndex), Some(outputTxMap(outpointIndex)._2)))
         val updatedTxMap = outputTxMap - outpointIndex
-        if (updatedTxMap.isEmpty) 
+
+        if (updatedTxMap.isEmpty)
           outputMap -= outpointTransactionHash
         else
           outputMap += (outpointTransactionHash -> updatedTxMap)
-      }} 
-      else
-      {
-        outOfOrderInputMap += ((outpointTransactionHash, outpointIndex) -> transactionHash)
       }
-
-      totalOutIn += 1
     }
+    else
+    {
+      outOfOrderInputMap += ((outpointTransactionHash, outpointIndex) -> transactionHash)
+    }
+
+    totalOutIn += 1
+  }
       
 
   def getAddressFromOutput(output: TransactionOutput): Option[Array[Byte]] =
@@ -230,6 +244,7 @@ class BlocksReader(args:List[String]){
       val addressOption: Option[Array[Byte]] = getAddressFromOutput(output: TransactionOutput) 
       val value = output.getValue.doubleValue
 
+
       if (outOfOrderInputMap.contains(transactionHash, index))
       {
         val inputTxHash = outOfOrderInputMap(transactionHash, index)
@@ -263,8 +278,13 @@ class BlocksReader(args:List[String]){
     val startTime = System.currentTimeMillis
     println("Reading binaries")
 
+    // For resume we dont save outputs anymore, instead of it we just check for each input, if there
+    // exists an output in the DB.
+    // => delete me: populateOutputMap
+
+    // Inputs are just a few, so we will not have problems reading all at once.
     populateOOOInputMap
-    populateOutputMap
+
 
     println("Saving blocks from %s to %s" format (blockCount, nrBlocksToSave))
     println("""=============================================
@@ -312,8 +332,10 @@ class BlocksReader(args:List[String]){
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx2+";").list.head == 1)
       duplicatedTx2Exists = true
     start = countInputs
+    resuming = (start > 0);
     val totalTime = readBlocksfromFile
     end = countInputs
+
     println("     Blocks processed!")
     println("=============================================")
     println("     Creating indexes ...")
