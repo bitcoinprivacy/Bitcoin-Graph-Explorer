@@ -42,7 +42,13 @@ class BlocksReader(args:List[String]){
   var resuming = false;
 
   var nrBlocksToSave = if (args.length > 0) args(0).toInt else 1000
-  if (args.length > 1 && args(1) == "init" )   new File(transactionsDatabaseFile).delete
+  if (args.length > 1 && args(1) == "init" )
+  {
+    resuming = false
+    new File(transactionsDatabaseFile).delete
+  }
+  else
+    resuming = true
 
   def populateOOOInputMap =
   {
@@ -293,13 +299,13 @@ class BlocksReader(args:List[String]){
 
   transactionsDBSession
   {
-    initializeDB
+    if (!resuming) initializeDB
+    start = countInputs
+
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx1+";").list.head == 1)
       duplicatedTx1Exists = true
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx2+";").list.head == 1)
       duplicatedTx2Exists = true
-    start = countInputs
-    resuming = (start > 0);
     val totalTime = readBlocksfromFile
     end = countInputs
 
