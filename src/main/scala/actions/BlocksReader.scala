@@ -43,6 +43,7 @@ class BlocksReader(args:List[String]){
 
   var nrBlocksToSave = if (args.length > 0) args(0).toInt else 1000
   if (args.length > 1 && args(1) == "init" )   new File(transactionsDatabaseFile).delete
+<<<<<<< HEAD
 
 
 
@@ -89,6 +90,8 @@ class BlocksReader(args:List[String]){
     }
     
   }  
+=======
+>>>>>>> fb3347cc5cbf1a128b98789207d64c16188742a5
     
   def initializeDB: Unit =
   {
@@ -220,7 +223,7 @@ class BlocksReader(args:List[String]){
         }
         catch {
           case e: ScriptException =>
-            println("bad transaction output: " + output)
+            println("bad transaction output: " + output.getParentTransaction.getHash)
             None
         }
       
@@ -278,6 +281,7 @@ class BlocksReader(args:List[String]){
     val startTime = System.currentTimeMillis
     println("Reading binaries")
 
+<<<<<<< HEAD
     // For resume we dont save outputs anymore, instead of it we just check for each input, if there
     // exists an output in the DB.
     // => delete me: populateOutputMap
@@ -286,6 +290,8 @@ class BlocksReader(args:List[String]){
     populateOOOInputMap
 
 
+=======
+>>>>>>> fb3347cc5cbf1a128b98789207d64c16188742a5
     println("Saving blocks from %s to %s" format (blockCount, nrBlocksToSave))
     println("""=============================================
        Reading blocks ..."""
@@ -294,7 +300,7 @@ class BlocksReader(args:List[String]){
     for
     {
       block <- asScalaIterator(loader)
-      val blockHash = Hash(block.getHash.getBytes)
+      blockHash = Hash(block.getHash.getBytes)
       if (!savedBlocksSet.contains(blockHash) && longestChain.contains(blockHash))
     }
     {
@@ -325,8 +331,7 @@ class BlocksReader(args:List[String]){
 
   transactionsDBSession
   {
-    if (args.length > 1 && args(1) == "init" )  initializeDB
-    else blockCount = blocks.size.run
+    initializeDB
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx1+";").list.head == 1)
       duplicatedTx1Exists = true
     if (Q.queryNA[Int]("select count(*) from movements where transaction_hash = "+duplicatedTx2+";").list.head == 1)
