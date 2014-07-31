@@ -9,7 +9,7 @@ class Hash (val array: mutable.WrappedArray[Byte]) extends AnyVal
     // fast toString/toHex methods adapted from xsbt/Mark Harrah
     // see license terms for these methods below
   
-	override def toString: String = 
+	override def toString: String =
 	{
 		val buffer = new StringBuilder(array.length * 2)
 		for(i <- 0 until array.length)
@@ -29,6 +29,8 @@ class Hash (val array: mutable.WrappedArray[Byte]) extends AnyVal
 		else
 			('a'.asInstanceOf[Int] + (b-10)).asInstanceOf[Char]
 	}
+	
+	def toSomeArray = Some(array.toArray)
 }
 
 object Hash   

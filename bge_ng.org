@@ -1,0 +1,125 @@
+
+* Bitcoin Graph Explorer Next Generation
+ 
+Bitcoin Graph Explorer (BGE) is a set of functions that allows for parsing
+the blockchain, saving important information about it in databases,
+and extracting interesting data from these, e.g. for display on a
+website like [[http://bitcoinprivacy.net]].
+
+So far we have completed version 1.0. The aim of this document is to
+rewrite BGE in literate programming style using org-mode, while
+uncluttering the design. This redesign takes its inspiration from [[https://www.google.de/url?sa%3Dt&rct%3Dj&q%3D&esrc%3Ds&source%3Dweb&cd%3D1&cad%3Drja&uact%3D8&ved%3D0CCcQFjAA&url%3Dhttp%253A%252F%252Fwww.cs.kent.ac.uk%252Fpeople%252Fstaff%252Fdat%252Fmiranda%252Fwhyfp90.pdf&ei%3D2L3YU63kFo707AayhICwCw&usg%3DAFQjCNEBbTAPkPRho_ATUFuAP0hTNlOQlA&sig2%3DB4u_euYZog36gRliBqrppw&bvm%3Dbv.71778758,d.ZGU][Why
+functional programming matters]] by John Hughes. That is, I intend to
+replace loops and global variables by a purely functional lazy style
+that only has side effects in the final function which writes to a
+database. This design should improve code reuse, encourage modularity,
+and hopefully lead to shorter and more readable code. Because we are
+writing in scala, modules should be implemented by traits which I plan
+to use in a style similar to the cake pattern. That is, components
+that are expected to have multiple implementations should be
+configurable in an "end of the world" object. At the same time, we try
+to adhere to the YAGNI principle, so not everything needs to be
+generalized.
+
+** The Block Reader (populate) feature
+
+This is the part of BGE that reads the blockchain data and stores it
+in a database. We have a working implementation of the batch file
+reader already in [[file:src/main/scala/actions/BlocksReader.scala][BlocksReader.scala]]. Thus, we start by implementing
+an update function. This needs to check for new blocks from bitcoind
+and import these into the database. There should be
+enough time to do this by simply updating the DB, since at the moment
+there are only on the order of 1000 transactions (Tx) per block/10
+minutes. Therefore, we don't need to keep the unspent transaction
+outputs (utxo) in memory, which should allow us to run the updater on
+a fairly basic machine. 
+
+*** BlockSource
+
+Because we want to escape loops and make it possible to swap out Block
+sources, we use a stream (a lazy list) of Blocks as an abstraction: 
+
+#+BEGIN_SRC scala :tangle src/main/scala/BlockSource.scala
+  import com.google.bitcoin.core.Block
+
+  trait BlockSource {
+          def blockStream: Stream[Block]
+  }
+#+END_SRC  
+
+**** Reading from a file
+
+Our first implementation reads raw bitcoind files
+using some bitcoinj functions that parse these files and yield an
+iterator of Blocks. 
+
+#+BEGIN_SRC scala :tangle src/main/scala/BitcoinDRawBlockFile
+  import com.google.bitcoin.params.MainNetParams
+  import com.google.bitcoin.utils.BlockFileLoader
+  import scala.collection.convert.WrapAsScala._
+
+  trait BitcoinDRawBlockFile extends BlockSource {
+          private val params = MainNetParams.get
+          private val loader = new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)
+          
+          val blockStream = asScalaIterator(loader).toStream   
+  }
+#+END_SRC  
+
+**** Asking for Blocks from bitcoind via json-rpc
+
+- uses our own json-rpc implementation
+- can be delayed, as reading from the raw files of a running bitcoind
+  should work just the same, only slower
+
+*** Filtering for the longest current blockchain
+    
+We need to provide a set of Hashes that only includes the valid blocks
+in the current longest blockchain. Note that we could also include
+orphaned blocks for the closure computation. However, this prevents us
+from simply matching inputs/outputs that arrive with outputs/inputs in
+our DB/memory. So for the moment we decide that we only save the
+longest blockchain. Also, our implementation is simplified by assuming
+that blocks once saved will never be invalidated. This assumption is
+true with high probability when we never include, say, the latest 5
+blocks. So the set we need to get includes the longest blockchain
+minus the latest 5 blocks. 
+
+It could be implemented in a number of ways. For now, there is simply
+this method in libs/package.scala, which reads a text file.
+
+#+BEGIN_SRC scala
+ def getLongestBlockChainHashSet: Set[Hash] =
+  {
+    val lines = scala.io.Source.fromFile("blockchain/blocklist.txt").getLines
+    val hashes = for (line <- lines) yield Hash(line)
+
+    hashes.toSet
+  }
+#+END_SRC
+
+This might be factored out in a trait and reimplemented as a DB. It
+might also be implemented not as a set but a predicate, since we only
+need to test for inclusion.
+
+*** Filtering against the blocks already in the DB
+
+This is now simply a query against the blocks DB. 
+TODO: Think about a nice design for the DB traits.
+
+*** the main "loop"
+
+#+BEGIN_SRC scala :tangle src/main/scala/SlowBlockReader.scala
+  import libs._ // for blocks db and longestChain
+
+  trait SlowBlockReader extends BlockSource 
+  { 
+    
+    
+  }
+
+    
+
+     
+
+#+END_SRC

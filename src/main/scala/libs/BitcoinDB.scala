@@ -10,28 +10,28 @@ package libs
 
 import scala.slick.driver.SQLiteDriver.simple._
 
-object Blocks extends Table[(String)]("blocks") {
+class Blocks(tag:Tag) extends Table[(Array[Byte])](tag, "blocks") {
 
-  def hash= column[String]("hash")
+  def hash= column[Array[Byte]]("hash")
   def * =  hash
 }
 
-object Addresses extends Table[(Array[Byte], Array[Byte], Double)]("addresses") {
+class Addresses(tag:Tag) extends Table[(Array[Byte], Array[Byte], Option[Double])](tag, "addresses") {
 
   def hash= column[Array[Byte]]("hash")
   def representant = column[Array[Byte]]("representant")
-  def balance= column[Double]("balance")
+  def balance= column[Option[Double]]("balance", O.Nullable)
 
-  def * = hash ~ representant ~ balance
+  def * = (hash,representant,balance)
 }
 
-object Outputs extends Table[(Array[Byte], Array[Byte], Array[Byte], Int, Double)]("movements") {
+class Outputs(tag:Tag) extends Table[(Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Double])](tag, "movements") {
 
-  def transaction_hash = column[Array[Byte]]("transaction_hash", O.Nullable)
-  def address = column[Array[Byte]]("address", O.Nullable)
-  def index = column[Int]("index", O.Nullable)
-  def value = column[Double]("value", O.Nullable)
-  def spent_in_transaction_hash = column[Array[Byte]]("spent_in_transaction_hash", O.Nullable)
+  def transaction_hash = column[Option[Array[Byte]]]("transaction_hash", O.Nullable)
+  def address = column[Option[Array[Byte]]]("address", O.Nullable)
+  def index = column[Option[Int]]("index", O.Nullable)
+  def value = column[Option[Double]]("value", O.Nullable)
+  def spent_in_transaction_hash = column[Option[Array[Byte]]]("spent_in_transaction_hash", O.Nullable)
 
-  def * = spent_in_transaction_hash ~ transaction_hash ~ address ~ index ~ value
+  def * = (spent_in_transaction_hash,transaction_hash,address,index,value)
 }
