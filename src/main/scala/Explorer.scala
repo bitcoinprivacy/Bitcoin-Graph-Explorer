@@ -10,6 +10,7 @@ import actions._
 object Explorer extends App{
   args.toList match{
     case "populate"::rest             => new BlocksReader(rest)
+    case "resume"::rest               => object ResumeBlockReader extends SlowBlockReader with BitcoinDRawBlockFile
     case "closure"::rest              => new AddressesClosurer(rest)
     case "all"::rest                  =>
       val populater = new BlocksReader(if (rest.isEmpty) List("100000", "init") else rest)

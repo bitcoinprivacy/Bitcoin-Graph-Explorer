@@ -41,7 +41,7 @@ sources, we use a stream (a lazy list) of Blocks as an abstraction:
 
 #+BEGIN_SRC scala :tangle src/main/scala/BlockSource.scala
   import com.google.bitcoin.core.Block
-
+  
   trait BlockSource {
           def blockStream: Stream[Block]
   }
@@ -109,6 +109,9 @@ TODO: Think about a nice design for the DB traits.
 
 *** the main "loop"
 
+We ignore the duplicate transactions, so we have to ensure that they
+are already processed. 200k blocks with the FastBlockReader should be
+good enough.
 #+BEGIN_SRC scala :tangle src/main/scala/SlowBlockReader.scala
   import libs._ // for blocks db and longestChain
 

@@ -1,10 +1,11 @@
 import com.google.bitcoin.params.MainNetParams
 import com.google.bitcoin.utils.BlockFileLoader
 import scala.collection.convert.WrapAsScala._
+import com.google.bitcoin.core.Block
 
 trait BitcoinDRawBlockFile extends BlockSource {
-	private val params = MainNetParams.get
-	private val loader = new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)
-	
-	val stream = asScalaIterator(loader).toStream	
+        private val params = MainNetParams.get
+        private val loader = new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)
+        
+        def blockStream: Stream[Block] = asScalaIterator(loader).toStream   
 }
