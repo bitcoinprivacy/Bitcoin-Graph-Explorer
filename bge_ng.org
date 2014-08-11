@@ -8,7 +8,7 @@ website like [[http://bitcoinprivacy.net]].
 
 So far we have completed version 1.0. The aim of this document is to
 rewrite BGE in literate programming style using org-mode, while
-uncluttering the design. This redesign takes its inspiration from [[https://www.google.de/url?sa%3Dt&rct%3Dj&q%3D&esrc%3Ds&source%3Dweb&cd%3D1&cad%3Drja&uact%3D8&ved%3D0CCcQFjAA&url%3Dhttp%253A%252F%252Fwww.cs.kent.ac.uk%252Fpeople%252Fstaff%252Fdat%252Fmiranda%252Fwhyfp90.pdf&ei%3D2L3YU63kFo707AayhICwCw&usg%3DAFQjCNEBbTAPkPRho_ATUFuAP0hTNlOQlA&sig2%3DB4u_euYZog36gRliBqrppw&bvm%3Dbv.71778758,d.ZGU][Why
+uncluttering the design. This redesign takes its inspiration from [[http://ipaper.googlecode.com/git-history/8070869c59470de474515000e3af74f8958b2161/John-Hughes/The%20Computer%20Journal-1989-Hughes-98-107.pdf][Why
 functional programming matters]] by John Hughes. That is, I intend to
 replace loops and global variables by a purely functional lazy style
 that only has side effects in the final function which writes to a
