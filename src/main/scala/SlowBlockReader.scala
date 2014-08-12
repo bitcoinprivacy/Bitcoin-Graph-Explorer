@@ -4,9 +4,10 @@ import scala.slick.driver.SQLiteDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import scala.collection.JavaConverters._
 
-trait SlowBlockReader extends BlockSource{
-
+trait SlowBlockReader {
   
+  def blockStream: Iterator[Block] // to be overridden by mixin
+
   transactionsDBSession {
 
     val longestChain = getLongestBlockChainHashSet
@@ -15,8 +16,6 @@ trait SlowBlockReader extends BlockSource{
     // TODO: is this really the easiest way of querying for the existance of a value?
     // TODO:  check why compiling the query fails:
     // val compiledBlockHashQuery = Compiled(blockHashQuery(_))
-    
-    
 
     def blockFilter(b: Block) =
       {
@@ -27,7 +26,7 @@ trait SlowBlockReader extends BlockSource{
       }
 
     lazy val filteredBlockStream =
-      blockStream filter blockFilter
+      blockStream withFilter blockFilter
     
     def transactionsInBlock(b: Block) = b.getTransactions.asScala.toStream
 
@@ -43,11 +42,11 @@ trait SlowBlockReader extends BlockSource{
 
     lazy val outputStream = transactionStream flatMap outputsInTransaction
       
-    System.out.println("HOLA");
+    System.out.println("HOLA")
 
-    for (i <- inputStream.take(50))   System.out.println(i.toString)
+    for (i <- filteredBlockStream)   System.out.println(i.toString)
     
-    for (o <- outputStream.take(50))  System.out.println(o.toString)
+    for (o <- outputStream take 50)  System.out.println(o.toString)
 
 
   }

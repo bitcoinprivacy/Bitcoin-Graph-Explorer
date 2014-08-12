@@ -7,5 +7,5 @@ trait BitcoinDRawBlockFile extends BlockSource {
         private val params = MainNetParams.get
         private val loader = new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)
         
-        def blockStream: Stream[Block] = asScalaIterator(loader).toStream   
+        override def blockStream: Iterator[Block] = asScalaIterator(loader)   
 }
