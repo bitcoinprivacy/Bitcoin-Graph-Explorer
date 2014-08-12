@@ -45,9 +45,11 @@ sources, we use a stream (a lazy list) of Blocks as an abstraction:
   trait BlockSource {
           def blockStream: Stream[Block]
   }
-#+END_SRC  
+#+END_SRC
 
-**** Reading from a file
+**** TODO BlockSource trait is unnecessary boilerplate, simply use abstract defs
+
+**** TODO Reading from a file
 
 Our first implementation reads raw bitcoind files
 using some bitcoinj functions that parse these files and yield an
