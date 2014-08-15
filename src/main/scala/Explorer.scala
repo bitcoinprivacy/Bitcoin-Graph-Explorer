@@ -10,18 +10,14 @@ import actions._
 object Explorer extends App{
   args.toList match{
     case "populate"::rest             => new BlocksReader(rest)
-    case "resume"::rest               => object ResumeBlockReader extends BitcoinDRawBlockFile with SlowBlockReader //needs to be in this order for linearization
+    case "resume"::rest               => object ResumeBlockReader extends BitcoinDRawFileBlockSource with SlowBlockReader //needs to be in this order for linearization
       ResumeBlockReader
     case "closure"::rest              => new AddressesClosurer(rest)
-    case "all"::rest                  =>
-      val populater = new BlocksReader(if (rest.isEmpty) List("100000", "init") else rest)
-      new AddressesClosurer(List(populater.start.toString, populater.end.toString))
     case _=> println
     ("""
       Available commands:
-      populate [number of blocks] [init]
+      populate [number of blocks]
       closure
-      all [number of blocks]
     """)
   }
 }

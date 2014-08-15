@@ -20,7 +20,7 @@ libraryDependencies ++= Seq(
   "org.xerial" % "sqlite-jdbc" % "3.7.15-M1",
      // "com.sagesex" %% "json-rpc-client" % "0.0.1",
    // "org.scala-lang" % "scala-actors" % "2.10.3",
-    "com.typesafe.slick" %% "slick" % "2.1.0-RC3",
+    "com.typesafe.slick" %% "slick" % "2.1.0",
   "com.typesafe" % "config" % "1.2.1",
       //"com.typesafe.play" %% "play" % "2.2.0"
       "org.scalacheck" %% "scalacheck" % "1.11.3" % "test",

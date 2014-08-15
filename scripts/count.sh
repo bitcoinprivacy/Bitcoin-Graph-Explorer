@@ -1,1 +1,1 @@
-bitcoind -rpcuser=user -rpcpassword=pass getblockcount
+bitcoind getblockcount

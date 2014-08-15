@@ -18,7 +18,7 @@ package object libs
   var populateTransactionSize = conf.getInt("populateTransactionSize")
   var balanceTransactionSize = conf.getInt("balanceTransactionSize")
 
-  val blocks = TableQuery[Blocks]
+  val blockDB = TableQuery[Blocks]
   val addresses = TableQuery[Addresses]
   val outputs = TableQuery[Outputs]
   
