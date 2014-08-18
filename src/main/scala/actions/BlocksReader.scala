@@ -47,7 +47,7 @@ class BlocksReader(args:List[String]){
 
   def initializeDB: Unit =
   {
-    outputs.ddl.create
+    movements.ddl.create
     blockDB.ddl.create
     addresses.ddl.create
   }
@@ -65,7 +65,7 @@ class BlocksReader(args:List[String]){
     println("     Saving blocks ..."                             )
 
     blockDB.insertAll(vectorBlocks: _*)
-    outputs.insertAll(vectorMovements: _*)
+    movements.insertAll(vectorMovements: _*)
 
     vectorMovements = Vector()
     vectorBlocks = Vector()

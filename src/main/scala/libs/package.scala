@@ -20,7 +20,7 @@ package object libs
 
   val blockDB = TableQuery[Blocks]
   val addresses = TableQuery[Addresses]
-  val outputs = TableQuery[Outputs]
+  val movements = TableQuery[Movements]
   
   def transactionsDBSession(f: => Unit): Unit =
   {
