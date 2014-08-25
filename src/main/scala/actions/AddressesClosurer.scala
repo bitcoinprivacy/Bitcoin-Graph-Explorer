@@ -7,19 +7,20 @@ package actions
  * Time: 1:03 PM
  * To change this template use File | Settings | File Templates.
  */
-import libs._
+import core._
 import java.io._
+import util.DisjointSetOfAddresses
+
 import scala.slick.driver.SQLiteDriver.simple._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import scala.collection.mutable.HashMap
-import libs.DisjointSetOfAddresses
-import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
+//import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
 
 
 class AddressesClosurer(args:List[String])
 {
-  def getAddressesFromMovements(firstElement: Int, elements: Int): HashMap[Hash, Array[Hash]] =
+  /*def getAddressesFromMovements(firstElement: Int, elements: Int): HashMap[Hash, Array[Hash]] =
   {
     // weird trick to allow slick using Array Bytes
     implicit val GetByteArr = GetResult(r => r.nextBytes())
@@ -222,5 +223,5 @@ class AddressesClosurer(args:List[String])
 
   }
 
-  stopLogger
+  stopLogger*/
 }

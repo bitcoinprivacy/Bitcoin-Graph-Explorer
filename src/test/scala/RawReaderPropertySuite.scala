@@ -1,6 +1,6 @@
 import org.scalatest.prop._
 import org.scalatest._
-import libs._
+import core._
 import org.scalacheck.Gen._
 import actions._
 
