@@ -6,7 +6,7 @@ apt-get update
 apt-get install -y bitcoind oracle-java7-installer
 if [ ! -f sbt.deb ]
     then
-    wget http://scalasbt.artifactoryonline.com/scalasbt/sbt-native-packages/org/scala-sbt/sbt//0.12.4/sbt.deb
+    wget http://scalasbt.artifactoryonline.com/scalasbt/sbt-native-packages/org/scala-sbt/sbt//0.13.1/sbt.deb
 else
     echo "file up to date"
 fi
