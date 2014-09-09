@@ -7,22 +7,27 @@ import core._
 /**
  * Created with IntelliJ IDEA.
  * User: yzark
- * Date: 11/19/13
+ * Date: 11/19/1
  * Time: 12:36 PM
  * To change this template use File | Settings | File Templates.
  */
 object Explorer extends App{
   args.toList match{
-    case "populate"::rest             => object InitializeBlockReader extends BitcoinDRawFileBlockSource with FastBlockReader //needs to be in this order for linearization
+    case "populate"::rest             => 
+      object InitializeBlockReader extends BitcoinDRawFileBlockSource with FastBlockReader //needs to be in this order for linearization
+      
       new File(transactionsDatabaseFile).delete
       InitializeBlockReader
-    case "resume"::rest               => object ResumeBlockReader extends BitcoinDRawFileBlockSource with SlowBlockReader //needs to be in this order for linearization
+      new FastAddressClosure(List("0", countInputs.toString))
+    case "resume"::rest               => 
+      val a = countInputs
+      object ResumeBlockReader extends BitcoinDRawFileBlockSource with SlowBlockReader //needs to be in this order for linearization
       ResumeBlockReader
-    case "closure"::rest              => new AddressesClosurer(rest)
+      new SlowAddressClosure(List(a.toString, countInputs.toString))
     case _=> println("""
       Available commands:
-      populate [number of blocks]
-      closure
+      populate
+      resume
     """)
   }
 }

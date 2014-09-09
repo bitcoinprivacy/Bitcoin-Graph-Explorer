@@ -1,4 +1,4 @@
-package actions
+package core
 
 /**
  * Created with IntelliJ IDEA.
@@ -7,20 +7,18 @@ package actions
  * Time: 1:03 PM
  * To change this template use File | Settings | File Templates.
  */
-import core._
+import util._
 import java.io._
-import util.DisjointSetOfAddresses
-
 import scala.slick.driver.SQLiteDriver.simple._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import scala.collection.mutable.HashMap
-//import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
+import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
 
 
-class AddressesClosurer(args:List[String])
+abstract class AddressClosure(args:List[String])
 {
-  /*def getAddressesFromMovements(firstElement: Int, elements: Int): HashMap[Hash, Array[Hash]] =
+  def getAddressesFromMovements(firstElement: Int, elements: Int): HashMap[Hash, Array[Hash]] =
   {
     // weird trick to allow slick using Array Bytes
     implicit val GetByteArr = GetResult(r => r.nextBytes())
@@ -95,46 +93,7 @@ class AddressesClosurer(args:List[String])
     println("     Values inserted in %s ms" format (System.currentTimeMillis - start))
   }
 
-  // we will use later for updates
-  def adaptTreeToDB(mapDSOA: HashMap[Hash, DisjointSetOfAddresses]): HashMap[Hash, DisjointSetOfAddresses] =
-  {
-    val timeStart = System.currentTimeMillis
-    println("     Adapting tree to database ...")
-
-    val query = "select hash, representant from addresses"
-    // weird trick to allow slick using Array Bytes
-    implicit val GetByteArr = GetResult(r => r.nextBytes())
-    val q2 = Q.queryNA[(Array[Byte],Array[Byte])](query)
-
-    for (pair <- q2)
-    {
-      val (hash, representant) = pair
-      val address = Hash(hash)
-      if (mapDSOA.contains(address))
-      {
-        mapDSOA(address).find.parent = Some(DisjointSetOfAddresses(Hash(representant)))
-        mapDSOA remove address
-      }
-    }
-
-    /*for ( (address, dsoa) <- mapDSOA)
-    {
-      // weird trick to allow slick using Array Bytes
-      implicit val GetByteArr = GetResult(r => r.nextBytes())
-      Q.queryNA[Array[Byte]]("select representant from addresses where hash= %s;" format (address)).list match
-      {
-        case representant::xs =>
-          dsoa.find.parent = Some(DisjointSetOfAddresses(Hash(representant)))
-          mapDSOA remove address
-        case _  =>
-      }
-    }*/
-
-    println("     Tree adapted in %s ms" format (System.currentTimeMillis - timeStart))
-
-    mapDSOA
-  }
-
+  
   def saveTree(tree: HashMap[Hash, DisjointSetOfAddresses]): (Int, Long) =
   {
     val timeStart = System.currentTimeMillis
@@ -182,7 +141,11 @@ class AddressesClosurer(args:List[String])
     println("     Saved in %s ms" format (System.currentTimeMillis - start))
   }
 
-  transactionsDBSession
+  def initializeAddressDatabaseFileIfNecessary
+  def createTablesIfNecessary
+  def adaptTreeIfNecessary(tree:  HashMap[Hash, DisjointSetOfAddresses]):  HashMap[Hash, DisjointSetOfAddresses]
+
+ transactionsDBSession
   {
     val start = if (args.length>0) args(0).toInt else 0
     val end = if (args.length>1) args(1).toInt else countInputs
@@ -191,17 +154,13 @@ class AddressesClosurer(args:List[String])
 
     var (tree, countTree, timeTree) = generateTree(start, end)
 
-    if (start == 0 )new File(addressesDatabaseFile).delete
+    initializeAddressDatabaseFileIfNecessary
+
     addressesDBSession
     {
-      if (start == 0) // Do only if we start closuring
-      {
-        addresses.ddl.create
-      }
-      else
-      {
-        tree = adaptTreeToDB(tree)
-      }
+      createTablesIfNecessary
+      
+      tree = adaptTreeIfNecessary(tree)
       val (countSave, timeSave) = saveTree(tree)
 
       var clockIndex = System.currentTimeMillis
@@ -219,9 +178,7 @@ class AddressesClosurer(args:List[String])
         (countTree, timeTree/1000, 1000*timeTree/(countTree+1)))
       println("/////////////////////////////////////////////")
     }
-
-
-  }
-
-  stopLogger*/
+ }
 }
+ 
+ 
