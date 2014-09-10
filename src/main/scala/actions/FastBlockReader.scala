@@ -79,11 +79,31 @@ trait FastBlockReader extends BlockReader
 }
 
   def post = {
+    saveUnmatchedOutputs
+    saveUnmatchedInputs
     saveDataToDB
+
     (Q.u + "create index if not exists address on movements (address)" + ";").execute
     (Q.u + "create unique index if not exists transaction_hash_i on movements (transaction_hash, `index`)" + ";").execute
     (Q.u + "create index if not exists spent_in_transaction_hash on movements (spent_in_transaction_hash)" + ";").execute
     System.out.println("Wir sind geil!")
+  }
+
+  def saveUnmatchedOutputs: Unit =
+  {
+    for ((transactionHash, indexMap) <- outputMap)
+    {
+      for ((index, (address, value)) <- indexMap)
+        insertInsertIntoList (None, transactionHash.toSomeArray, address.toSomeArray, Some(index), Some(value))
+      outputMap -= transactionHash
+    }
+  }
+
+  def saveUnmatchedInputs: Unit =
+  {
+    for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
+      insertInsertIntoList (transactionHash.toSomeArray, outpointTransactionHash.toSomeArray, None, Some(outpointIndex), None)
+
   }
 
   def saveDataToDB: Unit =
