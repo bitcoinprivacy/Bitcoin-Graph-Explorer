@@ -25,7 +25,7 @@ object Explorer extends App{
       ResumeBlockReader
       new SlowAddressClosure(List(a.toString, countInputs.toString))
 
-    case "closure" =>
+    case "closure"::rest              =>
       new FastAddressClosure(List("0", countInputs.toString))
     case _=> println("""
       Available commands:
