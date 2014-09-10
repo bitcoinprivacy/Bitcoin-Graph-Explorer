@@ -20,7 +20,7 @@ trait BlockReader extends BlockSource {
   var savedBlockSet: Set[Hash] = Set.empty
   val longestChain = getLongestBlockChainHashSet
 
-  transactionsDBSession
+  transactionDBSession
   {
     pre
 

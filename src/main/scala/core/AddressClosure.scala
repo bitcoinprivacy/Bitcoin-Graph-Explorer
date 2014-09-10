@@ -18,9 +18,11 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
 abstract class AddressClosure(args:List[String])
 {
-  def initializeAddressDatabaseFileIfNecessary
-  def createTablesIfNecessary
-  def adaptTreeIfNecessary(tree:  HashMap[Hash, DisjointSetOfAddresses]):  HashMap[Hash, DisjointSetOfAddresses]
+  def initializeAddressDatabaseFileIfNecessary = { }
+  def createTablesIfNecessary = { }
+  def adaptTreeIfNecessary(tree:  HashMap[Hash, DisjointSetOfAddresses]):  HashMap[Hash, DisjointSetOfAddresses] = tree
+  def createIndexesIfNecessary = { }
+
 
   def getAddressesFromMovements(firstElement: Int, elements: Int): HashMap[Hash, Array[Hash]] =
   {
@@ -34,7 +36,7 @@ abstract class AddressClosure(args:List[String])
     // val q2 = Q.queryNA[(Array[Byte],Array[Byte])](query)
     val emptyArray = Hash.zero(0).array.toArray
 
-    transactionsDBSession {
+    transactionDBSession {
       val queried = for {
         q <- movements.filter(q => q.spent_in_transaction_hash.isDefined && q.address.isDefined).
           filter(_.spent_in_transaction_hash =!= emptyArray).
@@ -96,7 +98,6 @@ abstract class AddressClosure(args:List[String])
     println("     Values inserted in %s ms" format (System.currentTimeMillis - start))
   }
 
-  
   def saveTree(tree: HashMap[Hash, DisjointSetOfAddresses]): (Int, Long) =
   {
     val timeStart = System.currentTimeMillis
@@ -134,7 +135,7 @@ abstract class AddressClosure(args:List[String])
   {
     val start = System.currentTimeMillis
     println("     Save transaction of %s ..." format (counter))
-    addressesDBSession {
+    addressDBSession {
       addresses.insertAll(queries: _*)
     }
 
@@ -154,15 +155,8 @@ abstract class AddressClosure(args:List[String])
   tree = adaptTreeIfNecessary(tree)
   val (countSave, timeSave) = saveTree(tree)
 
-  var clockIndex = System.currentTimeMillis
-  println("Creating indexes ...")
-  (Q.u + "create index if not exists representant on addresses (representant)").execute
-  (Q.u + "create unique index if not exists hash on addresses (hash)").execute
-  println("=============================================")
-  println("")
-  clockIndex = System.currentTimeMillis - clockIndex
-  println("/////////////////////////////////////////////")
-  println("Indices created in %s s" format (clockIndex / 1000))
+  createIndexesIfNecessary
+
   println("Total of %s addresses saved in %s s, %s µs per address" format
     (countSave, timeSave / 1000, 1000 * timeSave / (countSave + 1)))
   println("Total of %s addresses processed in %s s, %s µs per address" format

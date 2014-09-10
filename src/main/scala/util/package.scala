@@ -14,6 +14,7 @@ import scala.slick.jdbc.{StaticQuery => Q}
 package object util
 {  
   val conf = ConfigFactory.load()
+
   var transactionsDatabaseFile = conf.getString("transactionsDatabaseFile") //"blockchain/bitcoin.db"
   var addressesDatabaseFile = conf.getString("addressesDatabaseFile") //"blockchain/bitcoin.db"
   var closureTransactionSize = conf.getInt("closureTransactionSize")
@@ -25,7 +26,7 @@ package object util
   val addresses = TableQuery[Addresses]
   val movements = TableQuery[Movements]
   
-  def transactionsDBSession[X](f: => X): X =
+  def transactionDBSession[X](f: => X): X =
   {
     Database.forURL(
       url = "jdbc:sqlite:"+transactionsDatabaseFile,
@@ -41,7 +42,7 @@ package object util
     }    
   }
 
-  def addressesDBSession(f: => Unit): Unit =
+  def addressDBSession(f: => Unit): Unit =
   {
     Database.forURL(
       url = "jdbc:sqlite:"+addressesDatabaseFile,
@@ -60,7 +61,7 @@ package object util
   val arrayNull = Hash.zero(1).array.toArray
 
   def countInputs: Int =
-    transactionsDBSession
+    transactionDBSession
     {
       movements.length.run
     }
@@ -80,22 +81,4 @@ package object util
 
     hashes.toSet
   }
-
-  private var filename: String = null
-  private var logfile: File = null
-  private var writer: FileWriter = null
-  def println(s: String) = if (filename != null) writeLogger(s) else System.out.print(s)
-  def startLogger(s: String) =
-  {
-    filename = s
-    logfile = new File("logs/"+filename+".log")
-    writer = new FileWriter(logfile)
-  }
-  private def writeLogger(s: String): Unit =
-  {
-    writer = new FileWriter(logfile, true)
-    writer.write(s+"\n")
-    writer.close()
-  }
-  def stopLogger() = {filename = null}
 }
