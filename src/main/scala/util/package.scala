@@ -60,7 +60,7 @@ package object util
   val arrayNull = Hash.zero(1).array.toArray
 
   def countInputs: Int =
-    movements.countDistinct.run
+    movements.length.run
 
   def existsOutput(transactionHash: Hash, index: Int): Boolean =
   {
