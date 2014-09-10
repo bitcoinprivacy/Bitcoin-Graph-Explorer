@@ -60,7 +60,10 @@ package object util
   val arrayNull = Hash.zero(1).array.toArray
 
   def countInputs: Int =
-    movements.length.run
+    transactionsDBSession
+    {
+      movements.length.run
+    }
 
   def existsOutput(transactionHash: Hash, index: Int): Boolean =
   {

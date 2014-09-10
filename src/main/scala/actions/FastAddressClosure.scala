@@ -17,7 +17,8 @@ class FastAddressClosure(args:List[String]) extends AddressClosure(args) {
     new File(addressesDatabaseFile).delete
 }
 
-  def createTablesIfNecessary = { 
+  def createTablesIfNecessary = addressesDBSession
+  {
     addresses.ddl.create
   }
 }

@@ -24,7 +24,6 @@ object Explorer extends App{
       object ResumeBlockReader extends BitcoinDRawFileBlockSource with SlowBlockReader //needs to be in this order for linearization
       ResumeBlockReader
       new SlowAddressClosure(List(a.toString, countInputs.toString))
-
     case "closure"::rest              =>
       new FastAddressClosure(List("0", countInputs.toString))
     case _=> println("""

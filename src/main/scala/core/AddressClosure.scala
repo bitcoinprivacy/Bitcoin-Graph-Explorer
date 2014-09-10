@@ -18,6 +18,10 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
 abstract class AddressClosure(args:List[String])
 {
+  def initializeAddressDatabaseFileIfNecessary
+  def createTablesIfNecessary
+  def adaptTreeIfNecessary(tree:  HashMap[Hash, DisjointSetOfAddresses]):  HashMap[Hash, DisjointSetOfAddresses]
+
   def getAddressesFromMovements(firstElement: Int, elements: Int): HashMap[Hash, Array[Hash]] =
   {
     // weird trick to allow slick using Array Bytes
@@ -29,25 +33,25 @@ abstract class AddressClosure(args:List[String])
     //  "NOT NULL and b NOT NULL limit %s, %s;" format (firstElement, elements)
     // val q2 = Q.queryNA[(Array[Byte],Array[Byte])](query)
     val emptyArray = Hash.zero(0).array.toArray
-    
-    val queried = for {
-      q <- movements.filter(q => q.spent_in_transaction_hash.isDefined && q.address.isDefined).
-      				filter(_.spent_in_transaction_hash =!= emptyArray).
-      				drop(firstElement).take(elements)          				
-    } yield (q.spent_in_transaction_hash,q.address)
 
-    for {q <- queried
-    	 sTx <- q._1
-    	 ad <- q._2}
-    {
-      val spentInTx = Hash(sTx)
-      val addr = Hash(ad)
+    transactionsDBSession {
+      val queried = for {
+        q <- movements.filter(q => q.spent_in_transaction_hash.isDefined && q.address.isDefined).
+          filter(_.spent_in_transaction_hash =!= emptyArray).
+          drop(firstElement).take(elements)
+      } yield (q.spent_in_transaction_hash, q.address)
 
-      assert(addr != Hash(emptyArray),"=!= doesn't work")
-      val list:Array[Hash] = mapAddresses.getOrElse(spentInTx, Array()  )
-      mapAddresses.update(spentInTx, list :+ addr )
+      for {q <- queried
+           sTx <- q._1
+           ad <- q._2} {
+        val spentInTx = Hash(sTx)
+        val addr = Hash(ad)
+
+        assert(addr != Hash(emptyArray), "=!= doesn't work")
+        val list: Array[Hash] = mapAddresses.getOrElse(spentInTx, Array())
+        mapAddresses.update(spentInTx, list :+ addr)
+      }
     }
-
     println("     Read elements in %s ms" format (System.currentTimeMillis - timeStart))
 
     mapAddresses
@@ -62,8 +66,7 @@ abstract class AddressClosure(args:List[String])
     {
       println("=============================================")
       val amount = if (i + closureReadSize > end) end - i else closureReadSize
-      val (databaseResults) = getAddressesFromMovements(i, amount)
-      insertValuesIntoTree(databaseResults, tree)
+      insertValuesIntoTree(getAddressesFromMovements(i, amount), tree)
     }
 
     println("=============================================")
@@ -131,54 +134,42 @@ abstract class AddressClosure(args:List[String])
   {
     val start = System.currentTimeMillis
     println("     Save transaction of %s ..." format (counter))
-    addresses.insertAll(queries: _*)
-    //(Q.u + "BEGIN TRANSACTION;").execute
-    //for (query <- queries) Addresses.insertAll((query._1.array.toArray, query._2.array.toArray, 0.0))
+    addressesDBSession {
+      addresses.insertAll(queries: _*)
+    }
 
-    //(Q.u + "insert into addresses VALUES " +
-    // "(" + query._1.toString + "," + query._2.toString + ", 0 );").execute
-    //(Q.u + "COMMIT TRANSACTION;").execute
     println("     Saved in %s ms" format (System.currentTimeMillis - start))
   }
 
-  def initializeAddressDatabaseFileIfNecessary
-  def createTablesIfNecessary
-  def adaptTreeIfNecessary(tree:  HashMap[Hash, DisjointSetOfAddresses]):  HashMap[Hash, DisjointSetOfAddresses]
+  val start = if (args.length>0) args(0).toInt else 0
+  val end = if (args.length>1) args(1).toInt else countInputs
+  println("Reading inputs from %s to %s" format (start, end))
 
- transactionsDBSession
-  {
-    val start = if (args.length>0) args(0).toInt else 0
-    val end = if (args.length>1) args(1).toInt else countInputs
-    startLogger("closure_"+start+"_"+end);
-    println("Reading inputs from %s to %s" format (start, end))
+  var (tree, countTree, timeTree) = generateTree(start, end)
 
-    var (tree, countTree, timeTree) = generateTree(start, end)
+  initializeAddressDatabaseFileIfNecessary
 
-    initializeAddressDatabaseFileIfNecessary
+  createTablesIfNecessary
 
-    addressesDBSession
-    {
-      createTablesIfNecessary
-      
-      tree = adaptTreeIfNecessary(tree)
-      val (countSave, timeSave) = saveTree(tree)
+  tree = adaptTreeIfNecessary(tree)
+  val (countSave, timeSave) = saveTree(tree)
 
-      var clockIndex = System.currentTimeMillis
-      println("Creating indexes ...")
-      (Q.u + "create index if not exists representant on addresses (representant)").execute
-      (Q.u + "create unique index if not exists hash on addresses (hash)").execute
-      println("=============================================")
-      println("")
-      clockIndex = System.currentTimeMillis - clockIndex
-      println("/////////////////////////////////////////////")
-      println("Indices created in %s s" format (clockIndex/1000))
-      println("Total of %s addresses saved in %s s, %s µs per address" format
-        (countSave, timeSave/1000, 1000*timeSave/(countSave+1)))
-      println("Total of %s addresses processed in %s s, %s µs per address" format
-        (countTree, timeTree/1000, 1000*timeTree/(countTree+1)))
-      println("/////////////////////////////////////////////")
-    }
- }
+  var clockIndex = System.currentTimeMillis
+  println("Creating indexes ...")
+  (Q.u + "create index if not exists representant on addresses (representant)").execute
+  (Q.u + "create unique index if not exists hash on addresses (hash)").execute
+  println("=============================================")
+  println("")
+  clockIndex = System.currentTimeMillis - clockIndex
+  println("/////////////////////////////////////////////")
+  println("Indices created in %s s" format (clockIndex / 1000))
+  println("Total of %s addresses saved in %s s, %s µs per address" format
+    (countSave, timeSave / 1000, 1000 * timeSave / (countSave + 1)))
+  println("Total of %s addresses processed in %s s, %s µs per address" format
+    (countTree, timeTree / 1000, 1000 * timeTree / (countTree + 1)))
+  println("/////////////////////////////////////////////")
+
+
 }
  
  
