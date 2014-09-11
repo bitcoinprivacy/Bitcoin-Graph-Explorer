@@ -26,21 +26,16 @@ abstract class AddressClosure(args:List[String])
 
   def getAddressesFromMovements(firstElement: Int, elements: Int): HashMap[Hash, Array[Hash]] =
   {
-    // weird trick to allow slick using Array Bytes
-    implicit val GetByteArr = GetResult(r => r.nextBytes())
     val timeStart = System.currentTimeMillis
     println("     Reading until input %s" format (firstElement + elements))
     val mapAddresses:HashMap[Hash, Array[Hash]] = HashMap.empty
-    // val query = "select spent_in_transaction_hash as a, address as b from movements where a " +
-    //  "NOT NULL and b NOT NULL limit %s, %s;" format (firstElement, elements)
-    // val q2 = Q.queryNA[(Array[Byte],Array[Byte])](query)
     val emptyArray = Hash.zero(0).array.toArray
 
     transactionDBSession {
       val queried = for {
-        q <- movements.filter(q => q.spent_in_transaction_hash.isDefined && q.address.isDefined).
-          filter(_.spent_in_transaction_hash =!= emptyArray).
-          drop(firstElement).take(elements)
+        q <- movements.drop(firstElement).take(elements)
+	.filter(q => q.spent_in_transaction_hash.isDefined && q.address.isDefined)
+	.filter(_.spent_in_transaction_hash =!= emptyArray)         
       } yield (q.spent_in_transaction_hash, q.address)
 
       for {q <- queried

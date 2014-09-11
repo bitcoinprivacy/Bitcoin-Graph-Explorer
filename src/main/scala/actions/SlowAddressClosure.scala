@@ -31,7 +31,7 @@ class SlowAddressClosure (args:List[String]) extends AddressClosure (args)
     }
     }
 
-    println("     Tree adapted in %s ms" format (System.currentTimeMillis - timeStart))
+    println("     Tree of size "+ mapDSOA.size + " adapted in %s ms" format (System.currentTimeMillis - timeStart))
 
     mapDSOA
   }
