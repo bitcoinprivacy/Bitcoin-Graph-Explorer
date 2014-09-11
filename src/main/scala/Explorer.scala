@@ -26,7 +26,7 @@ object Explorer extends App{
       new SlowAddressClosure(List(a.toString, countInputs.toString))
       AddressBalance
     case "closure"::rest              =>
-      new FastAddressClosure("0" , countInputs.toString))
+      new FastAddressClosure("0" , countInputs.toString)
       AddressBalance
     case _=> println("""
       Available commands:
