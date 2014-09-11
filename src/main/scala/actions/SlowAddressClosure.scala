@@ -13,6 +13,7 @@ class SlowAddressClosure (args:List[String]) extends AddressClosure (args)
     val timeStart = System.currentTimeMillis
     println("     Adapting tree to database ...")
 
+    addressDBSession {
     val query = "select hash, representant from addresses"
     // weird trick to allow slick using Array Bytes
     implicit val GetByteArr = GetResult(r => r.nextBytes())
@@ -27,6 +28,7 @@ class SlowAddressClosure (args:List[String]) extends AddressClosure (args)
         mapDSOA(address).find.parent = Some(DisjointSetOfAddresses(Hash(representant)))
         mapDSOA remove address
       }
+    }
     }
 
     println("     Tree adapted in %s ms" format (System.currentTimeMillis - timeStart))
