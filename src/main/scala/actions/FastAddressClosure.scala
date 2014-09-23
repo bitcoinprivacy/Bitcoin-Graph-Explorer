@@ -8,18 +8,7 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
 class FastAddressClosure(args:List[String]) extends AddressClosure(args)
 {
-
-  override def initializeAddressDatabaseFileIfNecessary =
-  {
-    new File(addressesDatabaseFile).delete
-  }
-
-  override def createTablesIfNecessary = addressDBSession
-  {
-    addresses.ddl.create
-  }
-
-  override def createIndexesIfNecessary = addressDBSession
+  override def createIndexesIfNecessary = transactionDBSession
   {
     var clockIndex = System.currentTimeMillis
     println("Creating indexes ...")

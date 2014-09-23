@@ -13,7 +13,7 @@ class SlowAddressClosure (args:List[String]) extends AddressClosure (args)
     val timeStart = System.currentTimeMillis
     println("     Adapting tree to database ...")
 
-    addressDBSession {
+    transactionDBSession {
     val query = "select hash, representant from addresses"
     // weird trick to allow slick using Array Bytes
     implicit val GetByteArr = GetResult(r => r.nextBytes())

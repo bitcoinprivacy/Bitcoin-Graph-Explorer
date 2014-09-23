@@ -18,8 +18,6 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
 abstract class AddressClosure(args:List[String])
 {
-  def initializeAddressDatabaseFileIfNecessary = { }
-  def createTablesIfNecessary = { }
   def adaptTreeIfNecessary(tree:  HashMap[Hash, DisjointSetOfAddresses]):  HashMap[Hash, DisjointSetOfAddresses] = tree
   def createIndexesIfNecessary = { }
 
@@ -130,7 +128,7 @@ abstract class AddressClosure(args:List[String])
   {
     val start = System.currentTimeMillis
     println("     Save transaction of %s ..." format (counter))
-    addressDBSession {
+    transactionDBSession {
       addresses.insertAll(queries: _*)
     }
 
@@ -142,10 +140,6 @@ abstract class AddressClosure(args:List[String])
   println("Reading inputs from %s to %s" format (start, end))
 
   var (tree, countTree, timeTree) = generateTree(start, end)
-
-  initializeAddressDatabaseFileIfNecessary
-
-  createTablesIfNecessary
 
   tree = adaptTreeIfNecessary(tree)
   val (countSave, timeSave) = saveTree(tree)

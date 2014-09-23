@@ -16,7 +16,6 @@ package object util
   val conf = ConfigFactory.load()
 
   var transactionsDatabaseFile = conf.getString("transactionsDatabaseFile") //"blockchain/bitcoin.db"
-  var addressesDatabaseFile = conf.getString("addressesDatabaseFile") //"blockchain/bitcoin.db"
   var closureTransactionSize = conf.getInt("closureTransactionSize")
   var closureReadSize = conf.getInt("closureReadSize")
   var populateTransactionSize = conf.getInt("populateTransactionSize")
@@ -40,22 +39,6 @@ package object util
       (Q.u + "PRAGMA main.journal_mode=OFF;"    ).execute
       f
     }    
-  }
-
-  def addressDBSession(f: => Unit): Unit =
-  {
-    Database.forURL(
-      url = "jdbc:sqlite:"+addressesDatabaseFile,
-      driver = "org.sqlite.JDBC"
-    ) withDynSession
-    {
-      (Q.u + "PRAGMA main.page_size = 4962;"    ).execute
-      (Q.u + "PRAGMA main.cache_size=10000;"    ).execute
-      (Q.u + "PRAGMA main.locking_mode=NORMAL;" ).execute
-      (Q.u + "PRAGMA main.synchronous=OFF;"     ).execute
-      (Q.u + "PRAGMA main.journal_mode=OFF;"    ).execute
-        f
-      }
   }
 
   val arrayNull = Hash.zero(1).array.toArray
