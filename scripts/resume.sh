@@ -4,4 +4,4 @@ scripts/getblocklist.sh
 echo "Processing blockchain"
 sbt "run resume"
 echo "updating blockcount for website"
-scripts/updatecount.sh
+cat /root/bge/blockchain/blocklist.txt  | wc -l > /root/bge/blockchain/count.txt

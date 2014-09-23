@@ -59,7 +59,7 @@ package object util
 
   def getLongestBlockChainHashSet: Set[Hash] =
   {
-    val lines = scala.io.Source.fromFile("blockchain/blocklist.txt").getLines
+    val lines = scala.io.Source.fromFile("../.bitcoin/blocklist.txt").getLines
     val hashes = for (line <- lines) yield Hash(line)
 
     hashes.toSet
