@@ -1,6 +1,7 @@
 #! /bin/bash
-echo "Obtaining block list"
+cd /root/bge
+cat /root/.bitcoin/blocklist.txt  | wc -l > /root/bge/blockchain/count.txt.prov
 echo "Processing blockchain"
 sbt "run resume"
 echo "updating blockcount for website"
-cat /root/.bitcoin/blockchain/blocklist.txt  | wc -l > /root/bge/blockchain/count.txt
+mv blockchain/count.txt.prov blockchain/count.txt

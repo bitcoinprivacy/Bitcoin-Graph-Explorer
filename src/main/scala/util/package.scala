@@ -36,8 +36,8 @@ package object util
       (Q.u + "PRAGMA main.page_size = 4962;"    ).execute
       (Q.u + "PRAGMA main.cache_size=10000;"    ).execute
       (Q.u + "PRAGMA main.locking_mode=NORMAL;" ).execute
-      (Q.u + "PRAGMA main.synchronous=OFF;"     ).execute
-      (Q.u + "PRAGMA main.journal_mode=OFF;"    ).execute
+      (Q.u + "PRAGMA main.synchronous=NORMAL;"     ).execute
+      (Q.u + "PRAGMA main.journal_mode=WAL;"    ).execute
       f
     }    
   }
