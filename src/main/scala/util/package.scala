@@ -20,6 +20,7 @@ package object util
   var closureReadSize = conf.getInt("closureReadSize")
   var populateTransactionSize = conf.getInt("populateTransactionSize")
   var balanceTransactionSize = conf.getInt("balanceTransactionSize")
+  var blockHashListFile= conf.getString("blockHashListFile")
 
   val blockDB = TableQuery[Blocks]
   val addresses = TableQuery[Addresses]
@@ -59,7 +60,7 @@ package object util
 
   def getLongestBlockChainHashSet: Set[Hash] =
   {
-    val lines = scala.io.Source.fromFile("../.bitcoin/blocklist.txt").getLines
+    val lines = scala.io.Source.fromFile(blockHashListFile).getLines
     val hashes = for (line <- lines) yield Hash(line)
 
     hashes.toSet

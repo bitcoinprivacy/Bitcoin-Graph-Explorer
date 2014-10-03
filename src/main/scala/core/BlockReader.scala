@@ -82,7 +82,8 @@ trait BlockReader extends BlockSource {
   def getAddressFromOutput(output: TransactionOutput): Option[Array[Byte]] =
     try
     {
-      Some(output.getScriptPubKey.getToAddress(params).getHash160)
+      val address = output.getScriptPubKey.getToAddress(params)
+      Some(Array(address.getVersion.toByte)++address.getHash160)
     } 
     catch 
     {
@@ -98,7 +99,7 @@ trait BlockReader extends BlockSource {
             import com.google.bitcoin.core.Utils._
             val pubkey = Hash(pubkeystring).array.toArray
             val address = new Address(params, sha256hash160(pubkey))
-            Some(address.getHash160)
+            Some(Array(address.getVersion.toByte)++address.getHash160)
           } else { // special case because bitcoinJ doesn't support pay-to-IP scripts
             None
           }
