@@ -14,11 +14,10 @@ object AddressBalance
   transactionDBSession
   {
     println("Drop and create balances"); 
-    (Q.u + "DROP TABLE IF EXISTS balances;").execute
-    (Q.u + "CREATE TABLE balances (address blob, balance double, representant blob);").execute
+    Q.updateNA("DROP TABLE IF EXISTS balances;").execute
+    Q.updateNA("CREATE TABLE balances (address blob, balance double, representant blob);").execute
     println("Inserting elements"); 
-    (Q.u +
-      """
+    Q.updateNA("""
         INSERT INTO balances
         SELECT
         	m.address as address,
@@ -30,8 +29,8 @@ object AddressBalance
         	spent_in_transaction_hash IS NULL and a.representant is not null
         GROUP BY address;
       """).execute;
-    (Q.u +
-      """
+    println("Inserting elements");
+    Q.updateNA("""
         INSERT INTO balances SELECT
         	m.address as address,
         	sum(m.value) as balance,
@@ -42,8 +41,8 @@ object AddressBalance
         	spent_in_transaction_hash IS NULL and a.representant is null
         GROUP BY address;
       """).execute;
-    (Q.u +
-      """
+    println("Inserting elements");
+    Q.updateNA("""
         INSERT INTO balances SELECT
         	m.address as address,
         	0 as balance,
@@ -57,8 +56,8 @@ object AddressBalance
       """).execute
 
     println("Creating indexes...");
-    (Q.u + "CREATE INDEX b1 ON balances(address);").execute
-    (Q.u + "CREATE INDEX b2 ON balances(representant);").execute
+    Q.updateNA("CREATE INDEX b1 ON balances(address);").execute
+    Q.updateNA("CREATE INDEX b2 ON balances(representant);").execute
   }
   println("     Balance table updated in %s ms" format (System.currentTimeMillis - clock))
 }
