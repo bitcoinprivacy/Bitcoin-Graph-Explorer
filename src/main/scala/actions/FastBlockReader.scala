@@ -50,7 +50,7 @@ trait FastBlockReader extends BlockReader
         val address = addressOption match
         {
           case Some(address) => Hash(address)
-          case _ => Hash.zero(0)
+          case _ => println("zero");Hash.zero(0)
         }
 
         outputBuffer += (index -> (address, value))

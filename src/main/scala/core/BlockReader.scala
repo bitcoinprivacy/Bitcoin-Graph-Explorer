@@ -31,7 +31,7 @@ trait BlockReader extends BlockSource {
       savedBlockSet = savedBlockSet + Hash(c)
 
     var a = 1
-    var time = System.currentTimeMillis()
+    var time = System.currentTimeMillis
 
     for (transaction <- transactionSource)
     {
@@ -39,7 +39,7 @@ trait BlockReader extends BlockSource {
 
       if (a % 1000 == 0)
       {
-        val t = System.currentTimeMillis()  - time
+        val t = System.currentTimeMillis  - time
         System.out.println("Processed " + a + " transactions in " + t + " using " + 1000 * t / a + " µs/tx");
       }
 
@@ -52,18 +52,18 @@ trait BlockReader extends BlockSource {
   def blockFilter(b: Block) =
   {
     val blockHash = Hash(b.getHash.getBytes)
-    (longestChain contains blockHash) && 
+    (longestChain contains blockHash) &&
       !(savedBlockSet contains blockHash)
   }
 
   def withoutDuplicates(b: Block, t: Transaction): Boolean =
     !(Hash(b.getHash.getBytes) == Hash("00000000000a4d0a398161ffc163c503763b1f4360639393e0e4c8e300e0caec")  &&
       Hash(t.getHash.getBytes) == Hash("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599")) &&
-    !(Hash(b.getHash.getBytes) == Hash("00000000000a4d0a398161ffc163c503763b1f4360639393e0e4c8e300e0caec")  &&
+    !(Hash(b.getHash.getBytes) == Hash("00000000000a4d0a3B83B59A507C6B843DE3DB4E365B141621FB2381A2641B16C4E10C110E1C2EFBD98161ffc163c503763b1f4360639393e0e4c8e300e0caec")  &&
       Hash(t.getHash.getBytes) == Hash("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599"))
 
   lazy val filteredBlockSource =
-      blockSource withFilter blockFilter
+      blockSource.take(100000) withFilter blockFilter
     
     def transactionsInBlock(b: Block) = b.getTransactions.asScala filter (t => withoutDuplicates(b,t))
 
@@ -87,28 +87,23 @@ trait BlockReader extends BlockSource {
     catch 
     {
       case e: ScriptException =>
-        try 
-        {
-          val script = output.getScriptPubKey.toString
-          //TODO: 
-          // can we generate an address for pay-to-ip?
-
-          if (script.startsWith("[65]")) {
-            val pubkeystring = script.substring(4, 134)
-            import com.google.bitcoin.core.Utils._
-            val pubkey = Hash(pubkeystring).array.toArray
-            val address = new Address(params, sha256hash160(pubkey))
-            getVersionedHashFromAddress(address)
-          } else { // special case because bitcoinJ doesn't support pay-to-IP scripts
-            None
-          }
-        }
-        catch {
-          case e: ScriptException =>
-            println("bad transaction output: " + output.getParentTransaction.getHash)
-            None
-        }
-      
+      try
+      {
+        val script = output.getScriptPubKey.toString
+        val start = script.indexOf('[')+1
+        val end = script.indexOf(']') - start+1
+        val hexa = script.substring(start, end)
+        import com.google.bitcoin.core.Utils._
+        val pubkey = Hash(hexa).array.toArray
+        val address = new Address(params, sha256hash160(pubkey))
+        getVersionedHashFromAddress(address)
+      }
+      catch
+      {
+        case e: ScriptException =>
+          println("bad transaction output: " + output.getParentTransaction.getHash)
+          None
+      }
     }
 
   def getVersionedHashFromAddress(address: Address) =

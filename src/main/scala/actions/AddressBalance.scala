@@ -14,18 +14,46 @@ object AddressBalance
   transactionDBSession
   {
     println("Drop and create balances"); 
-    (Q.u + "drop table if exists balances;").execute
-    (Q.u + "create table balances (balance double, address blob);").execute
+    (Q.u + "DROP TABLE IF EXISTS balances;").execute
+    (Q.u + "CREATE TABLE balances (address blob, balance double, representant blob);").execute
     println("Inserting elements"); 
-    (Q.u + "insert into balances SELECT sum(value) as balance, address as address FROM movements m  WHERE spent_in_transaction_hash IS NULL  GROUP BY address;").execute
-    println("Creating indexes..."); 
-    (Q.u + "create index address_balance on balances(address);").execute
-    (Q.u + "drop table if exists closure_balance;")
-    (Q.u + "create table closure_balance (members integer, representant blob, balance double);")
-    (Q.u + "insert into closure_balance select ifnull(count(distinct(a.hash)), 1) as members, hex(b.address) as address, sum(b.balance) total from balances b left outer join addresses a on a.hash = b.address group by a.representant;")
-    (Q.u + "create index cb1 on closure_balance(members)")
-    (Q.u + "create index cb2 on closure_balance(representant)")
-    (Q.u + "create index cb3 on closure_balance(balance)")
+    (Q.u +
+      """
+        INSERT INTO balances
+        SELECT
+        	m.address as address,
+        	sum(m.value) as balance,
+        	a.representant as representant
+        FROM
+        	movements m left outer join addresses a on m.address = a.hash
+        WHERE
+        	spent_in_transaction_hash IS NULL and a.representant is not null
+        GROUP BY address
+        UNION
+        SELECT
+        	m.address as address,
+        	sum(m.value) as balance,
+        	m.address as representant
+        FROM
+        	movements m left outer join addresses a on m.address = a.hash
+        WHERE
+        	spent_in_transaction_hash IS NULL and a.representant is null
+        GROUP BY address
+        UNION
+        SELECT
+        	m.address as address,
+        	0 as balance,
+        	m.address as representant
+        FROM
+        	movements m
+        GROUP BY address
+        HAVING
+        	(SELECT count(*) from movements where spent_in_transaction_hash is NULL AND address = m.address) = 0
+        ;
+      """).execute
+    println("Creating indexes...");
+    (Q.u + "CREATE INDEX b1 ON balances(address);").execute
+    (Q.u + "CREATE INDEX b2 ON balances(representant);").execute
   }
   println("     Balance table updated in %s ms" format (System.currentTimeMillis - clock))
 }
