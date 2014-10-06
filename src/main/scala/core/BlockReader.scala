@@ -16,6 +16,7 @@ trait BlockReader extends BlockSource {
   def pre: Unit
   def post: Unit
 
+
   var savedBlockSet: Set[Hash] = Set.empty
   val longestChain = getLongestBlockChainHashSet
 
@@ -62,8 +63,8 @@ trait BlockReader extends BlockSource {
       Hash(t.getHash.getBytes) == Hash("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599"))
 
   lazy val filteredBlockSource =
-      blockSource withFilter blockFilter
-    
+      blockSource.take(100000) withFilter blockFilter
+
     def transactionsInBlock(b: Block) = b.getTransactions.asScala filter (t => withoutDuplicates(b,t))
 
     def inputsInTransaction(t: Transaction) =
@@ -91,11 +92,20 @@ trait BlockReader extends BlockSource {
         val script = output.getScriptPubKey.toString
         val start = script.indexOf('[')+1
         val end = script.indexOf(']') - start+1
-        val hexa = script.substring(start, end)
-        import com.google.bitcoin.core.Utils._
-        val pubkey = Hash(hexa).array.toArray
-        val address = new Address(params, sha256hash160(pubkey))
-        getVersionedHashFromAddress(address)
+
+        if (start < end)
+        {
+          val hexa = script.substring(start, end)
+          import com.google.bitcoin.core.Utils._
+          val pubkey = Hash(hexa).array.toArray
+          val address = new Address(params, sha256hash160(pubkey))
+          getVersionedHashFromAddress(address)
+        }
+        else
+        {
+          println("Error at: " + script)
+          None
+        }
       }
       catch
       {
