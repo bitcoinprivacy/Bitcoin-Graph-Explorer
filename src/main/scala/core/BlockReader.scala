@@ -63,7 +63,7 @@ trait BlockReader extends BlockSource {
       Hash(t.getHash.getBytes) == Hash("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599"))
 
   lazy val filteredBlockSource =
-      blockSource.take(100000) withFilter blockFilter
+      blockSource withFilter blockFilter
 
     def transactionsInBlock(b: Block) = b.getTransactions.asScala filter (t => withoutDuplicates(b,t))
 
@@ -91,8 +91,11 @@ trait BlockReader extends BlockSource {
       {
         val script = output.getScriptPubKey.toString
         val start = script.indexOf('[')+1
-        val end = script.indexOf(']') - start+1
-
+        var end = script.indexOf(']') - start+1
+        if (end - start > 130)
+        {
+          end = start + 130
+        }
         if (end - start == 130)
         {
           val hexa = script.substring(start, end)
