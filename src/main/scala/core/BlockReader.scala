@@ -15,7 +15,6 @@ trait BlockReader extends BlockSource {
   def saveBlock(b: Hash): Unit
   def pre: Unit
   def post: Unit
-  
 
   var savedBlockSet: Set[Hash] = Set.empty
   val longestChain = getLongestBlockChainHashSet
@@ -63,7 +62,7 @@ trait BlockReader extends BlockSource {
       Hash(t.getHash.getBytes) == Hash("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599"))
 
   lazy val filteredBlockSource =
-      blockSource.take(100000) withFilter blockFilter
+      blockSource withFilter blockFilter
     
     def transactionsInBlock(b: Block) = b.getTransactions.asScala filter (t => withoutDuplicates(b,t))
 
