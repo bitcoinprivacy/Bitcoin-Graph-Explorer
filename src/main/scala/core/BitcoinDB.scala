@@ -25,12 +25,12 @@ class Addresses(tag:Tag) extends Table[(Array[Byte], Array[Byte], Option[Double]
   def * = (hash,representant,balance)
 }
 
-class Movements(tag:Tag) extends Table[(Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Double])](tag, "movements") {
+class Movements(tag:Tag) extends Table[(Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Long])](tag, "movements") {
 
   def transaction_hash = column[Option[Array[Byte]]]("transaction_hash", O.Nullable)
   def address = column[Option[Array[Byte]]]("address", O.Nullable)
   def index = column[Option[Int]]("index", O.Nullable)
-  def value = column[Option[Double]]("value", O.Nullable)
+  def value = column[Option[Long]]("value", O.Nullable)
   def spent_in_transaction_hash = column[Option[Array[Byte]]]("spent_in_transaction_hash", O.Nullable)
 
   def * = (spent_in_transaction_hash,transaction_hash,address,index,value)

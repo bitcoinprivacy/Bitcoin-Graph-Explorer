@@ -13,7 +13,7 @@ libraryDependencies ++= Seq(
 //	"junit" % "junit" % "4.8" % "test->default", // For JUnit 4 testing
 //	"ch.qos.logback" % "logback-classic" % "0.9.26" % "compile->default", // Logging
     "org.slf4j" % "slf4j-simple" % "1.7.5",
-	"com.google" % "bitcoinj" % "0.11",
+	"org.bitcoinj" % "bitcoinj-core" % "0.12",
 //	"org.neo4j" % "neo4j-scala" % "0.2.0-M2-SNAPSHOT",
   //  "org.iq80.leveldb"%"leveldb"%"0.6",
     //"mysql"%"mysql-connector-java"%"5.1.26",
@@ -37,7 +37,7 @@ resolvers += "bitcoinj" at "http://distribution.bitcoinj.googlecode.com/git/rele
 
 resolvers += "scala-tools" at "https://oss.sonatype.org/content/groups/scala-tools"
 
-javaOptions in run += "-Xmx4G"
+javaOptions in run += "-Xmx2G"
 
 javaOptions in run += "-Xms1G"
 

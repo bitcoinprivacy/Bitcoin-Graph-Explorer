@@ -1,7 +1,8 @@
 package core
 
 // for blocks db and longestChain
-import com.google.bitcoin.core._
+import org.bitcoinj.core._
+
 import util._
 
 import scala.collection.JavaConverters._
@@ -15,7 +16,6 @@ trait BlockReader extends BlockSource {
   def saveBlock(b: Hash): Unit
   def pre: Unit
   def post: Unit
-
 
   var savedBlockSet: Set[Hash] = Set.empty
   val longestChain = getLongestBlockChainHashSet
@@ -37,7 +37,7 @@ trait BlockReader extends BlockSource {
     {
       saveTransaction(transaction)
 
-      if (a % 1000 == 0)
+      if (a % 10000 == 0)
       {
         val t = System.currentTimeMillis  - time
         System.out.println("Processed " + a + " transactions in " + t + " using " + 1000 * t / a + " µs/tx");
@@ -52,8 +52,7 @@ trait BlockReader extends BlockSource {
   def blockFilter(b: Block) =
   {
     val blockHash = Hash(b.getHash.getBytes)
-    (longestChain contains blockHash) &&
-      !(savedBlockSet contains blockHash)
+    (longestChain contains blockHash) && !(savedBlockSet contains blockHash)
   }
 
   def withoutDuplicates(b: Block, t: Transaction): Boolean =
@@ -63,66 +62,71 @@ trait BlockReader extends BlockSource {
       Hash(t.getHash.getBytes) == Hash("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599"))
 
   lazy val filteredBlockSource =
-      blockSource withFilter blockFilter
+    blockSource.take(100000) withFilter blockFilter
 
-    def transactionsInBlock(b: Block) = b.getTransactions.asScala filter (t => withoutDuplicates(b,t))
+  def transactionsInBlock(b: Block) =
+    b.getTransactions.asScala filter (t => withoutDuplicates(b,t))
 
-    def inputsInTransaction(t: Transaction) =
-      if (!t.isCoinBase)        t.getInputs.asScala
-      else                          List.empty
+  def inputsInTransaction(t: Transaction) =
+    if (!t.isCoinBase)        t.getInputs.asScala
+    else                          List.empty
 
-    def outputsInTransaction(t: Transaction) = { 
-      t.getOutputs.asScala
+  def outputsInTransaction(t: Transaction) =
+    t.getOutputs.asScala
 
-    }
-
-    lazy val transactionSource:Iterator[Transaction] = filteredBlockSource flatMap {b => saveBlock(Hash(b.getHash.getBytes)) ; transactionsInBlock(b)}
-
+  lazy val transactionSource:Iterator[Transaction] = filteredBlockSource flatMap {b => saveBlock(Hash(b.getHash.getBytes)) ; transactionsInBlock(b)}
 
   def getAddressFromOutput(output: TransactionOutput): Option[Array[Byte]] =
-    try
-    {
-      getVersionedHashFromAddress(output.getScriptPubKey.getToAddress(params))
+    try {
+      var add: Address = output.getScriptPubKey.getToAddress(params)
+       getVersionedHashFromAddress(Some(add))
     }
+
     catch 
     {
       case e: ScriptException =>
-      try
       {
-        val script = output.getScriptPubKey.toString
-        val start = script.indexOf('[')+1
-        var end = script.indexOf(']') - start+1
-        if (end - start > 130)
-        {
-          end = start + 130
-        }
-        if (end - start == 130)
-        {
-          val hexa = script.substring(start, end)
-          import com.google.bitcoin.core.Utils._
-          val pubkey = Hash(hexa).array.toArray
-          val address = new Address(params, sha256hash160(pubkey))
-          getVersionedHashFromAddress(address)
-        }
+        var add: Address = output.getAddressFromP2PKHScript(params)
+        if (add == null)
+        add = output.getAddressFromP2SH(params)
+        if (add==null)
+        add = parseScript(output.getScriptPubKey.toString)
+        if (add==null)
+        noAddressParsePossible("ERROR", output)
         else
-        {
-          println("Error at: " + script)
-          None
-        }
-      }
-      catch
-      {
-        case e: ScriptException =>
-          println("bad transaction output: " + output.getParentTransaction.getHash)
-          None
+        getVersionedHashFromAddress(Some(add))
       }
     }
 
-  def getVersionedHashFromAddress(address: Address) =
-  {
-
-    Some((Array(address.getVersion.toByte) ++ address.getHash160).toArray)
-
+  def noAddressParsePossible(key: String, output: TransactionOutput) = {
+    println(key+":"+output.getParentTransaction.getHash+":"+output.getScriptPubKey.toString)
+    None
   }
 
+  def parseScript(script: String): Address = {
+    val start: Int = script.indexOf('[')+1
+    var end: Int = script.indexOf(']') - start+1
+
+    if (end - start == 118)
+    {
+      val hexa = script.substring(start, end)
+      import org.bitcoinj.core.Utils._
+      val pubkey = Hash(hexa).array.toArray
+      val address = new Address(params, sha256hash160(pubkey))
+      address
+    }
+    else
+    {
+      null
+    }
+  }
+
+  def getVersionedHashFromAddress(address: Option[Address]): Option[Array[Byte]] =
+  {
+    address match {
+      case None => None
+      case Some(address) => Some((Array(address.getVersion.toByte) ++ address.getHash160).toArray)
+    }
+
+  }
 }

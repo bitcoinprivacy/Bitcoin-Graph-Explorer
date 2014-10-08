@@ -8,7 +8,7 @@ import util._
 import scala.collection.immutable
 
 // for blocks db and longestChain
-import com.google.bitcoin.core._
+import org.bitcoinj.core._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import scala.slick.driver.SQLiteDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
@@ -16,11 +16,11 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 trait FastBlockReader extends BlockReader
 {
   // txhash -> ([address,...],[value,...]) (one entry per index)
-  var outputMap: immutable.HashMap[Hash,immutable.HashMap[Int,(Hash,Double)]]  = immutable.HashMap()
+  var outputMap: immutable.HashMap[Hash,immutable.HashMap[Int,(Hash,Long)]]  = immutable.HashMap()
   //  outpoint -> txhash
   var outOfOrderInputMap: immutable.HashMap[(Hash,Int),Hash]  = immutable.HashMap()
   var vectorMovements:
-    Vector[(Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Double])] = Vector()
+    Vector[(Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Long])] = Vector()
   var vectorBlocks:Vector[Array[Byte]]  = Vector()
   var totalOutIn: Int = 0
 
@@ -32,12 +32,12 @@ trait FastBlockReader extends BlockReader
         includeInput(input,transactionHash)
 
     var index = 0
-    var outputBuffer = immutable.HashMap[Int,(Hash,Double)]()
+    var outputBuffer = immutable.HashMap[Int,(Hash,Long)]()
 
     for (output <- outputsInTransaction(trans))
     {
       val addressOption: Option[Array[Byte]] = getAddressFromOutput(output: TransactionOutput)
-      val value = output.getValue.doubleValue
+      val value = output.getValue.value
 
       if (outOfOrderInputMap.contains(transactionHash, index))
       {
@@ -50,7 +50,7 @@ trait FastBlockReader extends BlockReader
         val address = addressOption match
         {
           case Some(address) => Hash(address)
-          case _ => println("zero");Hash.zero(0)
+          case _ =>             Hash.zero(0)
         }
 
         outputBuffer += (index -> (address, value))
@@ -121,7 +121,7 @@ trait FastBlockReader extends BlockReader
     vectorBlocks +:= s
   }
 
-  def insertInsertIntoList(s: (Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Double])) =
+  def insertInsertIntoList(s: (Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Long])) =
   {
     if (vectorMovements.length + vectorBlocks.length >= populateTransactionSize)
       saveDataToDB

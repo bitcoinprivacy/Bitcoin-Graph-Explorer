@@ -1,6 +1,6 @@
 package actions
 
-import com.google.bitcoin.core._
+import org.bitcoinj.core._
 import core._
 import util._
 
@@ -48,7 +48,7 @@ trait SlowBlockReader extends BlockReader {
       q.update(oTx.toSomeArray, Some(oIdx), spTx.toSomeArray)
   }
 
-  def saveOutput(tx: Hash,adOpt:Option[Array[Byte]],idx:Int,value:Double): Unit =
+  def saveOutput(tx: Hash,adOpt:Option[Array[Byte]],idx:Int,value:Long): Unit =
   {
     val x = tx.array.toArray
     val q = for { o <- movements
@@ -65,9 +65,9 @@ trait SlowBlockReader extends BlockReader {
     (Hash(outpoint.getHash.getBytes), outpoint.getIndex.toInt, Hash(i.getParentTransaction.getHash.getBytes))
   }
 
-  def decomposeOutput(o: TransactionOutput, index: Int): (Hash,Option[Array[Byte]],Int,Double) = {
+  def decomposeOutput(o: TransactionOutput, index: Int): (Hash,Option[Array[Byte]],Int,Long) = {
     val addressOption: Option[Array[Byte]] = getAddressFromOutput(o)
-    val value = o.getValue.doubleValue
+    val value = o.getValue.value
     val txHash = Hash(o.getParentTransaction.getHash.getBytes)
     (txHash,addressOption,index,value)
   }

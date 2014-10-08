@@ -1,6 +1,6 @@
 package core
 
-import com.google.bitcoin.core.{Block, NetworkParameters}
+import org.bitcoinj.core.{Block, NetworkParameters}
 
 /**
  * Created by yzark on 25.08.14.
