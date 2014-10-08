@@ -90,7 +90,7 @@ trait BlockReader extends BlockSource {
           if (add == null)
             add = output.getAddressFromP2SH(params)
           if (add == null)
-            add = parseScript(output.getScriptPubKey.toString)
+            add = customParseScript(output.getScriptPubKey.toString)
           if (add == null)
             noAddressParsePossible("ERROR", output)
           else
@@ -98,7 +98,13 @@ trait BlockReader extends BlockSource {
         }
         catch{
           case e: Exception =>
-            noAddressParsePossible("ERRORX", output)
+          {
+            val add: Address = customParseScript(output.getScriptPubKey.toString)
+            if (add == null)
+              noAddressParsePossible("EXCEPTION", output)
+            else
+              getVersionedHashFromAddress(Some(add))
+          }
         }
       }
     }
@@ -108,7 +114,7 @@ trait BlockReader extends BlockSource {
     None
   }
 
-  def parseScript(script: String): Address = {
+  def customParseScript(script: String): Address = {
     val start: Int = script.indexOf('[')+1
     val end: Int = script.indexOf(']') - start+1
 
