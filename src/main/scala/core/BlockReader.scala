@@ -105,7 +105,7 @@ trait BlockReader extends BlockSource {
 
   def parseScript(script: String): Address = {
     val start: Int = script.indexOf('[')+1
-    var end: Int = script.indexOf(']') - start+1
+    val end: Int = script.indexOf(']') - start+1
 
     if (end - start == 118)
     {
@@ -127,6 +127,5 @@ trait BlockReader extends BlockSource {
       case None => None
       case Some(address) => Some((Array(address.getVersion.toByte) ++ address.getHash160).toArray)
     }
-
   }
 }
