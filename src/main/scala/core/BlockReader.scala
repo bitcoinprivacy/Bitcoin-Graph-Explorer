@@ -84,17 +84,22 @@ trait BlockReader extends BlockSource {
 
     catch 
     {
-      case e: ScriptException =>
-      {
-        var add: Address = output.getAddressFromP2PKHScript(params)
-        if (add == null)
-        add = output.getAddressFromP2SH(params)
-        if (add==null)
-        add = parseScript(output.getScriptPubKey.toString)
-        if (add==null)
-        noAddressParsePossible("ERROR", output)
-        else
-        getVersionedHashFromAddress(Some(add))
+      case e: ScriptException => {
+        try {
+          var add: Address = output.getAddressFromP2PKHScript(params)
+          if (add == null)
+            add = output.getAddressFromP2SH(params)
+          if (add == null)
+            add = parseScript(output.getScriptPubKey.toString)
+          if (add == null)
+            noAddressParsePossible("ERROR", output)
+          else
+            getVersionedHashFromAddress(Some(add))
+        }
+        catch{
+          case e: Exception =>
+            noAddressParsePossible("ERRORX", output)
+        }
       }
     }
 
