@@ -99,11 +99,7 @@ trait BlockReader extends BlockSource {
         catch{
           case e: Exception =>
           {
-            val add: Address = customParseScript(output.getScriptPubKey.toString)
-            if (add == null)
-              noAddressParsePossible("EXCEPTION", output)
-            else
-              getVersionedHashFromAddress(Some(add))
+            noAddressParsePossible("EXCEPTION", output)
           }
         }
       }
