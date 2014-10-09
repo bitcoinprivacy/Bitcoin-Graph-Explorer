@@ -1,6 +1,7 @@
 package core
 
 // for blocks db and longestChain
+import org.bitcoinj.core.Utils._
 import org.bitcoinj.core._
 
 import util._
@@ -61,6 +62,7 @@ trait BlockReader extends BlockSource {
     !(Hash(b.getHash.getBytes) == Hash("00000000000a4d0a3B83B59A507C6B843DE3DB4E365B141621FB2381A2641B16C4E10C110E1C2EFBD98161ffc163c503763b1f4360639393e0e4c8e300e0caec")  &&
       Hash(t.getHash.getBytes) == Hash("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599"))
 
+  // TODO: use take and slice to avoid reading the whole block file
   lazy val filteredBlockSource =
     blockSource withFilter blockFilter
 
@@ -81,26 +83,19 @@ trait BlockReader extends BlockSource {
       var add: Address = output.getScriptPubKey.getToAddress(params)
        getVersionedHashFromAddress(Some(add))
     }
-
-    catch 
-    {
+    catch{
       case e: ScriptException => {
         try {
-          var add: Address = output.getAddressFromP2PKHScript(params)
-          if (add == null)
-            add = output.getAddressFromP2SH(params)
-          if (add == null)
-            add = customParseScript(output.getScriptPubKey.toString)
-          if (add == null)
-            noAddressParsePossible("ERROR", output)
-          else
-            getVersionedHashFromAddress(Some(add))
+          getVersionedHashFromAddress(
+            Option(output.getAddressFromP2PKHScript(params))
+            .orElse(
+            Option(output.getAddressFromP2SH(params)))
+          )
+          .orElse(customParseScript(output.getScriptPubKey.toString))
+          .orElse(noAddressParsePossible("ERROR", output))
         }
-        catch{
-          case e: Exception =>
-          {
-            noAddressParsePossible("EXCEPTION", output)
-          }
+        catch {
+          case e: Exception => noAddressParsePossible("EXCEPTION", output)
         }
       }
     }
@@ -118,29 +113,48 @@ trait BlockReader extends BlockSource {
     None
   }
 
-  def customParseScript(script: String): Address = {
+  def customParseScript(script: String): Option[Array[Byte]] = {
+    if (script.endsWith("CHECKMULTISIG"))
+      parseMultisigScript(script)
+    else if (script.endsWith("CHECKSIG"))
+      parseChecksigScript(script)
+    else
+      None
+  }
+
+  def parseChecksigScript(script: String): Option[Array[Byte]] = {
     val start: Int = script.indexOf('[')+1
     val end: Int = script.indexOf(']') - start+1
 
-    if (end - start == 118)
+    if (end > start)
     {
       val hexa = script.substring(start, end)
       import org.bitcoinj.core.Utils._
       val pubkey = Hash(hexa).array.toArray
       val address = new Address(params, sha256hash160(pubkey))
-      address
+      getVersionedHashFromAddress(Some(address))
     }
+
     else
-    {
-      null
-    }
+      None
   }
 
+  def parseMultisigScript(script: String): Option[Array[Byte]] = {
+    val rawPubkeys = """\[(.)+\]""".r.findAllIn(script)
+    val pubkeys = for (pubkey <- rawPubkeys)
+      yield getHashFromPubkeyAsScriptString(pubkey)
+
+    val firstNumber = script.head.toInt.toByte
+
+    Some(Array(firstNumber)++pubkeys.reduce{(a,b)=>a++b})
+  }
+
+  def getHashFromPubkeyAsScriptString(pubkey: String): Array[Byte] =
+    sha256hash160(Hash(pubkey.slice(1, pubkey.length - 1)).array.toArray)
+
   def getVersionedHashFromAddress(address: Option[Address]): Option[Array[Byte]] =
-  {
     address match {
       case None => None
       case Some(address) => Some((Array(address.getVersion.toByte) ++ address.getHash160).toArray)
     }
-  }
 }
