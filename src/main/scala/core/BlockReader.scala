@@ -106,7 +106,15 @@ trait BlockReader extends BlockSource {
     }
 
   def noAddressParsePossible(key: String, output: TransactionOutput) = {
-    println(key+":"+output.getParentTransaction.getHash+":"+output.getScriptPubKey.toString)
+    try {
+      println(key+":"+output.getParentTransaction.getHash+":"+output.getScriptPubKey.toString)
+    }
+    catch{
+      case e: Exception =>
+      {
+        println(key+":"+output.getParentTransaction.getHash+":unknown")
+      }
+    }
     None
   }
 
