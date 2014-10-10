@@ -91,7 +91,7 @@ class ScriptReader {
       updateCommandList(instruction)
 
   def instructionInvalid(instruction: String): Boolean =
-    instruction.contains("PUSHDATA")
+    return false//instruction.contains("PUSHDATA")
 
   def updateCommandList(instruction: String): Unit =
     if (commands.contains(instruction))
