@@ -95,10 +95,17 @@ trait BlockReader extends BlockSource {
           .orElse(noAddressParsePossible("ERROR", output))
         }
         catch {
-          case e: Exception =>
-            customParseScript(output.getScriptPubKey.toString)
-            .orElse(noAddressParsePossible("EXCEPTION", output))
+          case e: ScriptException =>
+            try{
+              customParseScript(output.getScriptPubKey.toString)
+              .orElse(noAddressParsePossible("EXCEPTION", output))
+            }
+            catch{
+              case e: Exception =>
+                noAddressParsePossible("EXCEPTION", output)
+            }
         }
+
       }
     }
 
