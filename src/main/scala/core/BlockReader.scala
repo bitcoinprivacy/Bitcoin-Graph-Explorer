@@ -64,7 +64,7 @@ trait BlockReader extends BlockSource {
 
   // TODO: use take and slice to avoid reading the whole block file
   lazy val filteredBlockSource =
-    blockSource withFilter blockFilter
+    blockSource.take(100000) withFilter blockFilter
 
   def transactionsInBlock(b: Block) =
     b.getTransactions.asScala filter (t => withoutDuplicates(b,t))
@@ -107,14 +107,14 @@ trait BlockReader extends BlockSource {
     catch{
       case e: Exception =>
       {
-        println(key+":"+output.getParentTransaction.getHash+":unknown")
+        println(key+":"+output.getParentTransaction.getHash+":"+e.getMessage)
       }
     }
     None
   }
 
   def customParseScript(script: String): Option[Array[Byte]] = {
-    if (script.endsWith("CHECKMULTISIG"))
+    if (script.contains("CHECKMULTISIGVERIF") && script.contains("CHECKMULTISIG"))
       parseMultisigScript(script)
     else if (script.endsWith("CHECKSIG"))
       parseChecksigScript(script)
@@ -123,30 +123,39 @@ trait BlockReader extends BlockSource {
   }
 
   def parseChecksigScript(script: String): Option[Array[Byte]] = {
-    val start: Int = script.indexOf('[')+1
-    val end: Int = script.indexOf(']') - start+1
+    if (script.contains("PUSHDATA1")|| script.contains("PUSHDATA2") || script.contains("PUSHDATA4"))
+      return None
 
-    if (end > start)
+    val start: Int = script.indexOf('[')+1
+    var end: Int = script.indexOf(']') - start+1
+
+    if (end > start + 30)
     {
       val hexa = script.substring(start, end)
-      import org.bitcoinj.core.Utils._
       val pubkey = Hash(hexa).array.toArray
       val address = new Address(params, sha256hash160(pubkey))
       getVersionedHashFromAddress(Some(address))
     }
-
     else
       None
   }
 
   def parseMultisigScript(script: String): Option[Array[Byte]] = {
-    val rawPubkeys = """\[(.)+\]""".r.findAllIn(script)
+    val rawPubkeys = """\[([^\]])+\]""".r.findAllIn(script).toList
     val pubkeys = for (pubkey <- rawPubkeys)
       yield getHashFromPubkeyAsScriptString(pubkey)
+    val rawNumbers = """[ |^](0-9)*[ |$]""".r.findAllIn(script).toList
+    // TODO: if there is not first number, is it right to get the length?
+    val firstNumber =
+      if (!rawNumbers.isEmpty)
+        rawNumbers.head.toInt
+      else
+        pubkeys.length
 
-    val firstNumber = script.head.toInt.toByte
-
-    Some(Array(firstNumber)++pubkeys.reduce{(a,b)=>a++b})
+    if (pubkeys.isEmpty)
+      Some(Array(firstNumber.toByte))
+    else
+      Some(Array(firstNumber.toByte)++pubkeys.reduce{(a,b)=>a++b})
   }
 
   def getHashFromPubkeyAsScriptString(pubkey: String): Array[Byte] =

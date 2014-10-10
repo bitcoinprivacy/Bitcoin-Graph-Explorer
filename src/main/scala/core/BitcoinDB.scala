@@ -11,13 +11,11 @@ package core
 import scala.slick.driver.SQLiteDriver.simple._
 
 class Blocks(tag:Tag) extends Table[(Array[Byte])](tag, "blocks") {
-
   def hash= column[Array[Byte]]("hash")
   def * =  hash
 }
 
 class Addresses(tag:Tag) extends Table[(Array[Byte], Array[Byte], Option[Double])](tag, "addresses") {
-
   def hash= column[Array[Byte]]("hash")
   def representant = column[Array[Byte]]("representant")
   def balance= column[Option[Double]]("balance", O.Nullable)
@@ -26,8 +24,8 @@ class Addresses(tag:Tag) extends Table[(Array[Byte], Array[Byte], Option[Double]
 }
 
 class Movements(tag:Tag) extends Table[(Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Long])](tag, "movements") {
-
   def transaction_hash = column[Option[Array[Byte]]]("transaction_hash", O.Nullable)
+  // Address can be a single 20-hex address, or a 2-hex number plus several addresses
   def address = column[Option[Array[Byte]]]("address", O.Nullable)
   def index = column[Option[Int]]("index", O.Nullable)
   def value = column[Option[Long]]("value", O.Nullable)
