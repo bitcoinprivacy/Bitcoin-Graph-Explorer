@@ -78,6 +78,7 @@ trait BlockReader extends BlockSource {
 
   lazy val transactionSource:Iterator[Transaction] = filteredBlockSource flatMap {b => saveBlock(Hash(b.getHash.getBytes)) ; transactionsInBlock(b)}
 
+  // TODO: maybe we can simplify the try-catch blocks?
   def getAddressFromOutput(output: TransactionOutput): Option[Array[Byte]] =
     try {
       var add: Address = output.getScriptPubKey.getToAddress(params)
@@ -91,80 +92,95 @@ trait BlockReader extends BlockSource {
             .orElse(
             Option(output.getAddressFromP2SH(params)))
           )
-          .orElse(customParseScript(output.getScriptPubKey.toString))
-          .orElse(noAddressParsePossible("ERROR", output))
+          .orElse(customParseScript(output))
         }
         catch {
           case e: ScriptException =>
             try{
-              customParseScript(output.getScriptPubKey.toString)
-              .orElse(noAddressParsePossible("EXCEPTION", output))
+              customParseScript(output)
             }
             catch{
               case e: Exception =>
-                noAddressParsePossible("EXCEPTION", output)
+                noAddressParsePossible(output)
             }
         }
 
       }
     }
 
-  def noAddressParsePossible(key: String, output: TransactionOutput) = {
+  def noAddressParsePossible(output: TransactionOutput) = {
     try {
-      println(key+":"+output.getParentTransaction.getHash+":"+output.getScriptPubKey.toString)
+      println("ERROR:"+output.getParentTransaction.getHash+":"+output.getScriptPubKey.toString)
     }
     catch{
       case e: Exception =>
       {
-        println(key+":"+output.getParentTransaction.getHash+":"+e.getMessage)
+        println("ERROR:"+output.getParentTransaction.getHash+":"+e.getMessage)
       }
     }
     None
   }
 
-  def customParseScript(script: String): Option[Array[Byte]] = {
-    if (script.contains("CHECKMULTISIGVERIF") && script.contains("CHECKMULTISIG"))
-      parseMultisigScript(script)
-    else if (script.contains("CHECKSIG"))
-      parseChecksigScript(script)
-    else
-      None
+  def customParseScript(output: TransactionOutput): Option[Array[Byte]] = {
+      parseMultisigScript(output)
+      .orElse(parseChecksigScript(output))
+      .orElse(noAddressParsePossible(output))
   }
 
-  def parseChecksigScript(script: String): Option[Array[Byte]] = {
-    if (script.contains("PUSHDATA1")|| script.contains("PUSHDATA2") || script.contains("PUSHDATA4"))
-      return None
+  def parseChecksigScript(output: TransactionOutput): Option[Array[Byte]] = {
+    try{
+      val script: String = output.getScriptPubKey.toString
 
-    val start: Int = script.indexOf('[')+1
-    var end: Int = script.indexOf(']') - start+1
+      if (!script.contains("CHECKSIG") || script.contains("PUSHDATA1")||
+           script.contains("PUSHDATA2")|| script.contains("PUSHDATA4"))
+        return None
 
-    if (end > start + 30)
-    {
-      val hexa = script.substring(start, end)
-      val pubkey = Hash(hexa).array.toArray
-      val address = new Address(params, sha256hash160(pubkey))
-      getVersionedHashFromAddress(Some(address))
-    }
-    else
-      None
-  }
+      val start: Int = script.indexOf('[')+1
+      var end: Int = script.indexOf(']') - start+1
 
-  def parseMultisigScript(script: String): Option[Array[Byte]] = {
-    val rawPubkeys = """\[([^\]])+\]""".r.findAllIn(script).toList
-    val pubkeys = for (pubkey <- rawPubkeys)
-      yield getHashFromPubkeyAsScriptString(pubkey)
-    val rawNumbers = """[ |^](0-9)*[ |$]""".r.findAllIn(script).toList
-    // TODO: if there is not first number, is it right to get the length?
-    val firstNumber =
-      if (!rawNumbers.isEmpty)
-        rawNumbers.head.toInt
+      if (end > start + 30)
+      {
+        val hexa = script.substring(start, end)
+        val pubkey = Hash(hexa).array.toArray
+        val address = new Address(params, sha256hash160(pubkey))
+        getVersionedHashFromAddress(Some(address))
+      }
       else
-        pubkeys.length
+        None
+    }
+    catch{
+      case e: Exception =>
+        None
+    }
+  }
 
-    if (pubkeys.isEmpty)
-      Some(Array(firstNumber.toByte))
-    else
-      Some(Array(firstNumber.toByte)++pubkeys.reduce{(a,b)=>a++b})
+  def parseMultisigScript(output: TransactionOutput): Option[Array[Byte]] = {
+    try {
+      val script: String = output.getScriptPubKey.toString
+
+      if (script.contains("CHECKMULTISIGVERIF") || !script.contains("CHECKMULTISIG"))
+        None
+
+      val rawPubkeys = """\[([^\]])+\]""".r.findAllIn(script).toList
+      val pubkeys = for (pubkey <- rawPubkeys)
+      yield getHashFromPubkeyAsScriptString(pubkey)
+      val rawNumbers = """[ |^](0-9)*[ |$]""".r.findAllIn(script).toList
+      // TODO: if there is not first number, is it right to get the length?
+      val firstNumber =
+        if (!rawNumbers.isEmpty)
+          rawNumbers.head.toInt
+        else
+          pubkeys.length
+
+      if (pubkeys.isEmpty)
+        Some(Array(firstNumber.toByte))
+      else
+        Some(Array(firstNumber.toByte) ++ pubkeys.reduce { (a, b) => a ++ b})
+    }
+    catch{
+      case e: Exception =>
+        None
+    }
   }
 
   def getHashFromPubkeyAsScriptString(pubkey: String): Array[Byte] =
