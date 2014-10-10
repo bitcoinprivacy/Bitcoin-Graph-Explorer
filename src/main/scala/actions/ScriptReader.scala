@@ -121,7 +121,7 @@ class ScriptReader {
   def customParseScript(script: String): Option[Array[Byte]] = {
     if (!script.contains("CHECKMULTISIGVERIF") && script.contains("CHECKMULTISIG"))
       parseMultisigScript(script)
-    else if (script.endsWith("CHECKSIG"))
+    else if (script.contains("CHECKSIG"))
       parseChecksigScript(script)
     else
       None

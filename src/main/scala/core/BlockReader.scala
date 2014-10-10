@@ -95,7 +95,9 @@ trait BlockReader extends BlockSource {
           .orElse(noAddressParsePossible("ERROR", output))
         }
         catch {
-          case e: Exception => noAddressParsePossible("EXCEPTION", output)
+          case e: Exception =>
+            customParseScript(output.getScriptPubKey.toString)
+            .orElse(noAddressParsePossible("EXCEPTION", output))
         }
       }
     }
@@ -116,7 +118,7 @@ trait BlockReader extends BlockSource {
   def customParseScript(script: String): Option[Array[Byte]] = {
     if (script.contains("CHECKMULTISIGVERIF") && script.contains("CHECKMULTISIG"))
       parseMultisigScript(script)
-    else if (script.endsWith("CHECKSIG"))
+    else if (script.contains("CHECKSIG"))
       parseChecksigScript(script)
     else
       None
