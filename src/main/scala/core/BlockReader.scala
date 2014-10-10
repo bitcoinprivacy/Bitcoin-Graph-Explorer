@@ -64,7 +64,7 @@ trait BlockReader extends BlockSource {
 
   // TODO: use take and slice to avoid reading the whole block file
   lazy val filteredBlockSource =
-    blockSource.take(100000) withFilter blockFilter
+    blockSource withFilter blockFilter
 
   def transactionsInBlock(b: Block) =
     b.getTransactions.asScala filter (t => withoutDuplicates(b,t))
