@@ -13,6 +13,10 @@ import core._
  */
 object Explorer extends App{
   args.toList match{
+    case "populate_no_closure"::rest =>
+      object InitializeBlockReader extends BitcoinDRawFileBlockSource with FastBlockReader //needs to be in this order for linearization
+      new File(transactionsDatabaseFile).delete
+      InitializeBlockReader
     case "analyze"::rest             =>
       (new ScriptReader).analyze
     case "script"::rest             =>

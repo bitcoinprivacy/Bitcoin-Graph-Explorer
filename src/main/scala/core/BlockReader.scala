@@ -63,7 +63,7 @@ trait BlockReader extends BlockSource {
 
   // TODO: use take and slice to avoid reading the whole block file
   lazy val filteredBlockSource =
-    blockSource withFilter blockFilter
+    blockSource.take(100000) withFilter blockFilter
 
   def transactionsInBlock(b: Block) =
     b.getTransactions.asScala filter (t => withoutDuplicates(b, t))
@@ -77,7 +77,6 @@ trait BlockReader extends BlockSource {
 
   lazy val transactionSource: Iterator[Transaction] = filteredBlockSource flatMap { b => saveBlock(Hash(b.getHash.getBytes)); transactionsInBlock(b)}
 
-  // TODO: maybe we can simplify the try-catch blocks?
   def getAddressFromOutput(output: TransactionOutput): Option[Array[Byte]] =
     bitcoinjParseScript(output).
     orElse(customParseScript(output)).
@@ -86,8 +85,8 @@ trait BlockReader extends BlockSource {
   def bitcoinjParseScript(output: TransactionOutput) =
     getVersionedHashFromAddress(
       tryToGetAddress(output).
-      orElse(tryGetAddressFromP2PKHScript(output)).
-      orElse(tryGetAddressFromP2SH(output)))
+        orElse(tryGetAddressFromP2PKHScript(output)).
+        orElse(tryGetAddressFromP2SH(output)))
 
   def tryToGetAddress(output: TransactionOutput) = {
     try {
@@ -120,18 +119,19 @@ trait BlockReader extends BlockSource {
   def noAddressParsePossible(output: TransactionOutput) = {
     try {
       println("ERROR:"+output.getParentTransaction.getHash+":"+output.getScriptPubKey.toString)
+      None
     }
     catch {
       case e: Exception =>
         println("ERROR:"+output.getParentTransaction.getHash+":"+e.getMessage)
+        None
     }
-    None
+
   }
 
   def customParseScript(output: TransactionOutput): Option[Array[Byte]] =
-    return parseChecksigScript(output).
-           orElse(parseMultisigScript(output)).
-           orElse(None)
+    parseChecksigScript(output).
+    orElse(parseMultisigScript(output))
 
   def parseChecksigScript(output: TransactionOutput): Option[Array[Byte]] = {
     try{
@@ -139,15 +139,10 @@ trait BlockReader extends BlockSource {
 
       if (!script.contains("CHECKSIG"))
       {
-        println("ERROR:912089123809230892108923afe123:NOT_CHECKSIG")
-        return None
-      }
-      else{
-        println("ERROR:912089123809230892108923afe123:CHECKSIG")
         return None
       }
 
-    // Hash expression "[hexadecimal]" with length of 33 or 65
+      // Hash expression "[hexadecimal]" with length of 33 or 65
       // Search for a 33 or 65 pubkey and decode it
       val rawPubkeys = findHashListFromScript(script)
 
@@ -167,24 +162,17 @@ trait BlockReader extends BlockSource {
     }
   }
 
-  def findHashListFromScript(script: String): List[String] =
-    """\[([^\]]{33}|[^\]]{65})\]""".r.findAllIn(script).toList
-
-  def findNumericListFromScript(script: String): List[String] =
-    """[ |^](0-9)*[ |$]""".r.findAllIn(script).toList
-
   def parseMultisigScript(output: TransactionOutput): Option[Array[Byte]] = {
     try {
       val script: String = output.getScriptPubKey.toString
       // Ignore if there is not a CHECKMULTISIG
-      if (script.contains("CHECKMULTISIGVERIF") ||
-        !script.contains("CHECKMULTISIG"))
-        None
+      if (script.contains("CHECKMULTISIGVERIF") || !script.contains("CHECKMULTISIG"))
+        return None
 
       val rawPubkeys = findHashListFromScript(script)
 
       val pubkeys = for (pubkey <- rawPubkeys)
-      yield getHashFromPubkeyAsScriptString(pubkey)
+        yield getHashFromPubkeyAsScriptString(pubkey)
 
       val rawNumbers = findNumericListFromScript(script)
       // TODO: if there is not first number, is it right to get the length?
@@ -205,6 +193,13 @@ trait BlockReader extends BlockSource {
     }
   }
 
+  def findHashListFromScript(script: String): List[String] =
+    """\[([^\]]{66}|[^\]]{130})\]""".r.findAllIn(script).toList
+
+  def findNumericListFromScript(script: String): List[String] =
+    """[ |^](0-9)*[ |$]""".r.findAllIn(script).toList
+
+
   def getHashFromPubkeyAsScriptString(pubkey: String): Array[Byte] =
     sha256hash160(Hash(pubkey.slice(1, pubkey.length - 1)).array.toArray)
 
@@ -213,4 +208,5 @@ trait BlockReader extends BlockSource {
       case None => None
       case Some(address) => Some((Array(address.getVersion.toByte) ++ address.getHash160).toArray)
     }
+
 }
