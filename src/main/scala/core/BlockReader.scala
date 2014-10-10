@@ -122,8 +122,8 @@ trait BlockReader extends BlockSource {
   }
 
   def customParseScript(output: TransactionOutput): Option[Array[Byte]] = {
-    parseChecksigScript(output)
-      .orElse(parseMultisigScript(output))
+    parseChecksigScript(output)    // returns always None
+      .orElse(parseMultisigScript(output))  // None if it not contains checkmultisig
       .orElse(noAddressParsePossible(output))
   }
 
@@ -169,6 +169,7 @@ trait BlockReader extends BlockSource {
       yield getHashFromPubkeyAsScriptString(pubkey)
       val rawNumbers = """[ |^](0-9)*[ |$]""".r.findAllIn(script).toList
       // TODO: if there is not first number, is it right to get the length?
+      //
       val firstNumber =
         if (!rawNumbers.isEmpty)
           rawNumbers.head.toInt
