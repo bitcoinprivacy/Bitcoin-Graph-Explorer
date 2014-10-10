@@ -64,7 +64,7 @@ trait BlockReader extends BlockSource {
 
   // TODO: use take and slice to avoid reading the whole block file
   lazy val filteredBlockSource =
-    blockSource withFilter blockFilter
+    blockSource.take(100000) withFilter blockFilter
 
   def transactionsInBlock(b: Block) =
     b.getTransactions.asScala filter (t => withoutDuplicates(b,t))
@@ -122,23 +122,24 @@ trait BlockReader extends BlockSource {
   }
 
   def customParseScript(output: TransactionOutput): Option[Array[Byte]] = {
-      parseMultisigScript(output)
-      .orElse(parseChecksigScript(output))
+    parseChecksigScript(output)
+      .orElse(parseMultisigScript(output))
       .orElse(noAddressParsePossible(output))
   }
 
   def parseChecksigScript(output: TransactionOutput): Option[Array[Byte]] = {
     try{
+      return None
+      // Parse only checkmultisig
       val script: String = output.getScriptPubKey.toString
 
-      if (!script.contains("CHECKSIG") || script.contains("PUSHDATA1")||
-           script.contains("PUSHDATA2")|| script.contains("PUSHDATA4"))
+      if (!script.contains("CHECKSIG"))
         return None
 
       val start: Int = script.indexOf('[')+1
       var end: Int = script.indexOf(']') - start+1
 
-      if (end > start + 30)
+      if (end - start == 66 || end - start == 130 )
       {
         val hexa = script.substring(start, end)
         val pubkey = Hash(hexa).array.toArray
@@ -158,7 +159,9 @@ trait BlockReader extends BlockSource {
     try {
       val script: String = output.getScriptPubKey.toString
 
-      if (script.contains("CHECKMULTISIGVERIF") || !script.contains("CHECKMULTISIG"))
+      // Ignore if there is not a CHECKMULTISIG
+      if (script.contains("CHECKMULTISIGVERIF") ||
+         !script.contains("CHECKMULTISIG"))
         None
 
       val rawPubkeys = """\[([^\]])+\]""".r.findAllIn(script).toList
