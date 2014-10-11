@@ -18,36 +18,44 @@ trait BlockReader extends BlockSource {
   def saveBlock(b: Hash): Unit
 
   def pre: Unit
-
+  def useDatabase: Boolean
   def post: Unit
 
   var savedBlockSet: Set[Hash] = Set.empty
   val longestChain = getLongestBlockChainHashSet
+  var transactionCounter = 1
+  var startTime = System.currentTimeMillis
 
-  transactionDBSession {
+  if (useDatabase) transactionDBSession{
     pre
 
     val savedBlocks = for (b <- blockDB)
-    yield (b.hash)
+      yield (b.hash)
 
     for (c <- savedBlocks)
       savedBlockSet = savedBlockSet + Hash(c)
 
-    var a = 1
-    var time = System.currentTimeMillis
+    process
+    post
+  }
+  else{
+    pre
+    process
+    post
+  }
 
+  def process: Unit = {
     for (transaction <- transactionSource) {
       saveTransaction(transaction)
 
-      if (a % 10000 == 0) {
-        val t = System.currentTimeMillis - time
-        System.out.println("Processed " + a + " transactions in " + t + " using " + 1000 * t / a + " µs/tx");
+      if (transactionCounter % 10000 == 0) {
+        val t = System.currentTimeMillis - startTime
+        System.out.println("Processed " + transactionCounter + " transactions in " + t + " using " + 1000 * t / transactionCounter + " µs/tx");
       }
 
-      a += 1
+      transactionCounter += 1
     }
 
-    post
   }
 
   def blockFilter(b: Block) = {
@@ -126,7 +134,6 @@ trait BlockReader extends BlockSource {
         println("ERROR:"+output.getParentTransaction.getHash+":"+e.getMessage)
         None
     }
-
   }
 
   def customParseScript(output: TransactionOutput): Option[Array[Byte]] =
@@ -142,8 +149,6 @@ trait BlockReader extends BlockSource {
         return None
       }
 
-      // Hash expression "[hexadecimal]" with length of 33 or 65
-      // Search for a 33 or 65 pubkey and decode it
       val rawPubkeys = findHashListFromScript(script)
 
       if (rawPubkeys.nonEmpty)
@@ -165,7 +170,7 @@ trait BlockReader extends BlockSource {
   def parseMultisigScript(output: TransactionOutput): Option[Array[Byte]] = {
     try {
       val script: String = output.getScriptPubKey.toString
-      // Ignore if there is not a CHECKMULTISIG
+
       if (script.contains("CHECKMULTISIGVERIF") || !script.contains("CHECKMULTISIG"))
         return None
 
@@ -193,12 +198,15 @@ trait BlockReader extends BlockSource {
     }
   }
 
+  // Hash expression "[hexadecimal]" with length of 33 or 65
+  // Search for a 33 or 65 pubkey and decode it
   def findHashListFromScript(script: String): List[String] =
     """\[([^\]]{66}|[^\]]{130})\]""".r.findAllIn(script).toList
 
+  // Integer indicating how many from the addresses receive the money.
+  // It should be 1-5
   def findNumericListFromScript(script: String): List[String] =
     """[ |^](0-9)*[ |$]""".r.findAllIn(script).toList
-
 
   def getHashFromPubkeyAsScriptString(pubkey: String): Array[Byte] =
     sha256hash160(Hash(pubkey.slice(1, pubkey.length - 1)).array.toArray)
@@ -208,5 +216,4 @@ trait BlockReader extends BlockSource {
       case None => None
       case Some(address) => Some((Array(address.getVersion.toByte) ++ address.getHash160).toArray)
     }
-
 }

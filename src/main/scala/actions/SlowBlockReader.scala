@@ -8,8 +8,9 @@ import scala.slick.driver.SQLiteDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
 trait SlowBlockReader extends BlockReader {
+  def useDatabase: Boolean = true
 
- def saveTransaction(t: Transaction) =
+  def saveTransaction(t: Transaction) =
   {
     for (input <- inputsInTransaction(t))
     {

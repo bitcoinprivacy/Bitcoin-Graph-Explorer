@@ -25,38 +25,21 @@ class ScriptReader {
   val scriptsFile: String = "blockchain/scripts.log"
 
   // Get the repetition of each SCRIPT command
-  def analyze: Unit = {
-    for(script <- Source.fromFile(scriptsFile).getLines)
-      processScript(getSecondElement(script))
-    printCommandList
-  }
 
-  // try to generate address-hash from the script
-  def testScripts: Unit = {
-    var right = 0
-    var wrong = 0
+  for(script <- Source.fromFile(scriptsFile).getLines)
+    processScript(getSecondElement(script))
+  printCommandList
 
-    for(script <- Source.fromFile(scriptsFile).getLines)
-      customParseScript(getSecondElement(script)) match {
-        case Some(address) => outputAddress(address, script)
-        case None => updateCommandList("wrong")
-      }
+  def isJustHash(string: String): Boolean =
+    string.head == '['
 
-    printCommandList
-  }
+  def isJustPushData(instruction: String): Boolean =
+    instruction.contains("PUSHDATA1") ||
+      instruction.contains("PUSHDATA2") ||
+      instruction.contains("PUSHDATA4")
 
-  def printCommandList: Unit = {
-    for (command <- commands.toSeq.sortBy(_._1))
-      println(command._1 + ": " + command._2)
-  }
-
-  def outputAddress(address: Array[Byte], script: String): Unit = {
-    updateCommandList("right")
-    updateCommandList("Length " + address.length)
-  }
-
-  def isHexadecimal(char: Char): Boolean =
-    excludes.contains(char)
+  def isJustNumeric(x: String): Boolean =
+    "0123456789".contains(x)
 
   def getSecondElement(string: String): String =
     if (string.contains(':'))
@@ -83,15 +66,14 @@ class ScriptReader {
       case e: NoSuchElementException => println("PARSER"+instructions)}
 
   def processInstruction(instruction: String): Unit =
-    if (instructionInvalid(instruction))
-      return
-    else if (isHexadecimal(instruction.head))
+    if (isJustPushData(instruction))
+      updateCommandList("pushdata")
+    else if (isJustHash(instruction))
       updateCommandList("hashes")
+    else if (isJustNumeric(instruction))
+      updateCommandList("numeric")
     else
       updateCommandList(instruction)
-
-  def instructionInvalid(instruction: String): Boolean =
-    return false//instruction.contains("PUSHDATA")
 
   def updateCommandList(instruction: String): Unit =
     if (commands.contains(instruction))
@@ -99,76 +81,8 @@ class ScriptReader {
     else
       commands.put(instruction, 1)
 
-  def parseChecksigScript(script: String): Option[Array[Byte]] = {
-    if (script.contains("PUSHDATA1")|| script.contains("PUSHDATA2") || script.contains("PUSHDATA4"))
-      return None
-
-    val start: Int = script.indexOf('[')+1
-    var end: Int = script.indexOf(']') - start+1
-    updateCommandList("checksig")
-
-    if (end > start + 30)
-    {
-      val hexa = script.substring(start, end)
-      val pubkey = Hash(hexa).array.toArray
-      val address = new Address(params, sha256hash160(pubkey))
-      getVersionedHashFromAddress(Some(address))
-    }
-    else
-      None
-  }
-
-  def customParseScript(script: String): Option[Array[Byte]] = {
-    if (!script.contains("CHECKMULTISIGVERIF") && script.contains("CHECKMULTISIG"))
-      parseMultisigScript(script)
-    else if (script.contains("CHECKSIG"))
-      parseChecksigScript(script)
-    else
-      None
-  }
-
-  def isAllDigits(x: String) = x forall Character.isDigit
-
-  def parseMultisigScript(script: String): Option[Array[Byte]] = {
-    //updateCommandList("multichecksig")
-    val rawPubkeys = """\[([^\]])+\]""".r.findAllIn(script).toList
-    //updateCommandList("Found " + rawPubkeys.toList.length + " hashes")
-    val pubkeys = for (pubkey <- rawPubkeys)
-      yield getHashFromPubkeyAsScriptString(pubkey)
-    val rawNumbers = """[ |^](0-9)*[ |$]""".r.findAllIn(script).toList
-    val firstNumber =
-      if (!rawNumbers.isEmpty)
-        rawNumbers.head.toInt
-      else
-        pubkeys.length
-
-    //updateCommandList(firstNumber + " = " + Hash(Array(firstNumber.toByte)))
-
-    if (pubkeys.isEmpty)
-      Some(Array(firstNumber.toByte))
-    else
-      Some(Array(firstNumber.toByte)++pubkeys.reduce{(a,b)=>a++b})
-  }
-
-  def getHashFromPubkeyAsScriptString(pubkey: String): Array[Byte] =
-    sha256hash160(Hash(pubkey.slice(1, pubkey.length - 1)).array.toArray)
-
-  def getVersionedHashFromAddress(address: Option[Address]): Option[Array[Byte]] =
-    address match {
-      case None => None
-      case Some(address) => Some((Array(address.getVersion.toByte) ++ address.getHash160).toArray)
-    }
-
-  def noAddressParsePossible(key: String, output: TransactionOutput) = {
-    try {
-      println(key+":"+output.getParentTransaction.getHash+":"+output.getScriptPubKey.toString)
-    }
-    catch{
-      case e: Exception =>
-      {
-        println(key+":"+output.getParentTransaction.getHash+":"+e.getMessage)
-      }
-    }
-    None
+  def printCommandList: Unit = {
+    for (command <- commands.toSeq.sortBy(_._1))
+      println(command._1 + ": " + command._2)
   }
 }

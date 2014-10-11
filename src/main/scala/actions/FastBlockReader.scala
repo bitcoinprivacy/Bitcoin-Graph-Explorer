@@ -24,6 +24,8 @@ trait FastBlockReader extends BlockReader
   var vectorBlocks:Vector[Array[Byte]]  = Vector()
   var totalOutIn: Int = 0
 
+  def useDatabase: Boolean = true
+
   def saveTransaction(trans: Transaction) =
   {
     val transactionHash = Hash(trans.getHash.getBytes)
