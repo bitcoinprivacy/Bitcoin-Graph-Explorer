@@ -10,68 +10,18 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 object AddressBalance {
   var clock = System.currentTimeMillis
 
+  // the table balances contains a list of address with balance > 0
+  // if an address is not here, then he has 0 btc.
   transactionDBSession {
     println("Drop and create balances");
-    Q.updateNA("DROP TABLE IF EXISTS balances_temp;").execute
-    Q.updateNA("CREATE TABLE balances_temp (address blob, balance double, representant blob);").execute
+    Q.updateNA("drop table if exists balances_temp;").execute
+    Q.updateNA("create table balances_temp (balance double, address blob);").execute
     println("Inserting elements");
-    Q.updateNA(
-      """
-      INSERT INTO balances_temp
-      SELECT
-        m.address as address,
-        sum(m.value) as balance,
-        a.representant as representant
-      FROM
-        movements m left outer join addresses a on m.address = a.hash
-      WHERE
-        spent_in_transaction_hash IS NULL and a.representant is not null
-      GROUP BY address;
-    """).
-      execute
-    println("Inserting elements");
-    // queries having "having" do not terminate propertly with slick!
-    Q.updateNA(
-      """
-      INSERT INTO balances_temp SELECT
-        m.address as address,
-        0 as balance,
-        m.address as representant
-      FROM
-        movements m left join
-        (SELECT count(*) as count, address from movements where spent_in_transaction_hash is NULL) t on t.address = m.address
-      WHERE
-        t.count IS NULL
-      GROUP BY m.address
-      ;
-    """).
-      execute
-    println("Inserting elements");
-    Q.updateNA(
-      """
-      INSERT INTO balances_temp SELECT
-        m.address as address,
-        sum(m.value) as balance,
-        m.address as representant
-      FROM
-        movements m left outer join addresses a on m.address = a.hash
-      WHERE
-        spent_in_transaction_hash IS NULL and a.representant is null
-      GROUP BY address;
-    """).execute;
+    Q.updateNA("insert into balances_temp SELECT sum(value) as balance, address as address FROM movements m  WHERE spent_in_transaction_hash IS NULL  GROUP BY address;").execute
     println("Creating indexes...");
-    Q.updateNA(
-      "CREATE INDEX b1 ON balances_temp(address);").execute
-    Q.updateNA(
-      "CREATE INDEX b2 ON balances_temp(representant);").execute
-
-    println("Loading values to the productive table")
-
-    Q.updateNA(
-      "DROP TABLE IF EXISTS balances").execute
-    Q.updateNA(
-      "ALTER TABLE balances_temp RENAME TO balances").execute
-
+    Q.updateNA("create index address_balance on balances_temp(address);").execute
+    Q.updateNA("drop table if exists balances;").execute
+    Q.updateNA("ALTER TABLE balances_temp RENAME TO balances;").execute
   }
 
   println("     Balance table updated in %s ms" format (System.currentTimeMillis - clock))
