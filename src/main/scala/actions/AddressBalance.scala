@@ -11,14 +11,13 @@ object AddressBalance {
   var clock = System.currentTimeMillis
 
   transactionDBSession {
-    Q.updateNA("BEGIN TRANSACTION")
     println("Drop and create balances");
-    Q.updateNA("DROP TABLE IF EXISTS balances;").execute
-    Q.updateNA("CREATE TABLE balances (address blob, balance double, representant blob);").execute
+    Q.updateNA("DROP TABLE IF EXISTS balances_temp;").execute
+    Q.updateNA("CREATE TABLE balances_temp (address blob, balance double, representant blob);").execute
     println("Inserting elements");
     Q.updateNA(
       """
-      INSERT INTO balances
+      INSERT INTO balances_temp
       SELECT
         m.address as address,
         sum(m.value) as balance,
@@ -34,7 +33,7 @@ object AddressBalance {
     // queries having "having" do not terminate propertly with slick!
     Q.updateNA(
       """
-      INSERT INTO balances SELECT
+      INSERT INTO balances_temp SELECT
         m.address as address,
         0 as balance,
         m.address as representant
@@ -50,7 +49,7 @@ object AddressBalance {
     println("Inserting elements");
     Q.updateNA(
       """
-      INSERT INTO balances SELECT
+      INSERT INTO balances_temp SELECT
         m.address as address,
         sum(m.value) as balance,
         m.address as representant
@@ -60,13 +59,19 @@ object AddressBalance {
         spent_in_transaction_hash IS NULL and a.representant is null
       GROUP BY address;
     """).execute;
-    println(
-      "Creating indexes...");
+    println("Creating indexes...");
     Q.updateNA(
-      "CREATE INDEX b1 ON balances(address);").execute
+      "CREATE INDEX b1 ON balances_temp(address);").execute
     Q.updateNA(
-      "CREATE INDEX b2 ON balances(representant);").execute
-    Q.updateNA("COMMIT TRANSACTION")
+      "CREATE INDEX b2 ON balances_temp(representant);").execute
+
+    println("Loading values to the productive table")
+
+    Q.updateNA(
+      "DROP TABLE IF EXISTS balances").execute
+    Q.updateNA(
+      "ALTER TABLE balances_temp RENAME TO balances").execute
+
   }
 
   println("     Balance table updated in %s ms" format (System.currentTimeMillis - clock))
