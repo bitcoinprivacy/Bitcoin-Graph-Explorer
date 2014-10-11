@@ -217,3 +217,4 @@ trait BlockReader extends BlockSource {
       case Some(address) => Some((Array(address.getVersion.toByte) ++ address.getHash160).toArray)
     }
 }
+
