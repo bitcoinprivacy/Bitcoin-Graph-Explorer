@@ -21,7 +21,6 @@ abstract class AddressClosure(args:List[String])
   def adaptTreeIfNecessary(tree:  HashMap[Hash, DisjointSetOfAddresses]):  HashMap[Hash, DisjointSetOfAddresses] = tree
   def createIndexesIfNecessary = { }
 
-
   def getAddressesFromMovements(firstElement: Int, elements: Int): HashMap[Hash, Array[Hash]] =
   {
     val timeStart = System.currentTimeMillis

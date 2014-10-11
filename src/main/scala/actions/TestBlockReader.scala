@@ -13,6 +13,7 @@ import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import scala.slick.driver.SQLiteDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
+// Example of how to create a test-class
 // just try to generate address from outputs, no database
 trait TestBlockReader extends BlockReader
 {
@@ -22,7 +23,8 @@ trait TestBlockReader extends BlockReader
   {
     val transactionHash = Hash(trans.getHash.getBytes)
 
-    //for (input <- inputsInTransaction(trans))
+    for (input <- inputsInTransaction(trans))
+      testInput(input)
 
     for (output <- outputsInTransaction(trans))
       getAddressFromOutput(output: TransactionOutput).
@@ -41,6 +43,9 @@ trait TestBlockReader extends BlockReader
 
   }
 
+  def testInput(input: TransactionInput): Unit = {
+
+  }
   // Add here code to test
   def testOutput(output: TransactionOutput): Option[Array[Byte]] = {
     None
