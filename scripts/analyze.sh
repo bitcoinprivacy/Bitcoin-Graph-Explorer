@@ -1,5 +1,5 @@
 #!/bin/sh
-sbt "run test-populate" > blockchain/test.log
+sbt "run test-addresses" > blockchain/test.log
 grep ERROR: blockchain/test.log > blockchain/scripts.log
 rm blockchain/test.log
 sed -i 's/ERROR://g' blockchain/scripts.log 	
