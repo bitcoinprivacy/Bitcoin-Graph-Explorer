@@ -19,10 +19,9 @@ object AddressBalance {
     println("Inserting elements");
     Q.updateNA("insert into balances_temp SELECT sum(value) as balance, address as address FROM movements m  WHERE spent_in_transaction_hash IS NULL  GROUP BY address;").execute
     println("Creating indexes...");
-    Q.updateNA("create index address_balance on balances_temp(address);").execute
-    Q.updateNA("create index address_balance2 on balances_temp(balance);").execute
     Q.updateNA("drop table if exists balances;").execute
     Q.updateNA("ALTER TABLE balances_temp RENAME TO balances;").execute
+    Q.updateNA("create index address_balance on balances(address);").execute
   }
 
   println("     Balance table updated in %s ms" format (System.currentTimeMillis - clock))
