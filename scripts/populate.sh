@@ -1,3 +1,4 @@
+#!/bin/sh
 date
 cat .bitcoin/blocklist.txt  | wc -l > blockchain/count.txt.prov
 echo "0" > blockchain/count.txt
