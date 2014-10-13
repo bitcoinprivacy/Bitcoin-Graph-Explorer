@@ -71,7 +71,7 @@ trait BlockReader extends BlockSource {
 
   lazy val filteredBlockSource =
   {
-    println("Saving blocks from " + savedBlockSet.size + " until " + (longestChain.size - savedBlockSet.size))
+    println("Saving blocks from " + savedBlockSet.size + " until " + longestChain.size)
     blockSource.slice(savedBlockSet.size, longestChain.size - savedBlockSet.size) withFilter blockFilter
   }
 

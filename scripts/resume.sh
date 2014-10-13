@@ -1,8 +1,7 @@
 #! /bin/bash
 date
 echo "Reading blocklist"
-cd /root/bge
-cat /root/.bitcoin/blocklist.txt  | wc -l > /root/bge/blockchain/count.txt.prov
+cat .bitcoin/blocklist.txt  | wc -l > blockchain/count.txt.prov
 echo "Processing blockchain"
 sbt "run resume" >> blockchain/resume.log
 echo "Parsing errors found" 
