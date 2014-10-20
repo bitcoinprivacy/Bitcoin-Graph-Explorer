@@ -48,7 +48,7 @@ trait BlockReader extends BlockSource {
     for (transaction <- transactionSource) {
       saveTransaction(transaction)
 
-      if (transactionCounter % 10000 == 0) {
+      if (transactionCounter % 100 == 0) {
         val t = System.currentTimeMillis - startTime
         System.out.println("Processed " + transactionCounter + " transactions in " + t + " using " + 1000 * t / transactionCounter + " µs/tx");
       }
@@ -69,9 +69,10 @@ trait BlockReader extends BlockSource {
       !(Hash(b.getHash.getBytes) == Hash("00000000000a4d0a3B83B59A507C6B843DE3DB4E365B141621FB2381A2641B16C4E10C110E1C2EFBD98161ffc163c503763b1f4360639393e0e4c8e300e0caec") &&
         Hash(t.getHash.getBytes) == Hash("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599"))
 
-  // TODO: use take and slice to avoid reading the whole block file
   lazy val filteredBlockSource =
-    blockSource withFilter blockFilter
+  {
+    blockSource.slice(savedBlockSet.size, longestChain.size) withFilter blockFilter
+  }
 
   def transactionsInBlock(b: Block) =
     b.getTransactions.asScala filter (t => withoutDuplicates(b, t))

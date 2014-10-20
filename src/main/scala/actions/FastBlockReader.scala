@@ -85,9 +85,10 @@ trait FastBlockReader extends BlockReader
     saveUnmatchedInputs
     saveDataToDB
 
-    (Q.u + "create index if not exists address on movements (address)" + ";").execute
-    (Q.u + "create unique index if not exists transaction_hash_i on movements (transaction_hash, `index`)" + ";").execute
-    (Q.u + "create index if not exists spent_in_transaction_hash on movements (spent_in_transaction_hash)" + ";").execute
+    Q.updateNA("create index if not exists address on movements (address)" + ";").execute
+    Q.updateNA("create unique index if not exists transaction_hash_i on movements (transaction_hash, `index`)" + ";").execute
+    Q.updateNA("create index if not exists spent_in_transaction_hash on movements (spent_in_transaction_hash)" + ";").execute
+    Q.updateNA("create index if not exists block_hash on blocks(hash)").execute
     System.out.println("Wir sind geil!")
   }
 
