@@ -7,13 +7,10 @@
     fi
 done
 date
-echo "Reading blocklist"
+echo "[$(date)] Reading blockchain"
 cat .bitcoin/blocklist.txt  | wc -l > blockchain/count.txt.prov
 echo "Processing blockchain"
 scala -classpath "target/scala-2.11/Bitcoin Graph Explorer-assembly-2.0.jar" -DXmx=1G Explorer resume > blockchain/resume.log
-
-
-echo "[$(date)] Reading blockchain"
 cd /root/bge
 cat /root/.bitcoin/blocklist.txt  | wc -l > /root/bge/blockchain/count.txt.prov
 
