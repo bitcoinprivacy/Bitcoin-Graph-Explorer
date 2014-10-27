@@ -48,7 +48,7 @@ trait BlockReader extends BlockSource {
     for (transaction <- transactionSource) {
       saveTransaction(transaction)
 
-      if (transactionCounter % 10000 == 0) {
+      if (transactionCounter % 100 == 0) {
         val t = System.currentTimeMillis - startTime
         System.out.println("Processed " + transactionCounter + " transactions in " + t + " using " + 1000 * t / transactionCounter + " µs/tx");
       }

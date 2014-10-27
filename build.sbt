@@ -37,7 +37,6 @@ resolvers += "bitcoinj" at "httpexportJars := true://distribution.bitcoinj.googl
 
 resolvers += "scala-tools" at "https://oss.sonatype.org/content/groups/scala-tools"
 
-
 packageOptions in (Compile, packageBin) <+= (target, externalDependencyClasspath in Runtime) map
  { (targetDirectory: File, classpath: Classpath) =>
   val relativePaths = classpath map { attrFile: Attributed[File] => targetDirectory.toPath().relativize(attrFile.data.toPath()).toString() }; 
@@ -46,7 +45,8 @@ packageOptions in (Compile, packageBin) <+= (target, externalDependencyClasspath
 
 javaOptions in run += "-Xmx1G"
 
-javaOptions in run += "-Xms512M"
+
+javaOptions in run += "-Xms1G"
 
 javaOptions in run += "-XX:-UseGCOverheadLimit"
 //javaOptions in run += "-XX:+PrintCommandLineFlags"
