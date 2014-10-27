@@ -33,9 +33,16 @@ resolvers += "Fakod Snapshots" at "https://raw.github.com/FaKod/fakod-mvn-repo/m
 
 resolvers += "neo4j" at "http://m2.neo4j.org"
 
-resolvers += "bitcoinj" at "http://distribution.bitcoinj.googlecode.com/git/releases"
+resolvers += "bitcoinj" at "httpexportJars := true://distribution.bitcoinj.googlecode.com/git/releases"
 
 resolvers += "scala-tools" at "https://oss.sonatype.org/content/groups/scala-tools"
+
+
+packageOptions in (Compile, packageBin) <+= (target, externalDependencyClasspath in Runtime) map
+ { (targetDirectory: File, classpath: Classpath) =>
+  val relativePaths = classpath map { attrFile: Attributed[File] => targetDirectory.toPath().relativize(attrFile.data.toPath()).toString() }; 
+  Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> relativePaths.reduceOption(_ + " " + _).getOrElse(""))
+ }
 
 javaOptions in run += "-Xmx1G"
 
