@@ -21,7 +21,10 @@ object AddressBalance {
     println("Creating indexes...");
     Q.updateNA("drop table if exists balances;").execute
     Q.updateNA("ALTER TABLE balances_temp RENAME TO balances;").execute
-    Q.updateNA("create index address_balance on balances(address);").execute
+    Q.updateNA("create unique index address_balance_ on balances(address, balance);").execute
+    //Q.updateNA("drop table if exists closures")
+    //Q.updateNA("create table closures (representant blob, hash block, balance integer)").execute
+    //Q.updateNA("insert into closures SELECT a.representant as representant, count(*) as members, sum(ifnull(b.balance,0)) as balance FROM addresses a left join balances b on a.hash = b.address group by a.representant;").execute
   }
 
   println("     Balance table updated in %s ms" format (System.currentTimeMillis - clock))

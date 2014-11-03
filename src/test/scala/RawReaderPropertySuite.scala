@@ -5,7 +5,7 @@ import org.scalacheck.Gen._
 import actions._
 
 class RawReaderPropertySuite extends PropSpec with ShouldMatchers with PropertyChecks {
-  databaseFile = "blockchain/test.db"
+  /*databaseFile = "blockchain/test.db"
    
   property("populater.end should be the minimum of given end and number of blocks available") 
   {
@@ -17,5 +17,5 @@ class RawReaderPropertySuite extends PropSpec with ShouldMatchers with PropertyC
   	 }
   	 	
   }
-  }
+  } */
 }
