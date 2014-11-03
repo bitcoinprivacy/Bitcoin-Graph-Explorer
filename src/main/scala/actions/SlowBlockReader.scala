@@ -31,7 +31,6 @@ trait SlowBlockReader extends BlockReader {
   def pre  = { 
   
   }
-
   def post = { 
   
   }

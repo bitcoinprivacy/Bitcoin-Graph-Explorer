@@ -1,10 +1,11 @@
-import core._ 
+import core._
 import util._
 import java.io._
 import scala.slick.driver.SQLiteDriver.simple._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import scala.collection.mutable.HashMap
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
+import util.DisjointSetOfAddresses
 
 class SlowAddressClosure (args:List[String]) extends AddressClosure (args)
 {
@@ -14,21 +15,18 @@ class SlowAddressClosure (args:List[String]) extends AddressClosure (args)
     println("     Adapting tree to database ...")
 
     transactionDBSession {
-    val query = "select hash, representant from addresses"
-    // weird trick to allow slick using Array Bytes
-    implicit val GetByteArr = GetResult(r => r.nextBytes())
-    val q2 = Q.queryNA[(Array[Byte],Array[Byte])](query)
-
-    for (pair <- q2)
-    {
-      val (hash, representant) = pair
-      val address = Hash(hash)
-      if (mapDSOA.contains(address))
-      {
-        mapDSOA(address).find.parent = Some(DisjointSetOfAddresses(Hash(representant)))
-        mapDSOA remove address
-      }
-    }
+	    val byAddress = addresses.findBy( t => t.hash)
+	    for (pair <- mapDSOA){
+	      val (address, dsoa) = pair
+	      val found = byAddress(address.array.toArray).firstOption
+	      
+	      for (query <- found) {
+	        
+	        dsoa.find.parent = Some(DisjointSetOfAddresses(Hash(query._2)))
+	        mapDSOA remove address
+	      }
+	    }
+    
     }
 
     println("     Tree of size "+ mapDSOA.size + " adapted in %s ms" format (System.currentTimeMillis - timeStart))
