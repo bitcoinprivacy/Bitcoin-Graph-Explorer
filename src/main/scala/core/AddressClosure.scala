@@ -13,6 +13,7 @@ import scala.slick.driver.SQLiteDriver.simple._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import scala.collection.mutable.HashMap
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
+import java.lang.System
 
 
 
@@ -140,7 +141,9 @@ abstract class AddressClosure(args:List[String])
 
   var (tree, countTree, timeTree) = generateTree(start, end)
 
+  val timeStart = System.currentTimeMillis
   tree = adaptTreeIfNecessary(tree)
+  timeTree += System.currentTimeMillis - timeStart
   val (countSave, timeSave) = saveTree(tree)
 
   createIndexesIfNecessary
