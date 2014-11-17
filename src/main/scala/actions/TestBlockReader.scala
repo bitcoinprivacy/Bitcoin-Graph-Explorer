@@ -19,7 +19,7 @@ trait TestBlockReader extends BlockReader
 {
   def useDatabase: Boolean = false
 
-  def saveTransaction(trans: Transaction) =
+  def saveTransaction(trans: Transaction, blockHeight: Int) =
   {
     val transactionHash = Hash(trans.getHash.getBytes)
 

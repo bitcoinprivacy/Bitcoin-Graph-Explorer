@@ -34,6 +34,8 @@ object Explorer extends App{
       ResumeBlockReader
       new SlowAddressClosure(List(a.toString, countInputs.toString))
       AddressBalance
+    case "closure"::rest              =>
+      ClosureBalance
     case _=> println("""
       Available commands:
 
