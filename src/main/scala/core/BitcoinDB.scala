@@ -15,10 +15,10 @@ class Blocks(tag:Tag) extends Table[(Array[Byte])](tag, "blocks") {
   def * =  hash
 }
 
-class Addresses(tag:Tag) extends Table[(Array[Byte], Array[Byte], Option[Double])](tag, "addresses") {
+class Addresses(tag:Tag) extends Table[(Array[Byte], Array[Byte], Option[Long])](tag, "addresses") {
   def hash= column[Array[Byte]]("hash")
   def representant = column[Array[Byte]]("representant")
-  def balance= column[Option[Double]]("balance", O.Nullable)
+  def balance= column[Option[Long]]("balance", O.Nullable)
 
   def * = (hash,representant,balance)
 }

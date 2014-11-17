@@ -94,7 +94,7 @@ abstract class AddressClosure(args:List[String])
   def saveTree(tree: HashMap[Hash, DisjointSetOfAddresses]): (Int, Long) =
   {
     val timeStart = System.currentTimeMillis
-    var queries: Vector[(Array[Byte], Array[Byte], Option[Double])] = Vector()
+    var queries: Vector[(Array[Byte], Array[Byte], Option[Long])] = Vector()
     val totalElements = tree.size
     var counter = 0
     var counterTotal = 0
@@ -124,7 +124,7 @@ abstract class AddressClosure(args:List[String])
     (totalElements, System.currentTimeMillis - timeStart)
   }
 
-  def saveElementsToDatabase(queries: Vector[(Array[Byte], Array[Byte], Option[Double])], counter: Int): Unit =
+  def saveElementsToDatabase(queries: Vector[(Array[Byte], Array[Byte], Option[Long])], counter: Int): Unit =
   {
     val start = System.currentTimeMillis
     println("     Save transaction of %s ..." format (counter))
