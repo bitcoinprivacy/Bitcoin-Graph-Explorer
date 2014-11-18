@@ -43,7 +43,7 @@ packageOptions in (Compile, packageBin) <+= (target, externalDependencyClasspath
   Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> relativePaths.reduceOption(_ + " " + _).getOrElse(""))
  }
 
-javaOptions in run += "-Xmx1G"
+javaOptions in run += "-Xmx2G"
 
 
 javaOptions in run += "-Xms1G"

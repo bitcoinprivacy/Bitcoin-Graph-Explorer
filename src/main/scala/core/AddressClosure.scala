@@ -25,7 +25,7 @@ abstract class AddressClosure(args:List[String])
   def getAddressesFromMovements(firstElement: Int, elements: Int): HashMap[Hash, Array[Hash]] =
   {
     val timeStart = System.currentTimeMillis
-    println("     Reading until input %s" format (firstElement + elements))
+    //println("     Reading until input %s" format (firstElement + elements))
     val mapAddresses:HashMap[Hash, Array[Hash]] = HashMap.empty
     val emptyArray = Hash.zero(0).array.toArray
 
@@ -47,7 +47,7 @@ abstract class AddressClosure(args:List[String])
         mapAddresses.update(spentInTx, list :+ addr)
       }
     }
-    println("     Read elements in %s ms" format (System.currentTimeMillis - timeStart))
+    //println("     Read elements in %s ms" format (System.currentTimeMillis - timeStart))
 
     mapAddresses
   }
@@ -59,12 +59,17 @@ abstract class AddressClosure(args:List[String])
 
     for (i <- start to end by closureReadSize)
     {
-      println("=============================================")
+      //println("=============================================")
       val amount = if (i + closureReadSize > end) end - i else closureReadSize
       insertValuesIntoTree(getAddressesFromMovements(i, amount), tree)
+      println("DONE:Loaded until element %s in %s s, %s µs per element"
+        format
+          (i+amount,
+            (System.currentTimeMillis - timeStart)/1000,
+              (System.currentTimeMillis - timeStart)*1000/(amount+i)))
     }
 
-    println("=============================================")
+    //println("=============================================")
 
     (tree, tree.size, System.currentTimeMillis - timeStart)
   }
@@ -72,7 +77,7 @@ abstract class AddressClosure(args:List[String])
   def insertValuesIntoTree(databaseResults: HashMap[Hash, Array[Hash]], tree: HashMap[Hash, DisjointSetOfAddresses]) =
   {
     val start = System.currentTimeMillis
-    println("     Inserting values into tree")
+    //println("     Inserting values into tree")
 
     for (t <- databaseResults)
     {
@@ -88,7 +93,7 @@ abstract class AddressClosure(args:List[String])
       union(dSOAs)
     }
 
-    println("     Values inserted in %s ms" format (System.currentTimeMillis - start))
+    //println("     Values inserted in %s ms" format (System.currentTimeMillis - start))
   }
 
   def saveTree(tree: HashMap[Hash, DisjointSetOfAddresses]): (Int, Long) =
@@ -98,28 +103,33 @@ abstract class AddressClosure(args:List[String])
     val totalElements = tree.size
     var counter = 0
     var counterTotal = 0
-    println("")
+    //println("")
     println("Saving tree to database")
-
+    var counterFinal = 0
     for (value <- tree)
     {
       queries +:= (value._1.array.toArray, value._2.find.address.array.toArray, None)
       counter += 1
       counterTotal += 1
+      counterFinal += 1
       if (counter == closureTransactionSize)
       {
-        println("=============================================")
-        println("     Saving until element %s" format (counterTotal))
+        //println("=============================================")
+        //println("     Saving until element %s" format (counterTotal))
         saveElementsToDatabase(queries, counter)
         queries = Vector()
         counter = 0
       }
+      if (counterFinal % 1000000 == 0) {
+        counterFinal = 0
+        println("DONE:Saved until element %s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/counterTotal))
+      }
     }
 
-    println("=============================================")
-    println("     Saving until element %s" format (counterTotal))
+    //println("=============================================")
+    //println("     Saving until element %s" format (counterTotal))
     saveElementsToDatabase(queries, counter)
-    println("=============================================")
+    //println("=============================================")
 
     (totalElements, System.currentTimeMillis - timeStart)
   }
@@ -127,17 +137,17 @@ abstract class AddressClosure(args:List[String])
   def saveElementsToDatabase(queries: Vector[(Array[Byte], Array[Byte], Option[Long])], counter: Int): Unit =
   {
     val start = System.currentTimeMillis
-    println("     Save transaction of %s ..." format (counter))
+    //println("     Save transaction of %s ..." format (counter))
     transactionDBSession {
       addresses.insertAll(queries: _*)
     }
 
-    println("     Saved in %s ms" format (System.currentTimeMillis - start))
+    //println("     Saved in %s ms" format (System.currentTimeMillis - start))
   }
 
   val start = if (args.length>0) args(0).toInt else 0
   val end = if (args.length>1) args(1).toInt else countInputs
-  println("Reading inputs from %s to %s" format (start, end))
+  //println("Reading inputs from %s to %s" format (start, end))
 
   var (tree, countTree, timeTree) = generateTree(start, end)
 

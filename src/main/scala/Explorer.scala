@@ -20,6 +20,10 @@ object Explorer extends App{
       TestBlockReader
     case "analyze-script"::rest             =>
       (new ScriptReader)
+    case "reader"::rest           =>
+      object InitializeBlockReader extends BitcoinDRawFileBlockSource with FastBlockReader //needs to be in this order for linearization
+      new File(transactionsDatabaseFile).delete
+      InitializeBlockReader
     case "balance"::rest         =>
       AddressBalance
     case "test-script"::rest             =>
@@ -37,7 +41,8 @@ object Explorer extends App{
       new SlowAddressClosure(List(a.toString, countInputs.toString))
       AddressBalance
     case "closure"::rest              =>
-      ClosureBalance
+      new FastAddressClosure(List("0", countInputs.toString))
+      AddressBalance
     case _=> println("""
       Available commands:
 

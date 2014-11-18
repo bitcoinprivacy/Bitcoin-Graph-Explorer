@@ -78,7 +78,7 @@ trait FastBlockReader extends BlockReader
     vectorMovements = Vector()
     vectorBlocks = Vector()
     totalOutIn = 0
-    System.out.println("Sind wir geil?")
+    System.out.println("Initiating database")
     initializeDB
 }
 
@@ -86,12 +86,14 @@ trait FastBlockReader extends BlockReader
     saveUnmatchedOutputs
     saveUnmatchedInputs
     saveDataToDB
-
+    println("DONE:Creating indexes ...")
+    val time = System.currentTimeMillis
     Q.updateNA("create index if not exists address on movements (address)" + ";").execute
     Q.updateNA("create unique index if not exists transaction_hash_i on movements (transaction_hash, `index`)" + ";").execute
+    Q.updateNA("create index if not exists spent_in_transaction_hash2 on movements (spent_in_transaction_hash, address)" + ";").execute
     Q.updateNA("create index if not exists spent_in_transaction_hash on movements (spent_in_transaction_hash)" + ";").execute
     Q.updateNA("create index if not exists block_hash on blocks(hash)").execute
-    System.out.println("Wir sind geil!")
+    println("DONE:Indexes created in %s s" format (System.currentTimeMillis - time)/1000)
   }
 
   def saveUnmatchedOutputs: Unit =

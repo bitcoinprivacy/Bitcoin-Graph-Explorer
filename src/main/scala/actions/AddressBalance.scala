@@ -13,25 +13,26 @@ object AddressBalance {
 
   // the table balances contains a list of address with balance > 0
   // if an address is not here, then he has 0 btc.
-  transactionDBSession {
-    val numMovements = countInputs
-    val amount: Int = 1000000
-    for (begin <- 0 until numMovements by amount) {
-      println("loading elements in " + begin + " - " + (amount + begin ))
-      val x = System.currentTimeMillis
-      process(begin, amount)
-      println("loaded in " + (System.currentTimeMillis - x )*1000 + " s")
-    }
+  /*
+  val numMovements = countInputs
+  val amount: Int = 1000000
+  for (begin <- 0 until numMovements by amount) {
+    println("loading elements in " + begin + " - " + (amount + begin ))
+    val x = System.currentTimeMillis
+    process(begin, amount)
+    println("loaded in " + (System.currentTimeMillis - x )*1000 + " s")
   }
 
   def process(begin: Int, amount: Int) = {
-    val sumQuery = for {
-      (address, c) <- movements.filterNot(q => q.spent_in_transaction_hash.isDefined).groupBy(_.address).drop(begin).take(amount)
-    } yield address -> c.map(_.value).sum
+    transactionDBSession {
+      val sumQuery = for {
+        (address, c) <- movements.filterNot(q => q.spent_in_transaction_hash.isDefined).groupBy(_.address)
+      } yield address -> c.map(_.value).sum
 
-    for {(addressOption, balanceOption) <- sumQuery
-         address <- addressOption}
-      updateBalanceByAddress(address,balanceOption)
+      for {(addressOption, balanceOption) <- sumQuery
+           address <- addressOption}
+        updateBalanceByAddress(address, balanceOption)
+    }
   }
 
   def updateBalanceByAddress(address: Array[Byte], balance: Option[Long])() = {
@@ -40,9 +41,15 @@ object AddressBalance {
       q.update(balance)
     else
       addresses += (address, address, balance)
+  }    */
+  println("DONE:Updating addresses ...")
+  transactionDBSession {
+    Q.updateNA("" +
+      " UPDATE" +
+      "  addresses " +
+      "SET" +
+      " balance = (select sum(value) from movements where spent_in_transaction_hash is null and address = addresses.hash group by address) " +
+      ";").execute
+    println("DONE:Addresses updated in %s s" format (System.currentTimeMillis - clock))
   }
-
-
-
-  println("     Balance table updated in %s ms" format (System.currentTimeMillis - clock))
 }	
