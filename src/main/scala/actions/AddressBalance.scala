@@ -17,8 +17,10 @@ object AddressBalance {
     val numMovements = countInputs
     val amount: Int = 1000000
     for (begin <- 0 until numMovements by amount) {
-
+      println("loading elements in " + begin + " - " + (amount + begin ))
+      val x = System.currentTimeMillis
       process(begin, amount)
+      println("loaded in " + (System.currentTimeMillis - x )*1000 + " s")
     }
   }
 
