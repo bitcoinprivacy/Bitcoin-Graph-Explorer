@@ -20,6 +20,8 @@ object Explorer extends App{
       TestBlockReader
     case "analyze-script"::rest             =>
       (new ScriptReader)
+    case "balance"::rest         =>
+      AddressBalance
     case "test-script"::rest             =>
       (new ScriptTester)
     case "populate"::rest             =>
