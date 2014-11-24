@@ -29,7 +29,7 @@ trait SlowBlockReader extends BlockReader {
   }
 
   def pre  = { 
-  
+    savedMovements = Vector()
   }
   def post = { 
   
@@ -44,20 +44,35 @@ trait SlowBlockReader extends BlockReader {
 
     if (q.length.run == 0)
       movements += ((spTx.toSomeArray, oTx.toSomeArray, None, Some(oIdx), None,None))
-    else
+    else {
       q.update(oTx.toSomeArray, Some(oIdx), spTx.toSomeArray)
+
+      // If we move this code after the braces we get the out of order inputs too, but it
+      // is not necessary
+      val insertedValues = for { o <- movements if o.transaction_hash === arrayByte && o.index === oIdx }
+        yield (o.spent_in_transaction_hash,o.transaction_hash,o.address,o.index,o.value, o.block_height)
+      savedMovements +:= insertedValues.first
+      println("saved movements = " + savedMovements.length)
+    }
   }
 
   def saveOutput(tx: Hash,adOpt:Option[Array[Byte]],idx:Int,value:Long,height:Int): Unit =
   {
     val x = tx.array.toArray
-    val q = for { o <- movements
-                  if o.transaction_hash === x && o.index === idx }
-    yield (o.address, o.value, o.block_height)
+    val q = for { o <- movements if o.transaction_hash === x && o.index === idx }
+      yield (o.address, o.value, o.block_height)
     if (q.length.run == 0)
       movements +=((None, tx.toSomeArray, adOpt, Some(idx), Some(value), Some(height)))
     else
       q.update(adOpt, Some(value), Some(height))
+    val insertedValues = for { o <- movements if o.transaction_hash === x && o.index === idx }
+      yield (o.spent_in_transaction_hash,o.transaction_hash,o.address,o.index,o.value, o.block_height)
+
+    for (a <- insertedValues) {
+      savedMovements +:= a
+      println("saved movements = " + savedMovements.length)
+    }
+
   }
 
   def decomposeInput(i: TransactionInput): (Hash,Int,Hash) = {
