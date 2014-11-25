@@ -43,10 +43,10 @@ packageOptions in (Compile, packageBin) <+= (target, externalDependencyClasspath
   Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> relativePaths.reduceOption(_ + " " + _).getOrElse(""))
  }
 
-javaOptions in run += "-Xmx2G"
+javaOptions in run += "-Xmx12G"
 
 
-javaOptions in run += "-Xms1G"
+javaOptions in run += "-Xms2G"
 
 javaOptions in run += "-XX:-UseGCOverheadLimit"
 //javaOptions in run += "-XX:+PrintCommandLineFlags"

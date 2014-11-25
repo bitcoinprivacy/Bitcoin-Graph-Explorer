@@ -40,5 +40,5 @@ class SlowAddressBalance(savedMovements: Vector[(Option[Array[Byte]], Option[Arr
   }
   println("DONE: %s addresses updated in %s s, %s µs per address "
     format
-      (savedMovements.length, (System.currentTimeMillis - clock)/1000, (System.currentTimeMillis - clock)*1000/savedMovements.length))
+      (savedMovements.length, (System.currentTimeMillis - clock)/1000, (System.currentTimeMillis - clock)*1000/(savedMovements.length+1)))
 }

@@ -1,7 +1,7 @@
 package actions
 
 import util._
-import scala.slick.jdbc.{StaticQuery => Q, StaticQuery}
+import scala.slick.jdbc.{StaticQuery => Q}
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import scala.slick.driver.SQLiteDriver.simple._
 
