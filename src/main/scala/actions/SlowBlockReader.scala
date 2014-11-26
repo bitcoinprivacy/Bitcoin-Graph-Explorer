@@ -52,7 +52,7 @@ trait SlowBlockReader extends BlockReader {
       val insertedValues = for { o <- movements if o.transaction_hash === arrayByte && o.index === oIdx }
         yield (o.spent_in_transaction_hash,o.transaction_hash,o.address,o.index,o.value, o.block_height)
       savedMovements +:= insertedValues.first
-      println("saved movements = " + savedMovements.length)
+      println("DEBUG: saved movements = " + savedMovements.length)
     }
   }
 
@@ -70,7 +70,7 @@ trait SlowBlockReader extends BlockReader {
 
     for (a <- insertedValues) {
       savedMovements +:= a
-      println("saved movements = " + savedMovements.length)
+      println("DEBUG: saved movements = " + savedMovements.length)
     }
 
   }
