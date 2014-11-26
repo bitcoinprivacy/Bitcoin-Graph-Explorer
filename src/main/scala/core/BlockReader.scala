@@ -51,7 +51,7 @@ trait BlockReader extends BlockSource {
 
       if (transactionCounter % 10000 == 0) {
         val t = System.currentTimeMillis - startTime
-        println("DONE:Processed %s transactions in %s s using %s µs/tx" format(transactionCounter , t/1000, 1000 * t / transactionCounter))
+        println("DONE: Processed %s transactions in %s s using %s µs/tx" format(transactionCounter , t/1000, 1000 * t / transactionCounter))
       }
 
       transactionCounter += 1
