@@ -18,5 +18,5 @@ object ClosureBalance {
     Q.updateNA("alter table closures_temp rename to closures").execute
   }
 
-  println("     Closures table updated in %s ms" format (System.currentTimeMillis - clock))
+  println("DONE: Closures table updated in %s ms" format (System.currentTimeMillis - clock))
 }
