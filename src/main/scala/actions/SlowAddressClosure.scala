@@ -11,7 +11,7 @@ class SlowAddressClosure(savedMovements: Vector[(Option[Array[Byte]], Option[Arr
   override def adaptTreeIfNecessary(mapDSOA: HashMap[Hash, DisjointSetOfAddresses]): HashMap[Hash, DisjointSetOfAddresses] =
   {
     val timeStart = System.currentTimeMillis
-    println("     Adapting tree to database ...")
+    println("DEBUG: Adapting tree to database ...")
 
     transactionDBSession {
 	    val byAddress = addresses.findBy( t => t.hash)
@@ -27,7 +27,7 @@ class SlowAddressClosure(savedMovements: Vector[(Option[Array[Byte]], Option[Arr
 	    }
     }
 
-    println("     Tree of size "+ mapDSOA.size + " adapted in %s ms" format (System.currentTimeMillis - timeStart))
+    println("DONE: Tree of size "+ mapDSOA.size + " adapted in %s ms" format (System.currentTimeMillis - timeStart))
 
     mapDSOA
   }
