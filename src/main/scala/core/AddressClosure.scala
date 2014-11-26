@@ -51,7 +51,7 @@ trait AddressClosure
     var counter = 0
     var counterTotal = 0
     //println("")
-    println("DONE:Saving tree to database...")
+    println("DEBUG: Saving tree to database...")
     var counterFinal = 0
     for (value <- tree)
     {
@@ -69,7 +69,7 @@ trait AddressClosure
       }
       if (counterFinal % 1000000 == 0) {
         counterFinal = 0
-        println("DONE:Saved until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/counterTotal))
+        println("DEBUG: Saved until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/counterTotal))
       }
     }
 
