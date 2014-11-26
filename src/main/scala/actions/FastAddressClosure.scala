@@ -11,7 +11,7 @@ object FastAddressClosure extends AddressClosure
   override def createIndexesIfNecessary = transactionDBSession
   {
     var clockIndex = System.currentTimeMillis
-    println("DONE:Creating indexes ...")
+    println("DEBUG:Creating indexes ...")
     (Q.u + "create index if not exists representant on addresses (representant)").execute
     (Q.u + "create unique index if not exists hash on addresses (hash)").execute
     println("=============================================")
