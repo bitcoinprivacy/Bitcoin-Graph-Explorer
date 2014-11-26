@@ -11,7 +11,7 @@ import scala.slick.driver.SQLiteDriver.simple._
 object FastAddressBalance {
   var clock = System.currentTimeMillis
   transactionDBSession {
-    println("DONE:Updating addresses ...")
+    println("DEBUG:Updating addresses ...")
     Q.updateNA("" +
       " UPDATE OR IGNORE" +
       "  addresses " +
