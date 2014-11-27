@@ -58,11 +58,11 @@ package object util
         `index` = """ + index).list.head > 0
   }
 
-  def getLongestBlockChainHashSet: Set[Hash] =
+  def getLongestBlockChainHashSet: Map[Hash,Int] =
   {
     val lines = scala.io.Source.fromFile(blockHashListFile).getLines
     val hashes = for (line <- lines) yield Hash(line)
 
-    hashes.toSet
+    hashes.zipWithIndex.toMap
   }
 }

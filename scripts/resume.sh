@@ -9,7 +9,7 @@ cd /root/bge
 done
 echo "[$(date)] Reading blockchain"
 cat .bitcoin/blocklist.txt  | wc -l > blockchain/count.txt.prov
-scala -classpath "target/scala-2.11/Bitcoin Graph Explorer-assembly-2.0.jar" -DXmx=1G Explorer resume > blockchain/resume.log
+JAVA_OPTS="-Xmx1g" scala -classpath "target/scala-2.11/Bitcoin Graph Explorer-assembly-2.0.jar" Explorer resume > blockchain/resume.log
 cat /root/.bitcoin/blocklist.txt  | wc -l > /root/bge/blockchain/count.txt.prov
 grep ERROR: blockchain/resume.log >> blockchain/scripts.log
 sed -i 's/ERROR://g' blockchain/scripts.log

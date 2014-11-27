@@ -13,7 +13,7 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 // extends libs.BlockSource means that it depends on a libs.BlockSource
 trait BlockReader extends BlockSource {
 
-  def saveTransaction(transaction: Transaction)
+  def saveTransaction(transaction: Transaction, blockHeight: Int)
 
   def saveBlock(b: Hash): Unit
 
@@ -22,9 +22,10 @@ trait BlockReader extends BlockSource {
   def post: Unit
 
   var savedBlockSet: Set[Hash] = Set.empty
-  val longestChain = getLongestBlockChainHashSet
+  val longestChain: Map[Hash, Int] = getLongestBlockChainHashSet
   var transactionCounter = 1
   var startTime = System.currentTimeMillis
+  var savedMovements:Vector[(Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Long], Option[Int])] = Vector()
 
   if (useDatabase) transactionDBSession{
     pre
@@ -45,12 +46,12 @@ trait BlockReader extends BlockSource {
   }
 
   def process: Unit = {
-    for (transaction <- transactionSource) {
-      saveTransaction(transaction)
+    for ((transaction, blockHeight) <- transactionSource) {
+      saveTransaction(transaction, blockHeight)
 
-      if (transactionCounter % 100 == 0) {
+      if (transactionCounter % 10000 == 0) {
         val t = System.currentTimeMillis - startTime
-        System.out.println("Processed " + transactionCounter + " transactions in " + t + " using " + 1000 * t / transactionCounter + " µs/tx");
+        println("DONE: Processed %s transactions in %s s using %s µs/tx" format(transactionCounter , t/1000, 1000 * t / transactionCounter))
       }
 
       transactionCounter += 1
@@ -84,7 +85,9 @@ trait BlockReader extends BlockSource {
   def outputsInTransaction(t: Transaction) =
     t.getOutputs.asScala
 
-  lazy val transactionSource: Iterator[Transaction] = filteredBlockSource flatMap { b => saveBlock(Hash(b.getHash.getBytes)); transactionsInBlock(b)}
+  lazy val transactionSource: Iterator[(Transaction,Int)] = {
+    filteredBlockSource flatMap { b => saveBlock(Hash(b.getHash.getBytes)); transactionsInBlock(b) map ((_, longestChain.getOrElse(Hash(b.getHash.getBytes), 0)))}
+  }
 
   def getAddressFromOutput(output: TransactionOutput): Option[Array[Byte]] =
     bitcoinjParseScript(output).

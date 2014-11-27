@@ -1,38 +1,55 @@
-import core._ 
-import util._
-import java.io._
+import core._
 import scala.slick.driver.SQLiteDriver.simple._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import scala.collection.mutable.HashMap
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
-class SlowAddressClosure (args:List[String]) extends AddressClosure (args)
+import util._
+
+class SlowAddressClosure(savedMovements: Vector[(Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Long], Option[Int])]) extends AddressClosure
 {
   override def adaptTreeIfNecessary(mapDSOA: HashMap[Hash, DisjointSetOfAddresses]): HashMap[Hash, DisjointSetOfAddresses] =
   {
     val timeStart = System.currentTimeMillis
-    println("     Adapting tree to database ...")
+    println("DEBUG: Adapting tree to database ...")
 
     transactionDBSession {
-    val query = "select hash, representant from addresses"
-    // weird trick to allow slick using Array Bytes
-    implicit val GetByteArr = GetResult(r => r.nextBytes())
-    val q2 = Q.queryNA[(Array[Byte],Array[Byte])](query)
-
-    for (pair <- q2)
-    {
-      val (hash, representant) = pair
-      val address = Hash(hash)
-      if (mapDSOA.contains(address))
-      {
-        mapDSOA(address).find.parent = Some(DisjointSetOfAddresses(Hash(representant)))
-        mapDSOA remove address
-      }
-    }
+	    val byAddress = addresses.findBy( t => t.hash)
+	    for (pair <- mapDSOA){
+	      val (address, dsoa) = pair
+	      val found = byAddress(address.array.toArray).firstOption
+	      
+	      for (query <- found) {
+	        
+	        dsoa.find.parent = Some(DisjointSetOfAddresses(Hash(query._2)))
+	        mapDSOA remove address
+	      }
+	    }
     }
 
-    println("     Tree of size "+ mapDSOA.size + " adapted in %s ms" format (System.currentTimeMillis - timeStart))
+    println("DONE: Tree of size "+ mapDSOA.size + " adapted in %s ms" format (System.currentTimeMillis - timeStart))
 
     mapDSOA
   }
+
+  def generateTree: HashMap[Hash, DisjointSetOfAddresses] = {
+
+    val mapAddresses:HashMap[Hash, Array[Hash]] = HashMap.empty
+    var tree: HashMap[Hash, DisjointSetOfAddresses] = HashMap.empty
+
+    for {q <- savedMovements
+      spent <- q._1
+      address <- q._3
+    }
+    {
+      println(spent, address)
+      val list: Array[Hash] = mapAddresses.getOrElse(Hash(spent), Array())
+      mapAddresses.update(Hash(spent), list :+ Hash(address))
+    }
+
+    insertValuesIntoTree(mapAddresses, tree)
+
+    tree
+  }
+
 }

@@ -16,17 +16,17 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 trait FastBlockReader extends BlockReader
 {
   // txhash -> ([address,...],[value,...]) (one entry per index)
-  var outputMap: immutable.HashMap[Hash,immutable.HashMap[Int,(Hash,Long)]]  = immutable.HashMap()
+  var outputMap: immutable.HashMap[Hash,(immutable.HashMap[Int,(Hash,Long)], Int)]  = immutable.HashMap()
   //  outpoint -> txhash
   var outOfOrderInputMap: immutable.HashMap[(Hash,Int),Hash]  = immutable.HashMap()
   var vectorMovements:
-    Vector[(Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Long])] = Vector()
-  var vectorBlocks:Vector[Array[Byte]]  = Vector()
+    Vector[(Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Long], Option[Int])] = Vector()
+  var vectorBlocks:Vector[(Array[Byte], Int)]  = Vector()
   var totalOutIn: Int = 0
 
   def useDatabase: Boolean = true
 
-  def saveTransaction(trans: Transaction) =
+  def saveTransaction(trans: Transaction, blockHeight: Int) =
   {
     val transactionHash = Hash(trans.getHash.getBytes)
 
@@ -44,7 +44,9 @@ trait FastBlockReader extends BlockReader
       if (outOfOrderInputMap.contains(transactionHash, index))
       {
         val inputTxHash = outOfOrderInputMap(transactionHash, index)
-        insertInsertIntoList((inputTxHash.toSomeArray, transactionHash.toSomeArray, addressOption, Some(index), Some(value)))
+
+        insertInsertIntoList(inputTxHash.toSomeArray, transactionHash.toSomeArray, addressOption, Some(index), Some(value), Some(blockHeight))
+        insertInsertIntoList(inputTxHash.toSomeArray, transactionHash.toSomeArray, addressOption, Some(index), Some(value), Some(blockHeight))
         outOfOrderInputMap -= (transactionHash -> index)
       }
       else
@@ -63,11 +65,11 @@ trait FastBlockReader extends BlockReader
     }
 
     if (!outputBuffer.isEmpty)
-      outputMap += (transactionHash -> outputBuffer)
+      outputMap += (transactionHash -> ((outputBuffer, blockHeight)))
   }
 
   def saveBlock(b: Hash) = {
-    insertInsertIntoList(b.array.toArray)
+    insertInsertIntoList(b.array.toArray, longestChain.getOrElse(b,0))
   }
 
   def pre  = {
@@ -76,7 +78,7 @@ trait FastBlockReader extends BlockReader
     vectorMovements = Vector()
     vectorBlocks = Vector()
     totalOutIn = 0
-    System.out.println("Sind wir geil?")
+    System.out.println("DEBUG: Initiating database")
     initializeDB
 }
 
@@ -84,20 +86,22 @@ trait FastBlockReader extends BlockReader
     saveUnmatchedOutputs
     saveUnmatchedInputs
     saveDataToDB
-
+    println("DEBUG: Creating indexes ...")
+    val time = System.currentTimeMillis
     Q.updateNA("create index if not exists address on movements (address)" + ";").execute
     Q.updateNA("create unique index if not exists transaction_hash_i on movements (transaction_hash, `index`)" + ";").execute
+    Q.updateNA("create index if not exists spent_in_transaction_hash2 on movements (spent_in_transaction_hash, address)" + ";").execute
     Q.updateNA("create index if not exists spent_in_transaction_hash on movements (spent_in_transaction_hash)" + ";").execute
     Q.updateNA("create index if not exists block_hash on blocks(hash)").execute
-    System.out.println("Wir sind geil!")
+    println("DONE: Indexes created in %s s" format (System.currentTimeMillis - time)/1000)
   }
 
   def saveUnmatchedOutputs: Unit =
   {
-    for ((transactionHash, indexMap) <- outputMap)
+    for ((transactionHash, (indexMap, blockHeight)) <- outputMap)
     {
       for ((index, (address, value)) <- indexMap)
-        insertInsertIntoList (None, transactionHash.toSomeArray, address.toSomeArray, Some(index), Some(value))
+        insertInsertIntoList (None, transactionHash.toSomeArray, address.toSomeArray, Some(index), Some(value),Some(blockHeight))
       outputMap -= transactionHash
     }
   }
@@ -105,7 +109,7 @@ trait FastBlockReader extends BlockReader
   def saveUnmatchedInputs: Unit =
   {
     for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
-      insertInsertIntoList (transactionHash.toSomeArray, outpointTransactionHash.toSomeArray, None, Some(outpointIndex), None)
+      insertInsertIntoList (transactionHash.toSomeArray, outpointTransactionHash.toSomeArray, None, Some(outpointIndex), None, None)
 
   }
 
@@ -117,14 +121,14 @@ trait FastBlockReader extends BlockReader
     vectorBlocks = Vector()
   }
 
-  def insertInsertIntoList(s: Array[Byte]) =
+  def insertInsertIntoList(s: (Array[Byte], Int)) =
   {
     if (vectorMovements.length + vectorBlocks.length >= populateTransactionSize)
       saveDataToDB
     vectorBlocks +:= s
   }
 
-  def insertInsertIntoList(s: (Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Long])) =
+  def insertInsertIntoList(s: (Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Long], Option[Int])) =
   {
     if (vectorMovements.length + vectorBlocks.length >= populateTransactionSize)
       saveDataToDB
@@ -138,17 +142,18 @@ trait FastBlockReader extends BlockReader
 
     if (outputMap.contains(outpointTransactionHash))
     {
-      val outputTxMap = outputMap(outpointTransactionHash)
+      val (outputTxMap,blockHeight) = outputMap(outpointTransactionHash)
+
       if (outputTxMap.contains(outpointIndex))
       {
         insertInsertIntoList(
-          (transactionHash.toSomeArray, outpointTransactionHash.toSomeArray, outputTxMap(outpointIndex)._1.toSomeArray, Some(outpointIndex), Some(outputTxMap(outpointIndex)._2)))
+          (transactionHash.toSomeArray, outpointTransactionHash.toSomeArray, outputTxMap(outpointIndex)._1.toSomeArray, Some(outpointIndex), Some(outputTxMap(outpointIndex)._2), Some(blockHeight)))
         val updatedTxMap = outputTxMap - outpointIndex
 
         if (updatedTxMap.isEmpty)
           outputMap -= outpointTransactionHash
         else
-          outputMap += (outpointTransactionHash -> updatedTxMap)
+          outputMap += (outpointTransactionHash -> (updatedTxMap,blockHeight))
       }
     }
     else
