@@ -1,5 +1,10 @@
 #! /bin/bash
 cd /root/bge
+#
+#blocks=`expr $(cat ../.bitcoin/blocklist.txt | wc -l)`
+#blocks=$((blocks-5))
+#echo $blocks
+
 # crontab needs to change directory to the bge repository folder
 for pid in $(pidof -x resume.sh); do
     if [ $pid != $$ ]; then
