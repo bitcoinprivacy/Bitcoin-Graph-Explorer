@@ -8,7 +8,7 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 /**
  * Created by yzark on 24.11.14.
  */
-class SlowAddressBalance(savedMovements: Map[(Array[Byte],Int),(Option[Array[Byte]],Option[Array[Byte]],Option[Long],Option[Int])])  {
+class SlowAddressBalance(savedMovements: Map[(Hash,Int),(Option[Array[Byte]],Option[Array[Byte]],Option[Long],Option[Int])])  {
 
   var clock = System.currentTimeMillis
   transactionDBSession {

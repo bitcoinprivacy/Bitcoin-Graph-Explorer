@@ -6,7 +6,7 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
 import util._
 
-class SlowAddressClosure(savedMovements: Map[(Array[Byte],Int),(Option[Array[Byte]],Option[Array[Byte]],Option[Long],Option[Int])]) extends AddressClosure
+class SlowAddressClosure(savedMovements: Map[(Hash,Int),(Option[Array[Byte]],Option[Array[Byte]],Option[Long],Option[Int])]) extends AddressClosure
 {
   override def adaptTreeIfNecessary(mapDSOA: HashMap[Hash, DisjointSetOfAddresses]): HashMap[Hash, DisjointSetOfAddresses] =
   {
