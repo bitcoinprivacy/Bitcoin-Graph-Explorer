@@ -51,7 +51,11 @@ trait SlowBlockReader extends BlockReader {
       val insertedValues = for { o <- movements if o.transaction_hash === arrayByte && o.index === oIdx }
         yield (o.spent_in_transaction_hash,o.transaction_hash,o.address,o.index,o.value, o.block_height)
       val (sp,tx,ad,id,va,bl) = insertedValues.first
-      savedMovements = savedMovements.updated((Hash(tx.get),id.get), (sp,ad,va,bl))
+      // if the input match an output, we dont need these value anymore! If the input match an already copied
+      // output, we let the value there to substract it later.
+      val value: Option[Long] = if (savedMovements contains(Hash(tx.get), id.get)) Option(0) else va
+
+      savedMovements = savedMovements.updated((Hash(tx.get),id.get), (sp,ad,value,bl))
       println("DEBUG: saved movements = " + savedMovements.size)
     }
   }
