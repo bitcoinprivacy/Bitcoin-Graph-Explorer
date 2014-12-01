@@ -67,7 +67,7 @@ object FastAddressClosure extends AddressClosure
         format
         (i+amount,
           (System.currentTimeMillis - timeStart)/1000,
-          (System.currentTimeMillis - timeStart)*1000/(amount+i)))
+          (System.currentTimeMillis - timeStart)*1000/(amount+i+1)))
     }
 
     //println("=============================================")

@@ -24,12 +24,11 @@ trait SlowBlockReader extends BlockReader {
     }
   }
 
-  def saveBlock(b: Hash) = { 
+  def saveBlock(b: Hash) = 
     blockDB += (b.array.toArray,longestChain.getOrElse(b,0))
-  }
 
   def pre  = { 
-    savedMovements = Vector()
+    
   }
   def post = { 
   
@@ -51,8 +50,9 @@ trait SlowBlockReader extends BlockReader {
       // is not necessary
       val insertedValues = for { o <- movements if o.transaction_hash === arrayByte && o.index === oIdx }
         yield (o.spent_in_transaction_hash,o.transaction_hash,o.address,o.index,o.value, o.block_height)
-      savedMovements +:= insertedValues.first
-      println("DEBUG: saved movements = " + savedMovements.length)
+      val (sp,tx,ad,id,va,bl) = insertedValues.first
+      savedMovements = savedMovements.updated((tx.get,id.get), (sp,ad,va,bl))
+      println("DEBUG: saved movements = " + savedMovements.size)
     }
   }
 
@@ -65,12 +65,14 @@ trait SlowBlockReader extends BlockReader {
       movements +=((None, tx.toSomeArray, adOpt, Some(idx), Some(value), Some(height)))
     else
       q.update(adOpt, Some(value), Some(height))
+      
     val insertedValues = for { o <- movements if o.transaction_hash === x && o.index === idx }
       yield (o.spent_in_transaction_hash,o.transaction_hash,o.address,o.index,o.value, o.block_height)
 
     for (a <- insertedValues) {
-      savedMovements +:= a
-      println("DEBUG: saved movements = " + savedMovements.length)
+      val (sp,tx,ad,id,va,bl) = a
+      savedMovements = savedMovements.updated((tx.get,id.get), (sp,ad,va,bl))
+      println("DEBUG: saved movements = " + savedMovements.size)
     }
 
   }

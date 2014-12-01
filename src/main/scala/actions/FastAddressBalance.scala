@@ -29,13 +29,5 @@ object FastAddressBalance {
       ";").execute;
 
     println("DONE:Addresses updated in %s s" format (System.currentTimeMillis - clock)/1000)
-    clock = System.currentTimeMillis
-    println("DEBUG:Updating closure balances")
-    Q.updateNA("drop table if exists closures;").execute;
-    Q.updateNA("create table closures as select sum(balance) as balance, count(1) as members, representant from addresses where balance > 0 group by representant;").execute;
-    Q.updateNA("create index clo1 on closures(balance);").execute;
-    Q.updateNA("create unique index clo2 on closures(representant);").execute;
-    Q.updateNA("create index clo3 on closures(members);").execute;
-    println("DONE:Closure balances updated in %s s" format (System.currentTimeMillis - clock)/1000)
   }
 }	
