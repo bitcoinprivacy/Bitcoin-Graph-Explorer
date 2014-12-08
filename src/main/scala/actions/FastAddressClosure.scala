@@ -11,14 +11,14 @@ object FastAddressClosure extends AddressClosure
   override def createIndexesIfNecessary = transactionDBSession
   {
     var clockIndex = System.currentTimeMillis
-    println("DEBUG:Creating indexes ...")
+    println("DEBUG: Creating indexes ...")
     (Q.u + "create index if not exists representant on addresses (representant)").execute
     (Q.u + "create unique index if not exists hash on addresses (hash)").execute
     println("=============================================")
     println("")
     clockIndex = System.currentTimeMillis - clockIndex
     println("/////////////////////////////////////////////")
-    println("DONE:Indices created in %s s" format (clockIndex / 1000))
+    println("DONE: Indices created in %s s" format (clockIndex / 1000))
   }
 
   def getAddressesFromMovements(firstElement: Int, elements: Int): HashMap[Hash, Array[Hash]] =
@@ -63,7 +63,7 @@ object FastAddressClosure extends AddressClosure
       //println("=============================================")
       val amount = if (i + closureReadSize > end) end - i else closureReadSize
       insertValuesIntoTree(getAddressesFromMovements(i, amount), tree)
-      println("DONE:Loaded until element %s in %s s, %s µs per element"
+      println("DONE: Loaded until element %s in %s s, %s µs per element"
         format
         (i+amount,
           (System.currentTimeMillis - timeStart)/1000,

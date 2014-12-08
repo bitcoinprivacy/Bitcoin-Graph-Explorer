@@ -11,6 +11,7 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 class SlowAddressBalance(savedMovements: Map[(Hash,Int),(Option[Array[Byte]],Option[Array[Byte]],Option[Long],Option[Int])])  {
 
   var clock = System.currentTimeMillis
+  println("DEBUG: Updating balances ...")
   transactionDBSession {
     val byAddress = addresses.findBy(t => t.hash)
     for {(k,q) <- savedMovements
@@ -36,7 +37,7 @@ class SlowAddressBalance(savedMovements: Map[(Hash,Int),(Option[Array[Byte]],Opt
       }
     }
     
-    println("DONE: %s addresses updated in %s s, %s µs per address "
+    println("DONE: %s balances updated in %s s, %s µs per address "
     format
       (savedMovements.size, (System.currentTimeMillis - clock)/1000, (System.currentTimeMillis - clock)*1000/(savedMovements.size+1)))
   }

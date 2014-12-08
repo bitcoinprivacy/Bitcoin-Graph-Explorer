@@ -22,6 +22,8 @@ trait SlowBlockReader extends BlockReader {
       (saveOutput _).tupled((decomposeOutput _).tupled(output, i, blockHeight))
       i += 1
     }
+
+    println("DEBUG: Saved %s transactions" format transactionCounter )
   }
 
   def saveBlock(b: Hash) = 
@@ -31,7 +33,7 @@ trait SlowBlockReader extends BlockReader {
     
   }
   def post = { 
-  
+    println("DONE: Saved %s movements, %s transactions" format (savedMovements.size, transactionCounter))
   }
 
   def saveInput(oTx: Hash,oIdx:Int,spTx: Hash): Unit =
@@ -56,7 +58,6 @@ trait SlowBlockReader extends BlockReader {
       val value: Option[Long] = if (savedMovements contains(Hash(tx.get), id.get)) Option(0) else va
 
       savedMovements = savedMovements.updated((Hash(tx.get),id.get), (sp,ad,value,bl))
-      println("DEBUG: saved movements = " + savedMovements.size)
     }
   }
 
@@ -76,7 +77,7 @@ trait SlowBlockReader extends BlockReader {
     for (a <- insertedValues) {
       val (sp,tx,ad,id,va,bl) = a
       savedMovements = savedMovements.updated((Hash(tx.get),id.get), (sp,ad,va,bl))
-      println("DEBUG: saved movements = " + savedMovements.size)
+      println("DEBUG: Saved movements = " + savedMovements.size)
     }
 
   }
