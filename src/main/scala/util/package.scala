@@ -63,7 +63,7 @@ package object util
     val lines = scala.io.Source.fromFile(blockHashListFile).getLines
     val hashes = for (line <- lines) yield Hash(line)
     val out = hashes.zipWithIndex.toMap
-    println("TEST: Total blocks %s (%s)" format (hashes.size, out.size)
+    println("TEST: Total blocks %s (%s)" format (hashes.size, out.size))
     out
   }
 }
