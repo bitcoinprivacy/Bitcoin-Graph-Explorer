@@ -99,9 +99,6 @@ trait AddressClosure
 
   println("DONE:Total of %s addresses saved in %s s, %s µs per address" format
     (countSave, totalTime / 1000, 1000 * totalTime / (countSave + 1)))
-  println("/////////////////////////////////////////////")
-
-
 }
  
  

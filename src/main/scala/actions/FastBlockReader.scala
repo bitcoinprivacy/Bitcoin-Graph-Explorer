@@ -91,8 +91,9 @@ trait FastBlockReader extends BlockReader
     Q.updateNA("create index if not exists address on movements (address);").execute
     Q.updateNA("create unique index if not exists transaction_hash_i on movements (transaction_hash, `index`);").execute
     Q.updateNA("create index if not exists spent_in_transaction_hash2 on movements (spent_in_transaction_hash, address);").execute
-    Q.updateNA("create index if not exists block_height on movements (block_height);")
+    Q.updateNA("create index if not exists block_height on movements (block_height);").execute
     Q.updateNA("create index if not exists block_hash on blocks(hash);").execute
+    Q.updateNA("create index if not exists block_height2 on blocks(block_height);").execute
 
     println("DONE: Indexes created in %s s" format (System.currentTimeMillis - time)/1000)
   }
