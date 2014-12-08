@@ -35,6 +35,7 @@ trait BlockReader extends BlockSource {
 
     for (c <- savedBlocks)
       savedBlockSet = savedBlockSet + Hash(c)
+    println("TEST: savedBlockSet size: " + savedBlockSet.size)
 
     process
     post
