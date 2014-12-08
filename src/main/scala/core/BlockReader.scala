@@ -62,7 +62,11 @@ trait BlockReader extends BlockSource {
 
   def blockFilter(b: Block) = {
     val blockHash = Hash(b.getHash.getBytes)
-    (longestChain contains blockHash) && !(savedBlockSet contains blockHash)
+    val blockHeight = longestChain.getOrElse(blockHash, 0)
+    val accepted = (longestChain contains blockHash) && !(savedBlockSet contains blockHash)
+    println("TEST: %s (%s) = %s " format (blockHash, blockHeight, accepted))
+
+    accepted
   }
 
   def withoutDuplicates(b: Block, t: Transaction): Boolean =
@@ -73,7 +77,7 @@ trait BlockReader extends BlockSource {
 
   lazy val filteredBlockSource =
   {
-    blockSource.slice(savedBlockSet.size, longestChain.size) withFilter blockFilter
+    blockSource.drop(savedBlockSet.size) withFilter blockFilter
   }
 
   def transactionsInBlock(b: Block) =
