@@ -5,7 +5,7 @@
 import java.io._
 
 import com.typesafe.config.ConfigFactory
-import core.{Addresses, Blocks, Movements}
+import core.{Stats, Addresses, Blocks, Movements}
 
 import scala.slick.driver.SQLiteDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
@@ -25,7 +25,8 @@ package object util
   val blockDB = TableQuery[Blocks]
   val addresses = TableQuery[Addresses]
   val movements = TableQuery[Movements]
-  
+  val stats = TableQuery[Stats]
+
   def transactionDBSession[X](f: => X): X =
   {
     Database.forURL(

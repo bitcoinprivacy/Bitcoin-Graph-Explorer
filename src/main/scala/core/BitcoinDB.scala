@@ -16,6 +16,16 @@ class Blocks(tag:Tag) extends Table[(Array[Byte], Int)](tag, "blocks") {
   def * =  (hash, block_height)
 }
 
+class Stats(tag:Tag) extends Table[(Int, Int, Int, Int, Int, Int)](tag, "stats") {
+  def block_height = column[Int]("block_height")
+  def total_bitcoins_in_addresses = column[Int]("total_bitcoins_in_addresses")
+  def total_addresses = column[Int]("total_addresses")
+  def total_closures = column[Int]("total_closures")
+  def total_addresses_with_balance = column[Int]("total_addresses_with_balance")
+  def total_closures_with_balance = column[Int]("total_closures_with_balance")
+  def * =  (block_height, total_bitcoins_in_addresses, total_addresses, total_closures, total_addresses_with_balance, total_closures_with_balance)
+}
+
 class Addresses(tag:Tag) extends Table[(Array[Byte], Array[Byte], Option[Long])](tag, "addresses") {
   def hash= column[Array[Byte]]("hash")
   def representant = column[Array[Byte]]("representant")

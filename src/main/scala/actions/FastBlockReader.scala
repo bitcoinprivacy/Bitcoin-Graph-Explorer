@@ -95,6 +95,7 @@ trait FastBlockReader extends BlockReader
     Q.updateNA("create index if not exists block_hash on blocks(hash);").execute
     Q.updateNA("create index if not exists block_height2 on blocks(block_height);").execute
 
+
     println("DONE: Indexes created in %s s" format (System.currentTimeMillis - time)/1000)
   }
 
@@ -168,6 +169,7 @@ trait FastBlockReader extends BlockReader
 
   def initializeDB: Unit =
   {
+    stats.ddl.create
     movements.ddl.create
     blockDB.ddl.create
     addresses.ddl.create
