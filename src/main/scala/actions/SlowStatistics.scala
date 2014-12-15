@@ -16,10 +16,10 @@ object SlowStatistics {
        select
         (select max(block_height) from blocks) as block_height,
         sum(balance)/100000000 as total_bitcoins_in_addresses,
-        count(distinct(representant)) as total_closures_with_balance,
-        count(1) as total_addresses_with_balance,
+        (select count(1) from addresses) as total_addresses,
         (select count(distinct(representant)) from addresses)  as total_closures,
-        (select count(1) from addresses) as total_addresses
+        count(1) as total_addresses_with_balance,
+        count(distinct(representant)) as total_closures_with_balance
       from
         addresses
       where
