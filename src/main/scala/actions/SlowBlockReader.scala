@@ -29,7 +29,7 @@ trait SlowBlockReader extends BlockReader {
   def saveBlock(b: Hash) = {
     val blockHeight = longestChain.getOrElse(b,0)
     blockDB += (b.array.toArray,longestChain.getOrElse(b,0))
-    println("TEST: Saved %s blocks" format blockHeight)
+    println("DONE: Saved %s blocks" format blockHeight)
   }
 
   def pre  = { 
