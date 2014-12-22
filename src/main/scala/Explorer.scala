@@ -42,6 +42,7 @@ object Explorer extends App{
       new SlowAddressClosure(ResumeBlockReader.savedMovements)
       new SlowAddressBalance(ResumeBlockReader.savedMovements)
       SlowStatistics
+      SlowRichestAddresses
     case _=> println("""
       Available commands:
        reader:

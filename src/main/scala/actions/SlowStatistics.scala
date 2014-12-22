@@ -9,6 +9,7 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
  * Created by yzark on 15.12.14.
  */
 object SlowStatistics {
+  // TODO: write output
   transactionDBSession {
     Q.updateNA( """
        insert
@@ -25,6 +26,10 @@ object SlowStatistics {
       where
         balance > 0
     ;""").execute
+
+    Q.updateNA("create index if not exists stats1 on stats(block_height);")
+
+
   }
 }
 
