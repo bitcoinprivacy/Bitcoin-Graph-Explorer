@@ -28,6 +28,8 @@ object FastAddressBalance {
       " spent_in_transaction_hash is null group by address" +
       ";").execute;
 
+    (Q.u + "create index if not exists addresses_balance on addresses(balance)").execute
+
     println("DONE: Addresses updated in %s s" format (System.currentTimeMillis - clock)/1000)
   }
 }	
