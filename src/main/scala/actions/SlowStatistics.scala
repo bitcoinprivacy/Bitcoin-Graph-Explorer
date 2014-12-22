@@ -28,8 +28,6 @@ object SlowStatistics {
     ;""").execute
 
     Q.updateNA("create index if not exists stats1 on stats(block_height);")
-
-
   }
 }
 
