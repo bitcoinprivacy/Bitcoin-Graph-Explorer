@@ -26,6 +26,7 @@ package object util
   val addresses = TableQuery[Addresses]
   val movements = TableQuery[Movements]
   val richestAddresses = TableQuery[RichestAddresses]
+  val richestClosures = TableQuery[RichestClosures]
   val stats = TableQuery[Stats]
 
   def transactionDBSession[X](f: => X): X =

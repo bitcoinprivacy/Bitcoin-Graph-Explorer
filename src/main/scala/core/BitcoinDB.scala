@@ -33,6 +33,13 @@ class RichestAddresses(tag:Tag) extends Table[(Int, Array[Byte], Int)](tag, "ric
   def * =  (block_height, hash, balance)
 }
 
+class RichestClosures(tag:Tag) extends Table[(Int, Array[Byte], Int)](tag, "richest_closures") {
+  def block_height = column[Int]("block_height")
+  def hash= column[Array[Byte]]("hash")
+  def balance= column[Int]("balance", O.Nullable)
+  def * =  (block_height, hash, balance)
+}
+
 class Addresses(tag:Tag) extends Table[(Array[Byte], Array[Byte], Option[Long])](tag, "addresses") {
   def hash= column[Array[Byte]]("hash")
   def representant = column[Array[Byte]]("representant")

@@ -174,5 +174,6 @@ trait FastBlockReader extends BlockReader
     blockDB.ddl.create
     addresses.ddl.create
     richestAddresses.ddl.create
+    richestClosures.ddl.create
   }
 } 
