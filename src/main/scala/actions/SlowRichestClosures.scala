@@ -23,6 +23,8 @@ object SlowRichestClosures {
          sum(balance) as balance
        from
          addresses
+       where
+        balance > 0
        group by
         representant
        order by
