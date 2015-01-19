@@ -17,14 +17,27 @@ class SlowAddressClosure(savedMovements: Map[(Hash,Int),(Option[Array[Byte]],Opt
 	    val byAddress = addresses.findBy( t => t.hash)
 	    for (pair <- mapDSOA){
 	      val (address, dsoa) = pair
-	      val found = byAddress(address.array.toArray).firstOption
+	      val foundAddressOption = byAddress(address.array.toArray).firstOption
 	      
-	      for (query <- found) {
-	        
-	        dsoa.find.parent = Some(DisjointSetOfAddresses(Hash(query._2)))
-	        mapDSOA remove address
+              val representant = dsoa.find.address
+              val foundRepresentantOption = byAddress(representant.array.toArray).firstOption
+
+	      match foundAddressOption {
+                case Some foundAddress =>
+	         
+                  match foundRepresentant {
+                    case None =>
+	              dsoa.find.parent = Some(DisjointSetOfAddresses(Hash(foundAddress._2)))
+
+                    case Some(foundRepresentant) =>
+                      val updateQuery = for(p <- addresses if p.hash === foundAddress._1) yield p.representant
+                      updateQuery.update(foundRepresentant._2)
+                  }
+                  mapDSOA remove address
+                case None =>
+                  mapDSOA.update(address,mapDSOA.getOrElse(foundRepresentant._2, new DisjointSetOfAddresses(foundRepresentant._2)))
 	      }
-	    }
+            }
     }
 
     println("DONE: Tree of size "+ mapDSOA.size + " adapted in %s ms" format (System.currentTimeMillis - timeStart))
