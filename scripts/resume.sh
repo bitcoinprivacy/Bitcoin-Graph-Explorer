@@ -21,7 +21,7 @@ if [ "$lastBlockNumber" -eq "$newBlockNumber" ]; then
     exit 1
 fi
 
-echo "[$(date)] Reading blockchain until $lastBlockNumber"
+echo "[$(date)] Reading blockchain until $newBlockNumber"
 JAVA_OPTS="-Xmx1g" scala -classpath "target/scala-2.11/Bitcoin Graph Explorer-assembly-2.0.jar" Explorer resume > blockchain/resume.log
 mv blockchain/count.txt.prov blockchain/count.txt
 cat blockchain/resume.log >> blockchain/history.log
