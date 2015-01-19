@@ -14,7 +14,8 @@ object SlowRichestAddresses {
   /**
    * Created by yzark on 15.12.14.
    */
-      Q.updateNA( """
+  transactionDBSession {
+    Q.updateNA( """
        insert
         into richest_addresses
        select
@@ -27,6 +28,6 @@ object SlowRichestAddresses {
         balance desc
       limit 100
     ;""").execute
-
-    Q.updateNA("create index if not exists richest1 on richest_addresses(block_height);")
+    Q.updateNA("create index if not exists richest1 on richest_addresses(block_height);").execute
+  }
 }
