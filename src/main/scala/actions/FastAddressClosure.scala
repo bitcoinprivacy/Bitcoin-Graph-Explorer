@@ -54,8 +54,6 @@ object FastAddressClosure extends AddressClosure
     val timeStart = System.currentTimeMillis
     println("DEBUG: Generating tree ...")
     val tree:HashMap[Hash, DisjointSetOfAddresses] = HashMap.empty
-    val timeStart = System.currentTimeMillis
-
     val end = countInputs
 
     for (i <- 0 to end by closureReadSize)
