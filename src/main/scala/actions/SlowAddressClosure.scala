@@ -15,16 +15,34 @@ class SlowAddressClosure(savedMovements: Map[(Hash,Int),(Option[Array[Byte]],Opt
 
     transactionDBSession {
 	    val byAddress = addresses.findBy( t => t.hash)
-	    for (pair <- mapDSOA){
+	    for (pair <- mapDSOA) {
 	      val (address, dsoa) = pair
-	      val found = byAddress(address.array.toArray).firstOption
+	      val foundAddressOption = byAddress(address.array.toArray).firstOption
 	      
-	      for (query <- found) {
-	        
-	        dsoa.find.parent = Some(DisjointSetOfAddresses(Hash(query._2)))
-	        mapDSOA remove address
-	      }
-	    }
+              val representant = dsoa.find.address
+              val foundRepresentantOption = byAddress(representant.array.toArray).firstOption
+
+	      foundAddressOption match {  // A->B is new
+                case Some(foundAddress) =>
+	         
+                  foundRepresentantOption match {
+                    case None => // A->C is in db => B->C gets added 
+	              dsoa.find.parent = Some(DisjointSetOfAddresses(Hash(foundAddress._2))) 
+
+                    case Some(foundRepresentant) => // A->C, B->D in db => A->C gets updated to A->D
+                      val updateQuery = for(p <- addresses if p.hash === foundAddress._1) yield p.representant
+                      updateQuery.update(foundRepresentant._2)
+                  }
+                  mapDSOA remove address
+
+                case None => 
+                  foundRepresentantOption match {
+                    case Some(foundRepresentant) => // B->C in DB, A->C gets added
+                      dsoa.find.parent = Some(DisjointSetOfAddresses(Hash(foundRepresentant._2))) 
+                    case None => // nothing previous in db, just add A->B  
+	          }
+              }
+            }
     }
 
     println("DONE: Tree of size "+ mapDSOA.size + " adapted in %s ms" format (System.currentTimeMillis - timeStart))
