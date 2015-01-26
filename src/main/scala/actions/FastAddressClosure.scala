@@ -51,6 +51,8 @@ object FastAddressClosure extends AddressClosure
 
   def generateTree: (HashMap[Hash, DisjointSetOfAddresses])  =
   {
+    val timeStart = System.currentTimeMillis
+    println("DEBUG: Generating tree ...")
     val tree:HashMap[Hash, DisjointSetOfAddresses] = HashMap.empty
     val timeStart = System.currentTimeMillis
 
@@ -67,7 +69,9 @@ object FastAddressClosure extends AddressClosure
           (System.currentTimeMillis - timeStart)/1000,
           (System.currentTimeMillis - timeStart)*1000/(amount+i+1)))
     }
-
+    
+    println("DONE: Tree generated in %s ms" format (System.currentTimeMillis - timeStart))
+    
     tree
   }
 }
