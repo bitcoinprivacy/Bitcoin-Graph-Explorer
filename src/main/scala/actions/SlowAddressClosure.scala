@@ -51,7 +51,8 @@ class SlowAddressClosure(savedMovements: Map[(Hash,Int),(Option[Array[Byte]],Opt
   }
 
   def generateTree: HashMap[Hash, DisjointSetOfAddresses] = {
-
+    val timeStart = System.currentTimeMillis
+    println("DEBUG: Generating tree ...")
     val mapAddresses:HashMap[Hash, Array[Hash]] = HashMap.empty
     var tree: HashMap[Hash, DisjointSetOfAddresses] = HashMap.empty
 
@@ -65,7 +66,7 @@ class SlowAddressClosure(savedMovements: Map[(Hash,Int),(Option[Array[Byte]],Opt
     }
 
     insertValuesIntoTree(mapAddresses, tree)
-
+    println("DONE: Tree generated in %s ms" format (System.currentTimeMillis - timeStart))
     tree
   }
 
