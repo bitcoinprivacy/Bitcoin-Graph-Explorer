@@ -44,6 +44,8 @@ object Explorer extends App{
       SlowStatistics
       SlowRichestAddresses
       SlowRichestClosures
+    case "gini"::rest =>
+      SlowAddressGini
     case _=> println("""
       Available commands:
        reader:
