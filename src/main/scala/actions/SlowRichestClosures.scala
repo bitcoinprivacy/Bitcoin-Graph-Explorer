@@ -10,7 +10,8 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
   */
 object SlowRichestClosures {
 
-
+  println("DEBUG: Calculating richest closure list...")                           
+  val startTIme = System.currentTimeMillis   
    /**
     * Created by yzark on 15.12.14.
     */
@@ -33,5 +34,7 @@ object SlowRichestClosures {
       limit 100
       ;""").execute
     Q.updateNA("create index if not exists richest2 on richest_closures(block_height);").execute
+
+    println("DONE: Richest closure list calculated in " + (System.currentTimeMillis - startTIme)/1000 + "s")
   }
 }

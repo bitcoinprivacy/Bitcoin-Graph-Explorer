@@ -86,6 +86,7 @@ trait FastBlockReader extends BlockReader
     saveUnmatchedOutputs
     saveUnmatchedInputs
     saveDataToDB
+    println("DONE: " + totalOutIn + " movements, " + transactionCounter + " transactions saved in " + (System.currentTimeMillis - startTime)/1000 + "s")
     println("DEBUG: Creating indexes ...")
     val time = System.currentTimeMillis
     Q.updateNA("create index if not exists address on movements (address);").execute
