@@ -8,6 +8,7 @@ import scala.slick.driver.SQLiteDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
 trait SlowBlockReader extends BlockReader {
+  
   def useDatabase: Boolean = true
 
   def saveTransaction(t: Transaction, blockHeight: Int) =
@@ -29,14 +30,14 @@ trait SlowBlockReader extends BlockReader {
   def saveBlock(b: Hash) = {
     val blockHeight = longestChain.getOrElse(b,0)
     blockDB += (b.array.toArray,longestChain.getOrElse(b,0))
-    println("DONE: Saved %s blocks" format blockHeight)
+    println("DEBUG: Saved %s blocks" format blockHeight)
   }
 
   def pre  = { 
     
   }
   def post = { 
-    println("DONE: Saved %s movements, %s transactions" format (savedMovements.size, transactionCounter))
+    println("DONE: Saved %s movements, %s transactions in %s s" format (savedMovements.size, transactionCounter, (System.currentTimeMillis-startTime)/1000))
   }
 
   def saveInput(oTx: Hash,oIdx:Int,spTx: Hash): Unit =

@@ -22,7 +22,9 @@ class Stats(tag:Tag) extends Table[(Int, Int, Int, Int, Int, Int)](tag, "stats")
   def total_addresses = column[Int]("total_addresses")
   def total_closures = column[Int]("total_closures")
   def total_addresses_with_balance = column[Int]("total_addresses_with_balance")
-  def total_closures_with_balance = column[Int]("total_closures_with_balance")
+  def total_closures_with_balance = column[Int]("total_closures_with_balance") 
+  def total_addresses_no_dust = column[Int]("total_addresses_no_dust")
+  def total_closures_no_dust = column[Int]("total_closures_no_dust")
   def * =  (block_height, total_bitcoins_in_addresses, total_addresses, total_closures, total_addresses_with_balance, total_closures_with_balance)
 }
 

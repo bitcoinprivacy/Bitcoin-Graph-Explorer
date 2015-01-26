@@ -15,13 +15,13 @@ object SlowAddressGini
 {
   transactionDBSession
   {
-    val queried = addresses.filter(_.balance.isDefined).filter(_.balance =!= 0L).sortBy(_.balance.desc).map(_.balance)
+    val queried = addresses.filter(_.balance.isDefined).filter(_.balance =!= 0L).sortBy(_.balance.asc).map(_.balance)
 
-    val summe: Long = queried.sum.asInstanceOf[Long]
-    val n: Long = queried.length.asInstanceOf[Long]
-    val balances = queried.asInstanceOf[Vector[Long]]
-    val mainSum = balances.zipWithIndex.map(p => p._1*p._2).sum
-    val gini:Double = 2.0*mainSum/(n*summe) - (n+1.0)/n
+    val n: Long = queried.length.run
+    val balances = queried.run.toVector.map(_.get.toDouble)
+    val summe = balances.sum
+    val mainSum = balances.zipWithIndex.map(p => p._1*(p._2+1.0)/n).sum
+    val gini:Double = 2.0*mainSum/(summe) - (n+1.0)/n
 
     println(" TEST "+ gini)
   }

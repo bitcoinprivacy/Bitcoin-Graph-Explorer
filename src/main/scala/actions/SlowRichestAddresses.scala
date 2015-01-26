@@ -10,7 +10,8 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
  */
 object SlowRichestAddresses {
 
-
+  println("DEBUG: Calculating richest address list...")
+  val startTIme = System.currentTimeMillis
   /**
    * Created by yzark on 15.12.14.
    */
@@ -29,5 +30,6 @@ object SlowRichestAddresses {
       limit 100
     ;""").execute
     Q.updateNA("create index if not exists richest1 on richest_addresses(block_height);").execute
+    println("DONE: Richest address list calculated in " + (System.currentTimeMillis - startTIme)/1000 + "s")
   }
 }

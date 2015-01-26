@@ -50,7 +50,7 @@ trait AddressClosure
     val totalElements = tree.size
     var counter = 0
     var counterTotal = 0
-    //println("")
+    
     println("DEBUG: Saving tree to database...")
     var counterFinal = 0
     for (value <- tree)
@@ -61,8 +61,6 @@ trait AddressClosure
       counterFinal += 1
       if (counter == closureTransactionSize)
       {
-        //println("=============================================")
-        //println("     Saving until element %s" format (counterTotal))
         saveElementsToDatabase(queries, counter)
         queries = Vector()
         counter = 0
@@ -72,12 +70,11 @@ trait AddressClosure
         println("DEBUG: Saved until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/counterTotal))
       }
     }
+    
+    println("DONE: Saved until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/counterTotal))
 
-    //println("=============================================")
-    //println("     Saving until element %s" format (counterTotal))
     saveElementsToDatabase(queries, counter)
-    //println("=============================================")
-
+    
     totalElements
   }
 
@@ -97,7 +94,7 @@ trait AddressClosure
 
   createIndexesIfNecessary
 
-  println("DONE:Total of %s addresses saved in %s s, %s µs per address" format
+  println("DONE: Total of %s addresses closured in %s s, %s µs per address" format
     (countSave, totalTime / 1000, 1000 * totalTime / (countSave + 1)))
 }
  

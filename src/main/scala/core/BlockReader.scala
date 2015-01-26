@@ -35,8 +35,7 @@ trait BlockReader extends BlockSource {
 
     for (c <- savedBlocks)
       savedBlockSet = savedBlockSet + Hash(c)
-    println("TEST: savedBlockSet size: " + savedBlockSet.size)
-
+    
     process
     post
   }
@@ -52,7 +51,7 @@ trait BlockReader extends BlockSource {
 
       if (transactionCounter % 10000 == 0) {
         val t = System.currentTimeMillis - startTime
-        println("DONE: Processed %s transactions in %s s using %s µs/tx" format(transactionCounter , t/1000, 1000 * t / transactionCounter))
+        println("DEBUG: Processed %s transactions in %s s using %s µs/tx" format(transactionCounter , t/1000, 1000 * t / transactionCounter))
       }
 
       transactionCounter += 1
@@ -64,8 +63,7 @@ trait BlockReader extends BlockSource {
     val blockHash = Hash(b.getHash.getBytes)
     val blockHeight = longestChain.getOrElse(blockHash, 0)
     val accepted = (longestChain contains blockHash) && !(savedBlockSet contains blockHash)
-    println("TEST: %s (%s) = %s " format (blockHash, blockHeight, accepted))
-
+    
     accepted
   }
 

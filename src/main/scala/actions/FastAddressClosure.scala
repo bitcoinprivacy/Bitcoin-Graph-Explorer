@@ -14,17 +14,16 @@ object FastAddressClosure extends AddressClosure
     println("DEBUG: Creating indexes ...")
     (Q.u + "create index if not exists representant on addresses (representant)").execute
     (Q.u + "create unique index if not exists hash on addresses (hash)").execute
-    println("=============================================")
-    println("")
+    
     clockIndex = System.currentTimeMillis - clockIndex
-    println("/////////////////////////////////////////////")
+    
     println("DONE: Indices created in %s s" format (clockIndex / 1000))
   }
 
   def getAddressesFromMovements(firstElement: Int, elements: Int): HashMap[Hash, Array[Hash]] =
   {
     val timeStart = System.currentTimeMillis
-    //println("     Reading until input %s" format (firstElement + elements))
+    
     val mapAddresses:HashMap[Hash, Array[Hash]] = HashMap.empty
     val emptyArray = Hash.zero(0).array.toArray
 
@@ -46,8 +45,7 @@ object FastAddressClosure extends AddressClosure
         mapAddresses.update(spentInTx, list :+ addr)
       }
     }
-    //println("     Read elements in %s ms" format (System.currentTimeMillis - timeStart))
-
+    
     mapAddresses
   }
 
@@ -60,17 +58,15 @@ object FastAddressClosure extends AddressClosure
 
     for (i <- 0 to end by closureReadSize)
     {
-      //println("=============================================")
+      
       val amount = if (i + closureReadSize > end) end - i else closureReadSize
       insertValuesIntoTree(getAddressesFromMovements(i, amount), tree)
-      println("DONE: Loaded until element %s in %s s, %s µs per element"
+      println("DEBUG: Loaded until element %s in %s s, %s µs per element"
         format
         (i+amount,
           (System.currentTimeMillis - timeStart)/1000,
           (System.currentTimeMillis - timeStart)*1000/(amount+i+1)))
     }
-
-    //println("=============================================")
 
     tree
   }
