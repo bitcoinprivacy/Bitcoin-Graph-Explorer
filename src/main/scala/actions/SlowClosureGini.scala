@@ -15,42 +15,31 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 object SlowClosureGini
 {
   transactionDBSession
-  {
-    
-    implicit val GetByteArr = GetResult(r => r.nextBytes)
-    val queried = Q.queryNA[(Array[Byte], Long)] ( """
-      select representant, balance from addresses where balance is not null and balance > 80000000000
-""")    
-    println("vector done")
+  {    
+    case class Pairr(representant:Array[Byte], balance: Long)
+    implicit val getUserResult = GetResult(r => Pairr(r.nextBytes, r.nextLong))
+    val queried = Q.queryNA[Pairr] ("select representant, balance from addresses")    
     val hashMap: HashMap[Hash, Double] = HashMap.empty
-    var i = 0
 
     for (pair <- queried)
     {
-      if (pair._1 != null)
+      val balance = pair.balance.toDouble
+      
+      if (pair.representant != null && balance > 546 )
       {
-        val address = Hash(pair._1)
-        val balance = pair._2.toDouble
-        i+=1
-    
-        if (i==1000)
-        {
-          println("added 1000 elements to map");
-          i=0
-        }
-
+        val address = Hash(pair.representant)
         hashMap.update(address, balance + hashMap.getOrElse(address, 0.0))
       }
     }
 
     val arrayBalances = hashMap.values.toVector.sorted
     val n = hashMap.size
-    println("calculating gini from " + n + " closures");
     val summe = arrayBalances.sum
     val mainSum = arrayBalances.zipWithIndex.map(p => p._1*(p._2+1.0)/n).sum
     val gini:Double = 2.0*mainSum/(summe) - (n+1.0)/n
 
     println("TEST: Total closures: " + n)
     println("TEST: Closure gini: "+ gini)
+    Q.updateNA(" update stats set gini_closure = " + gini + " where block_height = (select max(block_height) from stats)").execute
   }
 }

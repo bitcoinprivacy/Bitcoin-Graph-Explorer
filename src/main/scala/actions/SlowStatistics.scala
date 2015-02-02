@@ -31,7 +31,7 @@ object SlowStatistics {
         balance > 0
     ;""").execute
    
-    Q.updateNA("create index if not exists stats1 on stats(block_height);")
+    Q.updateNA("create index if not exists stats1 on stats(block_height);").execute
     println("DONE: Stats calculated in " + (System.currentTimeMillis - startTIme)/1000 + "s");
   }
 }

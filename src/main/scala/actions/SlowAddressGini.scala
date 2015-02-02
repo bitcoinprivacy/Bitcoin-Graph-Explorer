@@ -15,7 +15,7 @@ object SlowAddressGini
 {
   transactionDBSession
   {
-    val queried = addresses.filter(_.balance.isDefined).filter(_.balance > 80000000000L).sortBy(_.balance.asc).map(_.balance)
+    val queried = addresses.filter(_.balance.isDefined).filter(_.balance > dustLimit).sortBy(_.balance.asc).map(_.balance)
 
     val n: Long = queried.length.run
     val balances = queried.run.toVector.map(_.get.toDouble)
@@ -25,5 +25,7 @@ object SlowAddressGini
 
     println("TEST: Total addresses: " + n)
     println("TEST: Address gini: "+ gini)
+    Q.updateNA(" update stats set gini_address = " + gini + " where block_height = (select max(block_height) from stats)").execute
+
   }
 }
