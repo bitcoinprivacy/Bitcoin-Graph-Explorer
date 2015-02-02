@@ -16,19 +16,38 @@ object SlowClosureGini
 {
   transactionDBSession
   {
-    val queried = addresses.filter(_.balance.isDefined).filter(_.balance > 546).sortBy(_.balance.asc).map(x => (x.representant,x.balance))
-   
-    val hashMap: HashMap[Hash, Long] = HashMap.empty
+    
+    implicit val GetByteArr = GetResult(r => r.nextBytes)
+    val queried = Q.queryNA[(Array[Byte], Long)] ( """
+      select representant, balance from addresses where balance is not null and balance > 80000000000
+""")    
+    println("vector done")
+    val hashMap: HashMap[Hash, Double] = HashMap.empty
+    var i = 0
+
     for (pair <- queried)
     {
-      val x: Array[Byte] = pair._1
-      val y: Long = pair._2.getOrElse(0L)
-      hashMap.put(Hash(x), y + hashMap.getOrElse(Hash(x), 0L))
+      if (pair._1 != null)
+      {
+        val address = Hash(pair._1)
+        val balance = pair._2.toDouble
+        i+=1
+    
+        if (i==1000)
+        {
+          println("added 1000 elements to map");
+          i=0
+        }
+
+        hashMap.update(address, balance + hashMap.getOrElse(address, 0.0))
+      }
     }
 
+    val arrayBalances = hashMap.values.toVector.sorted
     val n = hashMap.size
-    val summe = hashMap.values.sum
-    val mainSum = hashMap.values.zipWithIndex.map(p => p._1*(p._2+1.0)/n).sum
+    println("calculating gini from " + n + " closures");
+    val summe = arrayBalances.sum
+    val mainSum = arrayBalances.zipWithIndex.map(p => p._1*(p._2+1.0)/n).sum
     val gini:Double = 2.0*mainSum/(summe) - (n+1.0)/n
 
     println("TEST: Total closures: " + n)

@@ -15,7 +15,7 @@ object SlowAddressGini
 {
   transactionDBSession
   {
-    val queried = addresses.filter(_.balance.isDefined).filter(_.balance > 546).sortBy(_.balance.asc).map(_.balance)
+    val queried = addresses.filter(_.balance.isDefined).filter(_.balance > 80000000000L).sortBy(_.balance.asc).map(_.balance)
 
     val n: Long = queried.length.run
     val balances = queried.run.toVector.map(_.get.toDouble)
