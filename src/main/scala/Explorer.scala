@@ -42,6 +42,8 @@ object Explorer extends App{
       new SlowAddressClosure(ResumeBlockReader.savedMovements)
       new SlowAddressBalance(ResumeBlockReader.savedMovements)
       SlowStatistics
+      SlowClosureGini
+      SlowAddressGini
       SlowRichestAddresses
       SlowRichestClosures
     case "gini"::rest =>
