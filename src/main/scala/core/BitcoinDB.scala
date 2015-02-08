@@ -16,9 +16,10 @@ class Blocks(tag:Tag) extends Table[(Array[Byte], Int)](tag, "blocks") {
   def * =  (hash, block_height)
 }
 
-class Stats(tag:Tag) extends Table[(Int, Int, Int, Int, Int, Int, Double, Double)](tag, "stats") {
+class Stats(tag:Tag) extends Table[(Int, Int, Int, Int, Int, Int, Int, Double, Double)](tag, "stats") {
   def block_height = column[Int]("block_height")
   def total_bitcoins_in_addresses = column[Int]("total_bitcoins_in_addresses")
+  def total_transactions = column[Int]("total_transactions")
   def total_addresses = column[Int]("total_addresses")
   def total_closures = column[Int]("total_closures")
   def total_addresses_with_balance = column[Int]("total_addresses_with_balance")
@@ -27,7 +28,7 @@ class Stats(tag:Tag) extends Table[(Int, Int, Int, Int, Int, Int, Double, Double
   def total_closures_no_dust = column[Int]("total_closures_no_dust")
   def gini_closure = column[Double]("gini_closure")
   def gini_address = column[Double]("gini_address")
-  def * =  (block_height, total_bitcoins_in_addresses, total_addresses, total_closures, total_addresses_with_balance, total_closures_with_balance, gini_closure, gini_address)
+  def * =  (block_height, total_bitcoins_in_addresses, total_transactions, total_addresses, total_closures, total_addresses_with_balance, total_closures_with_balance, gini_closure, gini_address)
 }
 
 class RichestAddresses(tag:Tag) extends Table[(Int, Array[Byte], Int)](tag, "richest_addresses") {
