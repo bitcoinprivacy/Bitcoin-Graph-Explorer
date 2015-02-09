@@ -31,7 +31,7 @@ object SlowRichestClosures {
         representant
       order by
         balance desc
-      limit 100
+      limit 1000
       ;""").execute
     Q.updateNA("create index if not exists richest2 on richest_closures(block_height);").execute
 

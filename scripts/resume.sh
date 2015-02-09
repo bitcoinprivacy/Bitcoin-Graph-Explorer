@@ -15,6 +15,7 @@ done
 
 lastBlockNumber=`expr $(sqlite3  blockchain/movements.db "select max(block_height) from blocks; ")`
 newBlockNumber=`expr $(cat .bitcoin/blocklist.txt  | wc -l)`
+newBlockNumber=$(($newBlockNumber-1))
 
 if [ "$lastBlockNumber" -eq "$newBlockNumber" ]; then
     exit 1

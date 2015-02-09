@@ -27,7 +27,7 @@ object SlowRichestAddresses {
         addresses
       order by
         balance desc
-      limit 100
+      limit 1000
     ;""").execute
     Q.updateNA("create index if not exists richest1 on richest_addresses(block_height);").execute
     println("DONE: Richest address list calculated in " + (System.currentTimeMillis - startTIme)/1000 + "s")
