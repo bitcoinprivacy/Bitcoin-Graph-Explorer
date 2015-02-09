@@ -13,6 +13,13 @@ for pid in $(pidof -x resume.sh); do
     fi
 done
 
+for pid in $(pidof -x populate.sh); do
+    if [ $pid != $$ ]; then
+        #echo "[$(date)] : resume.sh : Process is already running with PID $pid"                                                                               
+        exit 1
+    fi
+done
+
 lastBlockNumber=`expr $(sqlite3  blockchain/movements.db "select max(block_height) from blocks; ")`
 newBlockNumber=`expr $(cat .bitcoin/blocklist.txt  | wc -l)`
 
