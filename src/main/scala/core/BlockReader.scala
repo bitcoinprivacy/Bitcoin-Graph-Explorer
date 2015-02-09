@@ -23,7 +23,7 @@ trait BlockReader extends BlockSource {
 
   var savedBlockSet: Set[Hash] = Set.empty
   val longestChain: Map[Hash, Int] = getLongestBlockChainHashSet
-  var transactionCounter = 1
+  var transactionCounter = 0
   var startTime = System.currentTimeMillis
   var savedMovements: Map[(Hash,Int),(Option[Array[Byte]],Option[Array[Byte]],Option[Long],Option[Int])] = Map.empty
               // tx_hash,index -> spent_tx,address,value,height
