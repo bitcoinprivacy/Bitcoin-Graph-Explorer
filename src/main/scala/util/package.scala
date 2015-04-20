@@ -7,15 +7,15 @@ import java.io._
 import com.typesafe.config.ConfigFactory
 import core._
 
-import scala.slick.driver.SQLiteDriver.simple._
+import scala.slick.driver.MySQLDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import scala.slick.jdbc.{StaticQuery => Q}
+import scala.slick.jdbc.meta.MTable
 
 package object util
 {  
   val conf = ConfigFactory.load()
 
-  var transactionsDatabaseFile = conf.getString("transactionsDatabaseFile") //"blockchain/bitcoin.db"
   var closureTransactionSize = conf.getInt("closureTransactionSize")
   var closureReadSize = conf.getInt("closureReadSize")
   var populateTransactionSize = conf.getInt("populateTransactionSize")
@@ -30,20 +30,19 @@ package object util
   val richestClosures = TableQuery[RichestClosures]
   val stats = TableQuery[Stats]
 
+  val USERNAME="root"
+  val PASSWORD=sys.env("MYSQL_ENV_MYSQL_ROOT_PASSWORD")
+  val DBNAME=conf.getString("databaseName")
+  val URL="jdbc:mysql://"+sys.env("MYSQL_PORT_3306_TCP_ADDR")+":"+sys.env("MYSQL_PORT_3306_TCP_PORT")+"/"+DBNAME
+  val DRIVER="org.mariadb.jdbc.Driver"
+ 
+  def deleteIfNotExists(tables: TableQuery[_ <: Table[_]]*)(implicit session: Session) {
+  tables foreach {table => if(!MTable.getTables(table.baseTableRow.tableName).list.isEmpty) table.ddl.drop}
+  }
+
   def transactionDBSession[X](f: => X): X =
   {
-    Database.forURL(
-      url = "jdbc:sqlite:"+transactionsDatabaseFile,
-      driver = "org.sqlite.JDBC"
-    ) withDynSession
-    {
-      (Q.u + "PRAGMA main.page_size = 4962;"    ).execute
-      (Q.u + "PRAGMA main.cache_size=1000000;"    ).execute
-      (Q.u + "PRAGMA main.locking_mode=NORMAL;" ).execute
-      (Q.u + "PRAGMA main.synchronous=NORMAL;"     ).execute
-      (Q.u + "PRAGMA main.journal_mode=WAL;"    ).execute
-      f
-    }    
+    Database.forURL(URL, user=USERNAME,password=PASSWORD,driver = DRIVER) withDynSession { f }
   }
 
   val arrayNull = Hash.zero(1).array.toArray

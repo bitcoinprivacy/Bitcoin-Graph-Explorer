@@ -8,7 +8,7 @@ package core
  * To change this template use File | Settings | File Templates.
  */
 
-import scala.slick.driver.SQLiteDriver.simple._
+import scala.slick.driver.MySQLDriver.simple._
 
 class Blocks(tag:Tag) extends Table[(Array[Byte], Int)](tag, "blocks") {
   def hash= column[Array[Byte]]("hash")

@@ -3,7 +3,7 @@ package actions
 import util._
 import scala.slick.jdbc.{StaticQuery => Q}
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
-import scala.slick.driver.SQLiteDriver.simple._
+import scala.slick.driver.MySQLDriver.simple._
 
 /**
  * Created by yzark on 10.09.14.

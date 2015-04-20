@@ -8,9 +8,10 @@ import util._
 import scala.collection.immutable
 
 // for blocks db and longestChain
+import scala.slick.jdbc.meta._
 import org.bitcoinj.core._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
-import scala.slick.driver.SQLiteDriver.simple._
+import scala.slick.driver.MySQLDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
 trait FastBlockReader extends BlockReader
@@ -169,7 +170,8 @@ trait FastBlockReader extends BlockReader
   }
 
   def initializeDB: Unit =
-  {
+  { 
+    deleteIfNotExists(stats, movements, blockDB, addresses, richestAddresses, richestClosures)
     stats.ddl.create
     movements.ddl.create
     blockDB.ddl.create

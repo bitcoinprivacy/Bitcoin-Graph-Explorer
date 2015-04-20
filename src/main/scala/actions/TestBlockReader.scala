@@ -10,7 +10,7 @@ import scala.collection.immutable
 // for blocks db and longestChain
 import org.bitcoinj.core._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
-import scala.slick.driver.SQLiteDriver.simple._
+import scala.slick.driver.MySQLDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
 // Example of how to create a test-class

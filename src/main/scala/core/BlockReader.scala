@@ -7,7 +7,7 @@ import org.bitcoinj.core._
 import util._
 
 import scala.collection.JavaConverters._
-import scala.slick.driver.SQLiteDriver.simple._
+import scala.slick.driver.MySQLDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
 // extends libs.BlockSource means that it depends on a libs.BlockSource

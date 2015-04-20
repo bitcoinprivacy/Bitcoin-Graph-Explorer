@@ -1,7 +1,7 @@
 import core._ 
 import util._
 import java.io._
-import scala.slick.driver.SQLiteDriver.simple._
+import scala.slick.driver.MySQLDriver.simple._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import scala.collection.mutable.HashMap
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession

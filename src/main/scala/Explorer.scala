@@ -24,7 +24,6 @@ object Explorer extends App{
       (new ScriptTester)
     case "reader"::rest           =>
       object InitializeBlockReader extends BitcoinDRawFileBlockSource with FastBlockReader //needs to be in this order for linearization
-      new File(transactionsDatabaseFile).delete
       InitializeBlockReader
     case "closure"::rest              =>
       FastAddressClosure
@@ -32,7 +31,6 @@ object Explorer extends App{
       FastAddressBalance
     case "populate"::rest             =>
       object InitializeBlockReader extends BitcoinDRawFileBlockSource with FastBlockReader //needs to be in this order for linearization
-      new File(transactionsDatabaseFile).delete
       InitializeBlockReader
       FastAddressClosure
       FastAddressBalance

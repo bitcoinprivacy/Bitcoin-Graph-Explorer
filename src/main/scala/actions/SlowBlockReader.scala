@@ -4,7 +4,7 @@ import org.bitcoinj.core._
 import core._
 import util._
 
-import scala.slick.driver.SQLiteDriver.simple._
+import scala.slick.driver.MySQLDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
 trait SlowBlockReader extends BlockReader {
