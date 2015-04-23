@@ -12,8 +12,8 @@ object FastAddressClosure extends AddressClosure
   {
     var clockIndex = System.currentTimeMillis
     println("DEBUG: Creating indexes ...")
-    (Q.u + "create index if not exists representant on addresses (representant)").execute
-    (Q.u + "create unique index if not exists hash on addresses (hash)").execute
+    (Q.u + "create index representant on addresses (representant (20))").execute
+    (Q.u + "create unique index hash on addresses (hash (20))").execute
     
     clockIndex = System.currentTimeMillis - clockIndex
     
