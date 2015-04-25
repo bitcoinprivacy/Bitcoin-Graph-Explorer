@@ -32,6 +32,7 @@ object Explorer extends App{
     case "populate"::rest             =>
       object InitializeBlockReader extends BitcoinDRawFileBlockSource with FastBlockReader //needs to be in this order for linearization
       InitializeBlockReader
+      CreateIndexes
       FastAddressClosure
       FastAddressBalance
     case "resume"::rest               => 

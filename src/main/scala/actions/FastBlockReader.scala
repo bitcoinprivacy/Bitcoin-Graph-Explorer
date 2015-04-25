@@ -89,6 +89,8 @@ trait FastBlockReader extends BlockReader
     System.out.println("DEBUG: Initiating database")
     initializeDB
     (Q.u+"SET GLOBAL max_allowed_packet=1073741824;").execute
+    (Q.u+"set global tmp_table_size = 1073741824;").execute
+    (Q.u+"set global max_heap_table_size = 1073741824;").execute
   }
 
   def post = {
@@ -96,15 +98,6 @@ trait FastBlockReader extends BlockReader
     saveUnmatchedInputs
     saveDataToDB
     println("DONE: " + totalOutIn + " movements, " + transactionCounter + " transactions saved in " + (System.currentTimeMillis - startTime)/1000 + "s")
-    println("DEBUG: Creating indexes ...")
-    val time = System.currentTimeMillis
-    Q.updateNA("create index  address on movements (address (20));").execute
-    Q.updateNA("create unique index  transaction_hash_i on movements (transaction_hash (20), `index`);").execute
-    Q.updateNA("create index  spent_in_transaction_hash2 on movements (spent_in_transaction_hash (20), address(20));").execute
-    Q.updateNA("create index  block_height on movements (block_height);").execute
-    Q.updateNA("create index  block_hash on blocks(hash (20));").execute
-    Q.updateNA("create index  block_height2 on blocks(block_height);").execute
-    println("DONE: Indexes created in %s s" format (System.currentTimeMillis - time)/1000)
   }
 
   def saveUnmatchedOutputs: Unit =
