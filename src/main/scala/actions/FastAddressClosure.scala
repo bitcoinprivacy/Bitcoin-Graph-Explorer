@@ -1,4 +1,6 @@
-import core._ 
+package actions
+
+import core._
 import util._
 import java.io._
 import scala.slick.driver.MySQLDriver.simple._
