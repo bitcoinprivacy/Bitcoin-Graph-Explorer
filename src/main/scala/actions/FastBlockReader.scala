@@ -25,8 +25,6 @@ trait FastBlockReader extends BlockReader
   var vectorBlocks: Vector[(Hash, Int)]  = Vector()
   var totalOutIn: Int = 0
 
-  val fw = Path.createTempFile()
-
   def useDatabase: Boolean = true
 
   def saveTransaction(trans: Transaction, blockHeight: Int) =
@@ -124,9 +122,6 @@ trait FastBlockReader extends BlockReader
     if (vectorBlocks.length > 0)
       (Q.u + "insert into blocks VALUES " + vectorBlocks.mkString(",")).execute
     if (vectorMovements.length > 0)
-      //fw.writeStrings(vectorMovements map (tuple=> tuple.productIterator.toList.mkString(",")),"\n")
-      //doesn't work because of some stupid nullpointerexception
-      //(Q.u + "insert into movements VALUES " +  vectorMovements.mkString(",")).execute 
       { def ohc(e:Option[Hash]):Option[Array[Byte]] = for (h <- e) yield Hash.hashToArray(h)
                 
         def vectorMovementsConverter[A,B,C](v:Vector[(Option[Hash],Option[Hash],Option[Hash],A,B,C)]) = v map {

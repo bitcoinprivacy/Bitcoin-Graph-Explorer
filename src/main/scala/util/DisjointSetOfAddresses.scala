@@ -8,11 +8,11 @@ package util
  * To change this template use File | Settings | File Templates.
  */
 
-case class DisjointSetOfAddresses(address: Hash) {
+case class DisjointSetOfAddresses(val address: Hash) {
 
   var rank = 0
   var parent: Option[DisjointSetOfAddresses] = None
-  var children: Set[DisjointSetOfAddresses] = Set.empty  // to be able to return all members of a set
+  //var children: Set[DisjointSetOfAddresses] = Set.empty  // to be able to return all members of a set
 
   def equals(that:DisjointSetOfAddresses) =
     this.address == that.address
@@ -27,12 +27,12 @@ case class DisjointSetOfAddresses(address: Hash) {
 
     if (left.rank <= right.rank) {
       left.parent = Some(right)
-      right.children += left
+   //   right.children += left
       right
     }
     else {
       right.parent = Some(left)
-      left.children += right
+   //   left.children += right
       left
     }
 
@@ -45,7 +45,7 @@ case class DisjointSetOfAddresses(address: Hash) {
       case Some(p) => 
       { val r = p.find
         this.parent = Some (r)
-        r.children += this          // path compression
+    //    r.children += this          // path compression
         r 
       }
         

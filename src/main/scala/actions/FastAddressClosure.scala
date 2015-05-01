@@ -14,8 +14,8 @@ object FastAddressClosure extends AddressClosure
   {
     var clockIndex = System.currentTimeMillis
     println("DEBUG: Creating indexes ...")
-    (Q.u + "create index representant on addresses (representant (20))").execute
-    (Q.u + "create unique index hash on addresses (hash (20))").execute
+    (Q.u + "create index representant on addresses (representant (61))").execute
+    (Q.u + "create unique index hash on addresses (hash (255))").execute
     
     clockIndex = System.currentTimeMillis - clockIndex
     
@@ -28,25 +28,31 @@ object FastAddressClosure extends AddressClosure
     
     val mapAddresses:HashMap[Hash, Array[Hash]] = HashMap.empty
     val emptyArray = Hash.zero(0).array.toArray
-
+    println("Reading")
     transactionDBSession {
-      val queried = for {
-        q <- movements.drop(firstElement).take(elements)
-          .filter(q => q.spent_in_transaction_hash.isDefined && q.address.isDefined)
-          .filter(_.spent_in_transaction_hash =!= emptyArray)
-      } yield (q.spent_in_transaction_hash, q.address)
+      val queried =
+        for (q <- movements.drop(firstElement).take(elements).filter{ q =>
+          val stx = q.spent_in_transaction_hash
+          lazy val ad =  q.address
+          stx.isDefined && stx =!= emptyArray && ad.isDefined && ad =!= emptyArray
+        })
+        yield (q.spent_in_transaction_hash, q.address)
 
-      for {q <- queried
-           sTx <- q._1
-           ad <- q._2} {
+      for {
+        q <- queried
+        sTx <- q._1
+        ad <- q._2}
+      {
+        // address cannot be empty if slick works propertly
+        // spent_in_transaction is no empty too
         val spentInTx = Hash(sTx)
         val addr = Hash(ad)
 
-        assert(addr != Hash(emptyArray), "=!= doesn't work")
         val list: Array[Hash] = mapAddresses.getOrElse(spentInTx, Array())
         mapAddresses.update(spentInTx, list :+ addr)
       }
     }
+    println("Read")
     
     mapAddresses
   }
