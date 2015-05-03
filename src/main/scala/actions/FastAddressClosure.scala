@@ -29,29 +29,28 @@ object FastAddressClosure extends AddressClosure
     val mapAddresses:HashMap[Hash, Array[Hash]] = HashMap.empty
     val emptyArray = Hash.zero(0).array.toArray
     println("Reading")
-    transactionDBSession {
-      val queried =
-        for (q <- movements.drop(firstElement).take(elements).filter{ q =>
-          val stx = q.spent_in_transaction_hash
-          lazy val ad =  q.address
-          stx.isDefined && stx =!= emptyArray && ad.isDefined && ad =!= emptyArray
-        })
-        yield (q.spent_in_transaction_hash, q.address)
+    
+    val queried =
+      for (q <- movements.drop(firstElement).take(elements).filter{ q =>
+        val stx = q.spent_in_transaction_hash
+        lazy val ad =  q.address
+        stx.isDefined && stx =!= emptyArray && ad.isDefined && ad =!= emptyArray
+      })
+      yield (q.spent_in_transaction_hash, q.address)
 
-      for {
-        q <- queried
-        sTx <- q._1
-        ad <- q._2}
-      {
-        // address cannot be empty if slick works propertly
-        // spent_in_transaction is no empty too
-        val spentInTx = Hash(sTx)
-        val addr = Hash(ad)
-
-        val list: Array[Hash] = mapAddresses.getOrElse(spentInTx, Array())
-        mapAddresses.update(spentInTx, list :+ addr)
-      }
+    for {
+      q <- queried
+      sTx <- q._1
+      ad <- q._2}
+    {
+      // address cannot be empty if slick works propertly
+      // spent_in_transaction is no empty too
+      val spentInTx = Hash(sTx)
+      val addr = Hash(ad)
+      val list: Array[Hash] = mapAddresses.getOrElse(spentInTx, Array())
+      mapAddresses.update(spentInTx, list :+ addr)
     }
+
     println("Read")
     
     mapAddresses
@@ -62,20 +61,25 @@ object FastAddressClosure extends AddressClosure
     val timeStart = System.currentTimeMillis
     println("DEBUG: Generating tree ...")
     val tree:HashMap[Hash, DisjointSetOfAddresses] = HashMap.empty
-    val end = countInputs
-
-    for (i <- 0 to end by closureReadSize)
-    {
+    transactionDBSession {
+      println("counting inputs");
+      val end = 370000000  // a number is bigger than the max of inputs, countInputs is way to slow,
+                           // even tried direct in mysql, select count(*) need several minutes
+      println("counted " + end + " inputs in " + (System.currentTimeMillis - timeStart)/1000);
       
-      val amount = if (i + closureReadSize > end) end - i else closureReadSize
-      insertValuesIntoTree(getAddressesFromMovements(i, amount), tree)
-      println("DEBUG: Loaded until element %s in %s s, %s µs per element"
-        format
-        (i+amount,
-          (System.currentTimeMillis - timeStart)/1000,
-          (System.currentTimeMillis - timeStart)*1000/(amount+i+1)))
+      for (i <- 0 to end by closureReadSize)
+      {
+        println("DEBUG: Loading elements up to "+i)
+        val amount = if (i + closureReadSize > end) end - i else closureReadSize
+        insertValuesIntoTree(getAddressesFromMovements(i, amount), tree)
+        println("DEBUG: Loaded until element %s in %s s, %s µs per element"
+          format
+          (i+amount,
+            (System.currentTimeMillis - timeStart)/1000,
+            (System.currentTimeMillis - timeStart)*1000/(amount+i+1)))
+      }
     }
-    
+
     println("DONE: Tree generated in %s ms" format (System.currentTimeMillis - timeStart))
     
     tree

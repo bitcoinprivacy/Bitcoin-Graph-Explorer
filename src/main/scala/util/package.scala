@@ -34,7 +34,7 @@ package object util
   val PASSWORD=sys.env("MYSQL_ENV_MYSQL_ROOT_PASSWORD")
   val DBNAME=conf.getString("databaseName")
   val URL="jdbc:mysql://"+sys.env("MYSQL_PORT_3306_TCP_ADDR")+":"+sys.env("MYSQL_PORT_3306_TCP_PORT")+"/"+DBNAME+"?useServerPrepStmts=false&rewriteBatchedStatements=true&maxWait=-1"
-//  val URL="jdbc:mysql://localhost:3306/movements"
+  //  val URL="jdbc:mysql://localhost:3306/movements"
   val DRIVER="com.mysql.jdbc.Driver"
  
   def deleteIfNotExists(tables: TableQuery[_ <: Table[_]]*)(implicit session: Session) {
@@ -49,10 +49,10 @@ package object util
   val arrayNull = Hash.zero(1).array.toArray
 
   def countInputs: Int =
-    transactionDBSession
-    {
+    //transactionDBSession
+    //{
       movements.length.run
-    }
+    //}
 
   def existsOutput(transactionHash: Hash, index: Int): Boolean =
   {

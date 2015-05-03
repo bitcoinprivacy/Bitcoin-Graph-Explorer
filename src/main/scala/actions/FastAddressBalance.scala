@@ -13,13 +13,13 @@ object FastAddressBalance {
   transactionDBSession {
     println("DEBUG: Updating addresses ...")
     Q.updateNA("" +
-      " UPDATE OR IGNORE" +
+      " UPDATE IGNORE" +
       "  addresses " +
       "SET" +
       " balance = (select sum(value) from movements where spent_in_transaction_hash is null and address = addresses.hash group by address) " +
       ";").execute
 
-    Q.updateNA("INSERT or IGNORE " +
+    Q.updateNA("INSERT IGNORE " +
       " INTO addresses select " +
       "   address, address, sum(value) " +
       " FROM " +

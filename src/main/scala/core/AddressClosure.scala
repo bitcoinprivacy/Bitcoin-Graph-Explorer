@@ -26,6 +26,7 @@ trait AddressClosure
 
   def insertValuesIntoTree(databaseResults: HashMap[Hash, Array[Hash]], tree: HashMap[Hash, DisjointSetOfAddresses]) =
   {
+    println("Insering values into tree");
     val start = System.currentTimeMillis
 
     for (t <- databaseResults)
@@ -38,8 +39,10 @@ trait AddressClosure
         case ar => ar(0).union(ar(1)) ; union(ar.drop(1))
       }
 
+      
       union(dSOAs)
     }
+    println("Values inserted");
 
   }
 

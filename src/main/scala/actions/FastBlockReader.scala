@@ -86,9 +86,9 @@ trait FastBlockReader extends BlockReader
     totalOutIn = 0
     System.out.println("DEBUG: Initiating database")
     initializeDB
-    (Q.u+"SET GLOBAL max_allowed_packet=1073741824;").execute
-    (Q.u+"set global tmp_table_size = 1073741824;").execute
-    (Q.u+"set global max_heap_table_size = 1073741824;").execute
+    // (Q.u+"SET GLOBAL max_allowed_packet=1073741824;").execute
+    // (Q.u+"set global tmp_table_size = 1073741824;").execute
+    // (Q.u+"set global max_heap_table_size = 1073741824;").execute
   }
 
   def post = {
