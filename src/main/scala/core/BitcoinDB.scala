@@ -13,7 +13,11 @@ import scala.slick.driver.MySQLDriver.simple._
 class Blocks(tag:Tag) extends Table[(Array[Byte], Int)](tag, "blocks") {
   def hash= column[Array[Byte]]("hash")
   def block_height = column[Int]("block_height")
+
   def * =  (hash, block_height)
+
+  def idx1 = index("idx_1", (hash), unique = true)
+  def idx2 = index("idx_2", (block_height), unique = true)
 }
 
 class Stats(tag:Tag) extends Table[(Int, Int, Int, Int, Int, Int, Int, Int, Int, Double, Double)](tag, "stats") {
@@ -61,6 +65,13 @@ class Movements(tag:Tag) extends Table[(Option[Array[Byte]], Option[Array[Byte]]
   def value = column[Option[Long]]("value", O.Nullable)
   def spent_in_transaction_hash = column[Option[Array[Byte]]]("spent_in_transaction_hash", O.Nullable)
   def block_height = column[Option[Int]]("block_height", O.Nullable)
+
+  def idx1 = index("idx_1", (transaction_hash, index), unique = true)
+  def idx2 = index("idx_2", (address), unique = false)
+  def idx3 = index("idx_3", (spent_in_transaction_hash, address), unique = false)
+  def idx4 = index("idx_4", (block_height), unique = false)
+  def idx5 = index("idx_5", (transaction_hash, index), unique = false)
+  def idx6 = index("idx_6", (transaction_hash, index), unique = false)
 
   def * = (spent_in_transaction_hash,transaction_hash,address,index,value, block_height)
 }

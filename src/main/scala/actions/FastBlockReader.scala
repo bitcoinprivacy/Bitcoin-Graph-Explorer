@@ -86,7 +86,9 @@ trait FastBlockReader extends BlockReader
     totalOutIn = 0
     System.out.println("DEBUG: Initiating database")
     initializeDB
-    // (Q.u+"SET GLOBAL max_allowed_packet=1073741824;").execute
+    (Q.u + "ALTER TABLE movements DISABLE KEYS;").execute
+    (Q.u + "LOCK TABLES a WRITE;");
+    //(Q.u+"SET GLOBAL max_allowed_packet=1073741824;").execute
     // (Q.u+"set global tmp_table_size = 1073741824;").execute
     // (Q.u+"set global max_heap_table_size = 1073741824;").execute
   }
@@ -95,6 +97,9 @@ trait FastBlockReader extends BlockReader
     saveUnmatchedOutputs
     saveUnmatchedInputs
     saveDataToDB
+    (Q.u + "ALTER TABLE tbl_name ENABLE KEYS;").execute
+    (Q.u + "UNLOCK TABLES;");
+
     println("DONE: " + totalOutIn + " movements, " + transactionCounter + " transactions saved in " + (System.currentTimeMillis - startTime)/1000 + "s")
   }
 
