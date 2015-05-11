@@ -16,8 +16,8 @@ class Blocks(tag:Tag) extends Table[(Array[Byte], Int)](tag, "blocks") {
 
   def * =  (hash, block_height)
 
-  def idx1 = index("idx_1", (hash), unique = true)
-  def idx2 = index("idx_2", (block_height), unique = true)
+//  def idx1 = index("idx_1", (hash), unique = true)
+//  def idx2 = index("idx_2", (block_height), unique = true)
 }
 
 class Stats(tag:Tag) extends Table[(Int, Int, Int, Int, Int, Int, Int, Int, Int, Double, Double)](tag, "stats") {
@@ -35,18 +35,20 @@ class Stats(tag:Tag) extends Table[(Int, Int, Int, Int, Int, Int, Int, Int, Int,
   def * =  (block_height, total_bitcoins_in_addresses, total_transactions, total_addresses, total_closures, total_addresses_with_balance, total_closures_with_balance, total_addresses_no_dust, total_closures_no_dust, gini_closure, gini_address)
 }
 
-class RichestAddresses(tag:Tag) extends Table[(Int, Array[Byte], Int)](tag, "richest_addresses") {
+class RichestAddresses(tag:Tag) extends Table[(Int, Array[Byte], Long)](tag, "richest_addresses") {
   def block_height = column[Int]("block_height")
   def hash= column[Array[Byte]]("hash")
-  def balance= column[Int]("balance", O.Nullable)
+  def balance= column[Long]("balance", O.Nullable)
   def * =  (block_height, hash, balance)
+  def idx1 = index("idxx1", (block_height), unique = false)  
 }
 
-class RichestClosures(tag:Tag) extends Table[(Int, Array[Byte], Int)](tag, "richest_closures") {
+class RichestClosures(tag:Tag) extends Table[(Int, Array[Byte], Long)](tag, "richest_closures") {
   def block_height = column[Int]("block_height")
   def hash= column[Array[Byte]]("hash")
-  def balance= column[Int]("balance", O.Nullable)
+  def balance= column[Long]("balance", O.Nullable)
   def * =  (block_height, hash, balance)
+  def idx1 = index("idxx1", (block_height), unique = false)
 }
 
 class Addresses(tag:Tag) extends Table[(Array[Byte], Array[Byte], Option[Long])](tag, "addresses") {
@@ -66,12 +68,12 @@ class Movements(tag:Tag) extends Table[(Option[Array[Byte]], Option[Array[Byte]]
   def spent_in_transaction_hash = column[Option[Array[Byte]]]("spent_in_transaction_hash", O.Nullable)
   def block_height = column[Option[Int]]("block_height", O.Nullable)
 
-  def idx1 = index("idx_1", (transaction_hash, index), unique = true)
-  def idx2 = index("idx_2", (address), unique = false)
-  def idx3 = index("idx_3", (spent_in_transaction_hash, address), unique = false)
-  def idx4 = index("idx_4", (block_height), unique = false)
-  def idx5 = index("idx_5", (transaction_hash, index), unique = false)
-  def idx6 = index("idx_6", (transaction_hash, index), unique = false)
+  //def idx1 = index("idx_1", (transaction_hash, index), unique = true)
+  //def idx2 = index("idx_2", (address), unique = false)
+  //def idx3 = index("idx_3", (spent_in_transaction_hash, address), unique = false)
+  //def idx4 = index("idx_4", (block_height), unique = false)
+  //def idx5 = index("idx_5", (transaction_hash, index), unique = false)
+  //def idx6 = index("idx_6", (transaction_hash, index), unique = false)
 
   def * = (spent_in_transaction_hash,transaction_hash,address,index,value, block_height)
 }

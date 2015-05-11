@@ -10,18 +10,6 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
 object FastAddressClosure extends AddressClosure
 {
-  override def createIndexesIfNecessary = transactionDBSession
-  {
-    var clockIndex = System.currentTimeMillis
-    println("DEBUG: Creating indexes ...")
-    (Q.u + "create index representant on addresses (representant (61))").execute
-    (Q.u + "create unique index hash on addresses (hash (255))").execute
-    
-    clockIndex = System.currentTimeMillis - clockIndex
-    
-    println("DONE: Indices created in %s s" format (clockIndex / 1000))
-  }
-
   def getAddressesFromMovements(firstElement: Int, elements: Int): HashMap[Hash, Array[Hash]] =
   {
     val timeStart = System.currentTimeMillis

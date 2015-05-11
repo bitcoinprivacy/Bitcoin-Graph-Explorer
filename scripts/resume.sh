@@ -20,17 +20,18 @@ for pid in $(pidof -x populate.sh); do
     fi
 done
 
-lastBlockNumber=`expr $(sqlite3  blockchain/movements.db "select max(block_height) from blocks; ")`
-newBlockNumber=`expr $(cat .bitcoin/blocklist.txt  | wc -l)`
+lastBlockNumber=`expr $(mysql movements --host=172.17.0.61 --port 3306 -u root -ptrivial -se "select max(block_height) from blocks"|cut -f1)`
+newBlockNumber=`expr $(cat /root/.bitcoin/blocklist.txt  | wc -l)`
 newBlockNumber=$(($newBlockNumber-1))
 
 if [ "$lastBlockNumber" -eq "$newBlockNumber" ]; then
     exit 1
 fi
 
-echo "[$(date)] Reading blockchain until $newBlockNumber"
-JAVA_OPTS="-Xmx1g" scala -classpath "target/scala-2.11/Bitcoin Graph Explorer-assembly-2.0.jar" Explorer resume > blockchain/resume.log
+echo "[$(date)] Reading blockchain from "$lastBlockNumber" in until "$newBlockNumber
 
-cat blockchain/resume.log >> blockchain/history.log
+JAVA_OPTS="-Xmx1g" scala -classpath "/root/bge/target/scala-2.11/Bitcoin Graph Explorer-assembly-2.0.jar" Explorer resume > /root/bge/blockchain/resume.log
+
+cat blockchain/resume.log >> /root/bge/blockchain/history.log
 echo "[$(date)] Done!"
 

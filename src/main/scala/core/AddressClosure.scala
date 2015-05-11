@@ -20,8 +20,7 @@ import java.lang.System
 trait AddressClosure
 {
   def adaptTreeIfNecessary(tree:  HashMap[Hash, DisjointSetOfAddresses]):  HashMap[Hash, DisjointSetOfAddresses] = tree
-  def createIndexesIfNecessary = { }
-
+  
   def generateTree: HashMap[Hash, DisjointSetOfAddresses]
 
   def insertValuesIntoTree(databaseResults: HashMap[Hash, Array[Hash]], tree: HashMap[Hash, DisjointSetOfAddresses]) =
@@ -94,8 +93,6 @@ trait AddressClosure
   val countSave = saveTree(adaptTreeIfNecessary(generateTree))
 
   val totalTime = System.currentTimeMillis - timeStart
-
-  createIndexesIfNecessary
 
   println("DONE: Total of %s addresses closured in %s s, %s µs per address" format
     (countSave, totalTime / 1000, 1000 * totalTime / (countSave + 1)))

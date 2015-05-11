@@ -33,8 +33,7 @@ object SlowRichestClosures {
         balance desc
       limit 1000
       ;""").execute
-    Q.updateNA("create index if not exists richest2 on richest_closures(block_height);").execute
-
+    
     println("DONE: Richest closure list calculated in " + (System.currentTimeMillis - startTIme)/1000 + "s")
   }
 }

@@ -97,7 +97,7 @@ trait FastBlockReader extends BlockReader
     saveUnmatchedOutputs
     saveUnmatchedInputs
     saveDataToDB
-    (Q.u + "ALTER TABLE tbl_name ENABLE KEYS;").execute
+    (Q.u + "ALTER TABLE movements ENABLE KEYS;").execute
     (Q.u + "UNLOCK TABLES;");
 
     println("DONE: " + totalOutIn + " movements, " + transactionCounter + " transactions saved in " + (System.currentTimeMillis - startTime)/1000 + "s")

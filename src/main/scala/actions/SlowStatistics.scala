@@ -13,7 +13,7 @@ object SlowStatistics {
   println("DEBUG: Calculating stats...")
   val startTIme = System.currentTimeMillis
   transactionDBSession {
-    Q.updateNA( """
+    (Q.u +  """
        insert
         into stats
        select
@@ -34,7 +34,6 @@ object SlowStatistics {
         balance > 0
     ;""").execute
    
-    Q.updateNA("create index if not exists stats1 on stats(block_height);").execute
     println("DONE: Stats calculated in " + (System.currentTimeMillis - startTIme)/1000 + "s");
   }
 }
