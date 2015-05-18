@@ -39,7 +39,7 @@ trait TestBlockReader extends BlockReader
     // Add here code to test
   }
 
-  def saveBlock(b: Hash): Unit = {
+  def saveBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long): Unit = {
     // Add here code to test
   }
 

@@ -15,7 +15,7 @@ trait BlockReader extends BlockSource {
 
   def saveTransaction(transaction: Transaction, blockHeight: Int)
 
-  def saveBlock(b: Hash): Unit
+  def saveBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long): Unit
 
   def pre: Unit
   def useDatabase: Boolean
@@ -51,7 +51,7 @@ trait BlockReader extends BlockSource {
 
       if (transactionCounter % 10000 == 0) {
         val t = System.currentTimeMillis - startTime
-        println("DEBUG: Processed %s transactions in %s s using %s µs/tx" format(transactionCounter , t/1000, 1000 * t / (transactionCounter+1)))
+        //println("DEBUG: Processed %s transactions in %s s using %s µs/tx" format(transactionCounter , t/1000, 1000 * t / (transactionCounter+1)))
       }
 
       transactionCounter += 1
@@ -88,8 +88,15 @@ trait BlockReader extends BlockSource {
   def outputsInTransaction(t: Transaction) =
     t.getOutputs.asScala
 
+  def getTxValue(b: Block) =
+    (for {t: Transaction <- transactionsInBlock(b)
+     o: TransactionOutput <- outputsInTransaction(t)}
+    yield o.getValue.value).sum
+      
+
+  // TODO: replace 0 0 with txs and btcs from the transaction set 
   lazy val transactionSource: Iterator[(Transaction,Int)] = {
-    filteredBlockSource flatMap { b => saveBlock(Hash(b.getHash.getBytes)); transactionsInBlock(b) map ((_, longestChain.getOrElse(Hash(b.getHash.getBytes), 0)))}
+    filteredBlockSource flatMap { b => saveBlock(Hash(b.getHash.getBytes), b.getTransactions.size,getTxValue(b),b.getTimeSeconds); transactionsInBlock(b) map ((_, longestChain.getOrElse(Hash(b.getHash.getBytes), 0)))}
   }
 
   def getAddressFromOutput(output: TransactionOutput): Option[Array[Byte]] =

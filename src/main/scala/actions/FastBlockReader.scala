@@ -22,7 +22,7 @@ trait FastBlockReader extends BlockReader
   //  outpoint -> txhash
   var outOfOrderInputMap: immutable.HashMap[(Hash,Int),Hash]  = immutable.HashMap()
   var vectorMovements: Vector[(Option[Hash], Option[Hash], Option[Hash], Option[Int], Option[Long], Option[Int])] = Vector()
-  var vectorBlocks: Vector[(Hash, Int)]  = Vector()
+  var vectorBlocks: Vector[(Hash, Int, Int, Long, Long)]  = Vector()
   var totalOutIn: Int = 0
 
   def useDatabase: Boolean = true
@@ -74,8 +74,10 @@ trait FastBlockReader extends BlockReader
       outputMap += (transactionHash -> ((outputBuffer, blockHeight)))
   }
 
-  def saveBlock(b: Hash) = {
-    insertInsertIntoList(b, longestChain.getOrElse(b,0))
+  def saveBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long) = {
+    val height = longestChain.getOrElse(b,0)
+    println("DONE: Saved block " + height)
+    insertInsertIntoList(b, height, txs, btcs, tstamp)
   }
 
   def pre  = {
@@ -84,7 +86,7 @@ trait FastBlockReader extends BlockReader
     vectorMovements = Vector()
     vectorBlocks = Vector()
     totalOutIn = 0
-    System.out.println("DEBUG: Initiating database")
+    println("DEBUG: Initiating database")
     initializeDB
     (Q.u + "ALTER TABLE movements DISABLE KEYS;").execute
     (Q.u + "LOCK TABLES a WRITE;");
@@ -122,7 +124,7 @@ trait FastBlockReader extends BlockReader
 
   def saveDataToDB: Unit =
   {
-    println("DEBUG: Inserting data to database ...") 
+    //println("DEBUG: Inserting data to database ...") 
 
     if (vectorBlocks.length > 0)
       (Q.u + "insert into blocks VALUES " + vectorBlocks.mkString(",")).execute
@@ -139,10 +141,10 @@ trait FastBlockReader extends BlockReader
      
     vectorMovements = Vector()
     vectorBlocks = Vector()
-    println("DEBUG: Data inserted")
+    //println("DEBUG: Data inserted")
   }
 
-  def insertInsertIntoList(s: (Hash, Int)) =
+  def insertInsertIntoList(s: (Hash, Int, Int, Long, Long)) =
   {
     if (vectorMovements.length + vectorBlocks.length >= populateTransactionSize)
       saveDataToDB

@@ -24,13 +24,13 @@ trait SlowBlockReader extends BlockReader {
       i += 1
     }
 
-    println("DEBUG: Saved %s transactions" format transactionCounter )
+    //println("DEBUG: Saved %s transactions" format transactionCounter )
   }
 
-  def saveBlock(b: Hash) = {
+  def saveBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long) = {
     val blockHeight = longestChain.getOrElse(b,0)
-    blockDB += (b.array.toArray,longestChain.getOrElse(b,0))
-    println("DEBUG: Saved %s blocks" format blockHeight)
+    blockDB += (b.array.toArray,longestChain.getOrElse(b,0), txs,btcs, tstamp)
+    println("DONE: Saved %s blocks" format blockHeight)
   }
 
   def pre  = { 
@@ -81,7 +81,7 @@ trait SlowBlockReader extends BlockReader {
     for (a <- insertedValues) {
       val (sp,tx,ad,id,va,bl) = a
       savedMovements = savedMovements.updated((Hash(tx.get),id.get), (sp,ad,va,bl))
-      println("DEBUG: Saved movements = " + savedMovements.size)
+      //println("DEBUG: Saved movements = " + savedMovements.size)
     }
 
   }

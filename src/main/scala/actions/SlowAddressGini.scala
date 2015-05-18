@@ -13,20 +13,21 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
  */
 object SlowAddressGini
 {
-  transactionDBSession
-  {
-    println("Getting address gini")
-    val queried = addresses.filter(_.balance.isDefined).filter(_.balance > dustLimit).sortBy(_.balance.asc).map(_.balance)
+  def apply = {
+    transactionDBSession
+    {
+      println("Getting address gini")
+      val queried = addresses.filter(_.balance.isDefined).filter(_.balance > dustLimit).sortBy(_.balance.asc).map(_.balance)
 
-    val n: Long = queried.length.run
-    val balances = queried.run.toVector.map(_.get.toDouble)
-    val summe = balances.sum
-    val mainSum = balances.zipWithIndex.map(p => p._1*(p._2+1.0)/n).sum
-    val gini:Double = 2.0*mainSum/(summe) - (n+1.0)/n
+      val n: Long = queried.length.run
+      val balances = queried.run.toVector.map(_.get.toDouble)
+      val summe = balances.sum
+      val mainSum = balances.zipWithIndex.map(p => p._1*(p._2+1.0)/n).sum
+      val gini:Double = 2.0*mainSum/(summe) - (n+1.0)/n
 
-    println("TEST: Total addresses: " + n)
-    println("TEST: Address gini: "+ gini)
-    Q.updateNA(" update stats set gini_address = " + gini + " order by block_height desc limit 1").execute
-
+      println("TEST: Total addresses: " + n)
+      println("TEST: Address gini: "+ gini)
+      Q.updateNA(" update stats set gini_address = " + gini + " order by block_height desc limit 1").execute
+    }
   }
 }

@@ -10,16 +10,18 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
  */
 object SlowStatistics {
   // TODO: write output
-  println("DEBUG: Calculating stats...")
-  val startTIme = System.currentTimeMillis
-  transactionDBSession {
-    (Q.u +  """
+  def apply = {
+    println("DEBUG: Calculating stats...")
+  
+    val startTIme = System.currentTimeMillis
+    transactionDBSession {
+      (Q.u +  """
        insert
         into stats
        select
         (select max(block_height) from blocks),
         sum(balance)/100000000,
-        0,
+        (select sum(txs) from blocks),
         (select count(1) from addresses),
         (select count(distinct(representant)) from addresses),
         count(1),
@@ -27,16 +29,15 @@ object SlowStatistics {
         (select count(1) from addresses where balance > 546),
         (select count(distinct(representant)) from addresses where balance > 546),
         0, 
-        0 
+        0,
+        """+ (System.currentTimeMillis/1000).toString +"""
       from
         addresses
       where
         balance > 0
     ;""").execute
    
-    println("DONE: Stats calculated in " + (System.currentTimeMillis - startTIme)/1000 + "s");
+      println("DONE: Stats calculated in " + (System.currentTimeMillis - startTIme)/1000 + "s");
+    }
   }
 }
-
-
-
