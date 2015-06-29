@@ -29,15 +29,15 @@ package object util
   val richestAddresses = TableQuery[RichestAddresses]
   val richestClosures = TableQuery[RichestClosures]
   val stats = TableQuery[Stats]
+  val utxo = TableQuery[UTXO]
 
   val USERNAME="root"
   val PASSWORD=sys.env("MYSQL_ENV_MYSQL_ROOT_PASSWORD")
   val DBNAME=conf.getString("databaseName")
   val URL="jdbc:mysql://"+sys.env("MYSQL_PORT_3306_TCP_ADDR")+":"+sys.env("MYSQL_PORT_3306_TCP_PORT")+"/"+DBNAME+"?useServerPrepStmts=false&rewriteBatchedStatements=true&maxWait=-1"
-  //  val URL="jdbc:mysql://localhost:3306/movements"
   val DRIVER="com.mysql.jdbc.Driver"
  
-  def deleteIfNotExists(tables: TableQuery[_ <: Table[_]]*)(implicit session: Session) {
+  def deleteIfExists(tables: TableQuery[_ <: Table[_]]*)(implicit session: Session) {
   tables foreach {table => if(!MTable.getTables(table.baseTableRow.tableName).list.isEmpty) table.ddl.drop}
   }
 
@@ -67,5 +67,26 @@ package object util
     val lines = scala.io.Source.fromFile(blockHashListFile).getLines
     val hashes = for (line <- lines) yield Hash(line)
     hashes.zipWithIndex.toMap
+  }
+
+
+  //(spent_in_transaction_hash,transaction_hash,address,index,value, height_in, height_out)
+  def readUTXOs: UTXOs = {
+    transactionDBSession {
+      val query = for ( a <- utxo.sortBy(p => (p.transaction_hash,p.index) )) yield ((a.transaction_hash, a.index),(a.address, a.value, a.block_height))
+      var x = 0
+      val converted = for { group <- query.iterator.grouped(10000)
+        ((t,i),(a,v,b)) <- group
+     }
+      yield {
+        println(x)
+        x+=1
+        (Hash(t),i) -> (Hash(a),v,b)
+      }
+      
+      converted.foldLeft (new UTXOs(collection.immutable.HashMap.empty): UTXOs)(_+_)
+      
+    }
+ 
   }
 }

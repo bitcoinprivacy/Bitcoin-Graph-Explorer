@@ -55,22 +55,23 @@ class RichestClosures(tag:Tag) extends Table[(Int, Array[Byte], Long)](tag, "ric
   def idx1 = index("idxx1", (block_height), unique = false)
 }
 
-class Addresses(tag:Tag) extends Table[(Array[Byte], Array[Byte], Option[Long])](tag, "addresses") {
+class Addresses(tag:Tag) extends Table[(Array[Byte], Array[Byte])](tag, "addresses") {
   def hash= column[Array[Byte]]("hash")
   def representant = column[Array[Byte]]("representant")
-  def balance= column[Option[Long]]("balance", O.Nullable)
 
-  def * = (hash,representant,balance)
+
+  def * = (hash,representant)
 }
 
-class Movements(tag:Tag) extends Table[(Option[Array[Byte]], Option[Array[Byte]], Option[Array[Byte]], Option[Int], Option[Long], Option[Int])](tag, "movements") {
-  def transaction_hash = column[Option[Array[Byte]]]("transaction_hash", O.Nullable)
+class Movements(tag:Tag) extends Table[(Array[Byte], Array[Byte], Array[Byte], Int, Long, Int, Int)](tag, "movements") {
+  def transaction_hash = column[Array[Byte]]("transaction_hash")
   // Address can be a single byte 00 plus 20-byte address, or a 2-hex number plus several addresses
-  def address = column[Option[Array[Byte]]]("address", O.Nullable)
-  def index = column[Option[Int]]("index", O.Nullable)
-  def value = column[Option[Long]]("value", O.Nullable)
-  def spent_in_transaction_hash = column[Option[Array[Byte]]]("spent_in_transaction_hash", O.Nullable)
-  def block_height = column[Option[Int]]("block_height", O.Nullable)
+  def address = column[Array[Byte]]("address")
+  def index = column[Int]("index")
+  def value = column[Long]("value")
+  def spent_in_transaction_hash = column[Array[Byte]]("spent_in_transaction_hash")
+  def height_in = column[Int]("height_in")
+  def height_out = column[Int]("height_out")
 
   //def idx1 = index("idx_1", (transaction_hash, index), unique = true)
   //def idx2 = index("idx_2", (address), unique = false)
@@ -79,5 +80,17 @@ class Movements(tag:Tag) extends Table[(Option[Array[Byte]], Option[Array[Byte]]
   //def idx5 = index("idx_5", (transaction_hash, index), unique = false)
   //def idx6 = index("idx_6", (transaction_hash, index), unique = false)
 
-  def * = (spent_in_transaction_hash,transaction_hash,address,index,value, block_height)
+  def * = (spent_in_transaction_hash,transaction_hash,address,index,value, height_in, height_out)
+}
+
+class UTXO(tag:Tag) extends Table[(Array[Byte], Array[Byte], Int, Long, Int)](tag, "utxo") {
+  def transaction_hash = column[Array[Byte]]("transaction_hash")
+  // Address can be a single byte 00 plus 20-byte address, or a 2-hex number plus several addresses
+  // Non decoded addresses are represented as X'', since mysql cannot manage index over NULL values
+  def address = column[Array[Byte]]("address") 
+  def index = column[Int]("index")
+  def value = column[Long]("value")
+  def block_height = column[Int]("block_height")
+
+  def * = (transaction_hash,address,index,value, block_height)
 }

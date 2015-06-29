@@ -19,45 +19,41 @@ import java.lang.System
 
 trait AddressClosure
 {
-  def adaptTreeIfNecessary(tree:  HashMap[Hash, DisjointSetOfAddresses]):  HashMap[Hash, DisjointSetOfAddresses] = tree
+  def adaptTreeIfNecessary(tree: DisjointSets[Hash]):  DisjointSets[Hash] = tree
   
-  def generateTree: HashMap[Hash, DisjointSetOfAddresses]
+  def generateTree: DisjointSets[Hash]
 
-  def insertValuesIntoTree(databaseResults: HashMap[Hash, Array[Hash]], tree: HashMap[Hash, DisjointSetOfAddresses]) =
+  def insertInputsIntoTree(addresses: Iterable[Hash], tree: DisjointSets[Hash]): DisjointSets[Hash] =
+  {
+    val addedTree = addresses.foldLeft(tree)((t:DisjointSets[Hash],a:Hash) => t.add(a))
+    addedTree.union(addresses)
+  }
+    
+
+  def insertValuesIntoTree(databaseResults: HashMap[Hash, Array[Hash]], tree: DisjointSets[Hash]) =
   {
     println("Insering values into tree");
     val start = System.currentTimeMillis
 
-    for (t <- databaseResults)
-    {
-      val dSOAs= t._2 map(a => tree.getOrElseUpdate(a, {DisjointSetOfAddresses(a)}) )
-
-      def union(l:Array[DisjointSetOfAddresses]): Unit = l match{
-        case Array() =>
-        case Array(x) =>
-        case ar => ar(0).union(ar(1)) ; union(ar.drop(1))
-      }
-
-      
-      union(dSOAs)
-    }
-    println("Values inserted");
-
+    databaseResults.foldLeft(tree)((t,l) => insertInputsIntoTree(l._2,t)) 
+    
+    println("Values inserted")
+    
   }
 
-  def saveTree(tree: HashMap[Hash, DisjointSetOfAddresses]): Int =
+  def saveTree(tree: DisjointSets[Hash]): Int =
   {
     val timeStart = System.currentTimeMillis
-    var queries: Vector[(Array[Byte], Array[Byte], Option[Long])] = Vector()
-    val totalElements = tree.size
+    var queries: Vector[(Array[Byte], Array[Byte])] = Vector()
+    val totalElements = tree.elements.size
     var counter = 0
     var counterTotal = 0
     
     println("DEBUG: Saving tree to database...")
     var counterFinal = 0
-    for (value <- tree)
-    {
-      queries +:= (value._1.array.toArray, value._2.find.address.array.toArray, None)
+    tree.elements.keys.foldLeft(tree){(t,value) => 
+      val (parent, newTree) = tree.find(value)
+      queries +:= (value.array.toArray, parent.array.toArray)
       counter += 1
       counterTotal += 1
       counterFinal += 1
@@ -71,23 +67,24 @@ trait AddressClosure
         counterFinal = 0
         println("DEBUG: Saved until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/counterTotal))
       }
+      newTree
     }
     
-    println("DONE: Saved until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/counterTotal))
+    println("DONE: Saved until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/counterTotal+1))
 
     saveElementsToDatabase(queries, counter)
     
     totalElements
   }
 
-  def saveElementsToDatabase(queries: Vector[(Array[Byte], Array[Byte], Option[Long])], counter: Int): Unit =
+  def saveElementsToDatabase(queries: Vector[(Array[Byte], Array[Byte])], counter: Int): Unit =
   {
     val start = System.currentTimeMillis
     transactionDBSession {
       addresses.insertAll(queries: _*)
     }
   }
-
+  println("applying closure ")
   val timeStart = System.currentTimeMillis
 
   val countSave = saveTree(adaptTreeIfNecessary(generateTree))

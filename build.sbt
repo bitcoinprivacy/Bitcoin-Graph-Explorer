@@ -27,6 +27,10 @@ libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.11.3" % "test",
       "org.scalatest" %% "scalatest" % "2.1.5" % "test",
   "com.github.scala-incubator.io" %% "scala-io-file" % "0.4.3-1"
+  //  "org.mapdb" % "mapdb" % "2.0-alpha2"
+//  "net.openhft" % "koloboke-api-jdk6-7" % "0.6.7",
+// "net.openhft" % "koloboke-impl-jdk6-7" % "0.6.7"
+//  "com.github.vlsi.compactmap" % "compactmap" % "1.2.1"
 )
 
 resolvers += "Local Maven Repository" at "file:///"+Path.userHome.absolutePath+"/.m2/repository"
@@ -39,6 +43,8 @@ resolvers += "bitcoinj" at "http://distribution.bitcoinj.googlecode.com/git/rele
 
 resolvers += "scala-tools" at "https://oss.sonatype.org/content/groups/scala-tools"
 
+resolvers += "openhft" at "https://oss.sonatype.org/content/groups/public"
+
 resolvers += "sonatype" at "https://oss.sonatype.org/content/repositories/releases/"
 
 packageOptions in (Compile, packageBin) <+= (target, externalDependencyClasspath in Runtime) map
@@ -47,12 +53,19 @@ packageOptions in (Compile, packageBin) <+= (target, externalDependencyClasspath
   Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> relativePaths.reduceOption(_ + " " + _).getOrElse(""))
  }
 
-javaOptions in run += "-Xmx10G"
+javaOptions in run += "-Xmx5G"
 
 
-javaOptions in run += "-Xms2G"
+javaOptions in run += "-Xms100M"
 
-javaOptions in run += "-XX:-UseGCOverheadLimit"
+//javaOptions in run += "-XX:+UseParallelGC"
+
+//javaOptions in run += "-XX:-UseGCOverheadLimit"
+
+//javaOptions in run += "-XX:+UseStringDeduplicationJVM"
+
+//javaOptions in run += "-XX:+UseG1GC"
+
 //javaOptions in run += "-XX:+PrintCommandLineFlags"
 
 //javaOptions in run += "-XX:+PrintGCDetails"

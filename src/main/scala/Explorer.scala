@@ -1,5 +1,4 @@
 import java.io.File
-
 import actions._
 import util._
 import core._
@@ -25,32 +24,33 @@ object Explorer extends App{
     case "reader"::rest           =>
       object InitializeBlockReader extends BitcoinDRawFileBlockSource with FastBlockReader //needs to be in this order for linearization
       InitializeBlockReader
-    case "closure"::rest              =>
-      FastAddressClosure
-      CreateAddressIndexes
-    case "balance"::rest         =>
-      FastAddressBalance
     case "populate"::rest             =>
       object InitializeBlockReader extends BitcoinDRawFileBlockSource with FastBlockReader //needs to be in this order for linearization
       InitializeBlockReader
       CreateIndexes
       FastAddressClosure
       CreateAddressIndexes
-      FastAddressBalance
     case "stats"::rest =>
       SlowStatistics
     case "resume"::rest               =>
       object ResumeBlockReader extends BitcoinDRawFileBlockSource with SlowBlockReader //needs to be in this order for linearization
       ResumeBlockReader
-      new SlowAddressClosure(ResumeBlockReader.savedMovements)
-      new SlowAddressBalance(ResumeBlockReader.savedMovements)
+      // new SlowAddressClosure(ResumeBlockReader.savedMovements)
+      //new SlowAddressBalance(ResumeBlockReader.savedMovements)
       // apply required to call the methods more than one time,
-      // what is required for the loop run bge
+      // which is required for the loop run bge
       SlowStatistics.apply
       SlowClosureGini.apply
       SlowAddressGini.apply
       SlowRichestAddresses.apply
       SlowRichestClosures.apply
+    case "test_utxo"::rest =>
+      val test = readUTXOs
+      println("wir sind geil")
+      System.gc
+      Thread.sleep(60000)
+      println("Wir waren geil")
+
     case "richest"::rest =>
       SlowRichestClosures.apply
       SlowRichestAddresses.apply
@@ -71,13 +71,13 @@ object Explorer extends App{
         val from = Integer.parseInt(cmd2.lines.head,10)
         val to = Integer.parseInt(cmd.lines.head, 10) - 1
 
-        if (to > from)
+        if (to > from+2)
         {
           println("Reading blocks from " +from + " to " +to)
           object ResumeBlockReader extends BitcoinDRawFileBlockSource with SlowBlockReader //needs to be in this order for linearization
           ResumeBlockReader
-          new SlowAddressClosure(ResumeBlockReader.savedMovements)
-          new SlowAddressBalance(ResumeBlockReader.savedMovements)
+          //new SlowAddressClosure(ResumeBlockReader.savedMovements)
+          //new SlowAddressBalance(ResumeBlockReader.savedMovements)
           SlowStatistics.apply
           SlowClosureGini.apply
           SlowAddressGini.apply

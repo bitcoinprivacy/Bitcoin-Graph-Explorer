@@ -11,11 +11,12 @@ package util
 case class DisjointSetOfAddresses(val address: Hash) {
 
   var rank = 0
-  var parent: Option[DisjointSetOfAddresses] = None
+  var parent: DisjointSetOfAddresses = this // takes less RAM than an Option
   //var children: Set[DisjointSetOfAddresses] = Set.empty  // to be able to return all members of a set
 
-  def equals(that:DisjointSetOfAddresses) =
-    this.address == that.address
+
+//  def equals(that:DisjointSetOfAddresses) = // not necessary because it is a case class
+//    this.address == that.address
 
   def union(that: DisjointSetOfAddresses): DisjointSetOfAddresses = {
     val left = this.find
@@ -26,12 +27,12 @@ case class DisjointSetOfAddresses(val address: Hash) {
       right.rank += 1
 
     if (left.rank <= right.rank) {
-      left.parent = Some(right)
+      left.parent = right
    //   right.children += left
       right
     }
     else {
-      right.parent = Some(left)
+      right.parent = left
    //   left.children += right
       left
     }
@@ -40,16 +41,15 @@ case class DisjointSetOfAddresses(val address: Hash) {
   }
 
   def find: DisjointSetOfAddresses = {
-    this.parent match {
-      case None => this
-      case Some(p) => 
+    val p = this.parent
+    if (p == this) this
+    else 
       { val r = p.find
-        this.parent = Some (r)
+        this.parent = r
     //    r.children += this          // path compression
         r 
       }
         
-    }
   }
 
 }
