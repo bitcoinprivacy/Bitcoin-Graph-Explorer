@@ -208,7 +208,7 @@ trait FastBlockReader extends BlockReader
     stats.ddl.create
     movements.ddl.create
     blockDB.ddl.create
-    //utxo.ddl.create
+    utxo.ddl.create
     addresses.ddl.create
     richestAddresses.ddl.create
     richestClosures.ddl.create

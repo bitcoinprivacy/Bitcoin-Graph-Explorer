@@ -58,6 +58,12 @@ javaOptions in run += "-Xmx5G"
 
 javaOptions in run += "-Xms100M"
 
+javaOptions in run += "-Dcom.sun.management.jmxremote.port=3333"
+javaOptions in run += "-Dcom.sun.management.jmxremote.authenticate=false"
+javaOptions in run += "-Dcom.sun.management.jmxremote.ssl=false"
+
+
+
 //javaOptions in run += "-XX:+UseParallelGC"
 
 //javaOptions in run += "-XX:-UseGCOverheadLimit"

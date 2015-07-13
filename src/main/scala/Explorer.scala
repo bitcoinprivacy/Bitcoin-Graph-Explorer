@@ -92,6 +92,8 @@ object Explorer extends App{
       }
       println("process stopped")
 
+
+
     case _=> println("""
       Available commands:
        reader: call fast block reader
