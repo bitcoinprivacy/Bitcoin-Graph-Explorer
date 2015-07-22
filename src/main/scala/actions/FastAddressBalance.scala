@@ -1,14 +1,15 @@
 package actions
 
 import util._
+import core._
 import scala.slick.jdbc.{StaticQuery => Q}
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
-import scala.slick.driver.MySQLDriver.simple._
+
 
 /**
  * Created by yzark on 10.09.14.
  */
-object FastAddressBalance {
+object FastAddressBalance extends BitcoinDB {
   var clock = System.currentTimeMillis
   transactionDBSession {
     println("DEBUG: Updating addresses ...")
@@ -32,4 +33,4 @@ object FastAddressBalance {
 
     println("DONE: Addresses updated in %s s" format (System.currentTimeMillis - clock)/1000)
   }
-}	
+}

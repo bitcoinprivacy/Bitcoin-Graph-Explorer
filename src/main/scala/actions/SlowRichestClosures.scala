@@ -1,14 +1,14 @@
 package actions
 
 import util._
+import core.BitcoinDB
 import scala.slick.jdbc.{StaticQuery => Q}
-//import scala.slick.driver.MySQLDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
 /**
   * Created by yzark on 22.12.14.
   */
-object SlowRichestClosures {
+object SlowRichestClosures extends BitcoinDB {
   def apply = {
     println("DEBUG: Calculating richest closure list...")
     val startTIme = System.currentTimeMillis
@@ -33,7 +33,7 @@ object SlowRichestClosures {
         balance desc
       limit 1000
       ;""").execute
-    
+
       println("DONE: Richest closure list calculated in " + (System.currentTimeMillis - startTIme)/1000 + "s")
     }
   }

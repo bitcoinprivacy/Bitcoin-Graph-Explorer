@@ -3,7 +3,6 @@ package actions
 import core._
 import util._
 import java.io._
-import scala.slick.driver.MySQLDriver.simple._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import scala.collection.mutable.HashMap
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
@@ -11,7 +10,7 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 /**
  * Created by yzark on 26.01.15.
  */
-object SlowAddressGini
+object SlowAddressGini extends BitcoinDB
 {
   def apply = {
     transactionDBSession

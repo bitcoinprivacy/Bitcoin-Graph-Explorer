@@ -64,9 +64,9 @@ object Explorer extends App{
     case "bge"::rest =>
       import sys.process._
             
-      while (new java.io.File("/root/bge/lock").exists)
+      while (new java.io.File("/nix/bge/lock").exists)
       {
-        val cmd = Seq("cat", "/root/.bitcoin/blocklist.txt") #| Seq( "wc", "-l")
+        val cmd = Seq("cat", "/nix/.bitcoin/blocklist.txt") #| Seq( "wc", "-l")
         val cmd2 = Seq("mysql", "movements", "--host=172.17.0.61", "--port" ,"3306", "-u", "root", "-ptrivial", "-se", "select max(block_height) from blocks") #| Seq("cut", "-f1")
         val from = Integer.parseInt(cmd2.lines.head,10)
         val to = Integer.parseInt(cmd.lines.head, 10) - 1

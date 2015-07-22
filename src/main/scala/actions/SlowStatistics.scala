@@ -2,17 +2,16 @@ package actions
 
 import util._
 import scala.slick.jdbc.{StaticQuery => Q}
-//import scala.slick.driver.MySQLDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
-
+import core.BitcoinDB
 /**
  * Created by yzark on 15.12.14.
  */
-object SlowStatistics {
+object SlowStatistics extends BitcoinDB {
   // TODO: write output
   def apply = {
     println("DEBUG: Calculating stats...")
-  
+
     val startTIme = System.currentTimeMillis
     transactionDBSession {
       (Q.u +  """
@@ -28,7 +27,7 @@ object SlowStatistics {
         count(distinct(representant)),
         (select count(1) from addresses where balance > 546),
         (select count(distinct(representant)) from addresses where balance > 546),
-        0, 
+        0,
         0,
         """+ (System.currentTimeMillis/1000).toString +"""
       from
@@ -36,7 +35,7 @@ object SlowStatistics {
       where
         balance > 0
     ;""").execute
-   
+
       println("DONE: Stats calculated in " + (System.currentTimeMillis - startTIme)/1000 + "s");
     }
   }

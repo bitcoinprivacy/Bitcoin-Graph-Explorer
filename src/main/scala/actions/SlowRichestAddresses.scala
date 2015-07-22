@@ -1,14 +1,14 @@
 package actions
 
 import util._
+import core._
 import scala.slick.jdbc.{StaticQuery => Q}
-//import scala.slick.driver.MySQLDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
 /**
  * Created by yzark on 22.12.14.
  */
-object SlowRichestAddresses {
+object SlowRichestAddresses extends BitcoinDB {
   def apply = {
 
     println("DEBUG: Calculating richest address list...")
