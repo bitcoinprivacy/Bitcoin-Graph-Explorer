@@ -18,16 +18,16 @@ trait BitcoinDB {
   val stats = TableQuery[Stats]
   val utxo = TableQuery[UTXO]
 
-  val USERNAME = "root"
-  val PASSWORD = sys.env("MYSQL_ENV_MYSQL_ROOT_PASSWORD")
-  val conf = ConfigFactory.load()
-  val DBNAME = conf.getString("databaseName")
-  val URL = "jdbc:mysql://" + sys.env("MYSQL_PORT_3306_TCP_ADDR") + ":" + sys.env("MYSQL_PORT_3306_TCP_PORT") + "/" + DBNAME + "?useServerPrepStmts=false&rewriteBatchedStatements=true&maxWait=-1"
-  val DRIVER = "com.mysql.jdbc.Driver"
+  def USERNAME = conf.getString("username")
+  def PASSWORD = conf.getString("password")
+  def HOST = conf.getString("host")
+  def OPTIONS = conf.getString("jdbcOptions")
+  def DBNAME = conf.getString("databaseName")
+  def URL = "jdbc:mysql://" + HOST + "/" + DBNAME + OPTIONS
+  def DRIVER =  "com.mysql.jdbc.Driver"
 
-  def deleteIfExists(tables: TableQuery[_ <: Table[_]]*)(implicit session: Session) {
+  def deleteIfExists(tables: TableQuery[_ <: Table[_]]*)(implicit session: Session) =
     tables foreach { table => if (!MTable.getTables(table.baseTableRow.tableName).list.isEmpty) table.ddl.drop }
-  }
 
   def transactionDBSession[X](f: => X): X =
     {

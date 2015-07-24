@@ -1,4 +1,4 @@
-A/**OA
+/**
  * Created by yzark on 12/16/13.
  */
 
@@ -19,6 +19,7 @@ package object util extends BitcoinDB
   var blockHashListFile= conf.getString("blockHashListFile")
   var dustLimit = conf.getLong("dustLimit")
 
+  println(blockHashListFile)
 
   val arrayNull = Hash.zero(1).array.toArray
 
