@@ -21,10 +21,7 @@ object CreateIndexes {
       "create index  spent_in_transaction_hash2 on movements (spent_in_transaction_hash, address);",
       "create index height_in on movements (height_in);",
       "create index height_out_in on movements (height_out, height_in);",
-      "create index  block_hash on blocks(hash);",
-      "create index  block_height on blocks(block_height);",
-      "create index representant on addresses (representant)",
-      "create unique index hash on addresses (hash)"))
+      "create index  block_height on blocks(block_height);"))
     {
       Q.updateNA(query).execute
       println("DEBUG: Finished"+ query)

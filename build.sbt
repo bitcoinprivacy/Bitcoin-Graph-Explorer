@@ -11,9 +11,9 @@ libraryDependencies ++= Seq(
  //	"org.scala-tools.testing" % "specs_2.9.0" % "1.6.8" % "test", // For specs.org tests
 //	"org.scalatest" % "scalatest_2.9.1" % "1.6.1", // scalatest
 //	"junit" % "junit" % "4.8" % "test->default", // For JUnit 4 testing
-//	"ch.qos.logback" % "logback-classic" % "0.9.26" % "compile->default", // Logging
+//        "ch.qos.logback" % "logback-classic" % "0.9.26" % "compile->default", // Logging
     "org.slf4j" % "slf4j-simple" % "1.7.5",
-	"org.bitcoinj" % "bitcoinj-core" % "0.12",
+        "org.bitcoinj" % "bitcoinj-core" % "0.12",
 //	"org.neo4j" % "neo4j-scala" % "0.2.0-M2-SNAPSHOT",
   //  "org.iq80.leveldb"%"leveldb"%"0.6",
     "mysql"%"mysql-connector-java"%"5.1.26",
@@ -49,11 +49,11 @@ resolvers += "sonatype" at "https://oss.sonatype.org/content/repositories/releas
 
 packageOptions in (Compile, packageBin) <+= (target, externalDependencyClasspath in Runtime) map
  { (targetDirectory: File, classpath: Classpath) =>
-  val relativePaths = classpath map { attrFile: Attributed[File] => targetDirectory.toPath().relativize(attrFile.data.toPath()).toString() }; 
+  val relativePaths = classpath map { attrFile: Attributed[File] => targetDirectory.toPath().relativize(attrFile.data.toPath()).toString() };
   Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> relativePaths.reduceOption(_ + " " + _).getOrElse(""))
  }
 
-javaOptions in run += "-Xmx5G"
+javaOptions in run += "-Xmx12G"
 
 
 javaOptions in run += "-Xms100M"
