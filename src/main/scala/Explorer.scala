@@ -30,6 +30,10 @@ object Explorer extends App{
       CreateIndexes
       FastAddressClosure
       CreateAddressIndexes
+    case "closure"::rest             =>
+      FastAddressClosure
+      CreateAddressIndexes
+
     case "stats"::rest =>
       SlowStatistics
     case "resume"::rest               =>
@@ -63,7 +67,7 @@ object Explorer extends App{
       SlowClosureGini.apply
     case "bge"::rest =>
       import sys.process._
-            
+
       while (new java.io.File("/nix/bge/lock").exists)
       {
         val cmd = Seq("cat", "/nix/.bitcoin/blocklist.txt") #| Seq( "wc", "-l")
@@ -82,7 +86,7 @@ object Explorer extends App{
           SlowClosureGini.apply
           SlowAddressGini.apply
           SlowRichestAddresses.apply
-          SlowRichestClosures.apply          
+          SlowRichestClosures.apply
         }
         else
         {
@@ -99,7 +103,7 @@ object Explorer extends App{
        reader: call fast block reader
        closure: call fast address closure
        balance: call fast address balance
-       bge:  call resume in a loop, whenever are new blocks 
+       bge:  call resume in a loop, whenever are new blocks
        gini: calculate gini coefficients
        stats: calculate the stats
        richest: calculate richest lists
