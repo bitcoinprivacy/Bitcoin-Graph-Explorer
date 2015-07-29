@@ -62,6 +62,3 @@ object FastAddressClosure extends AddressClosure {
 }
 
 
-
-
-
