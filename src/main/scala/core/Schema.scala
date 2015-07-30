@@ -8,7 +8,7 @@ package core
  * To change this template use File | Settings | File Templates.
  */
 
-import scala.slick.driver.MySQLDriver.simple._
+import scala.slick.driver.PostgresDriver.simple._
 
 class Blocks(tag:Tag) extends Table[(Array[Byte], Int, Int, Long, Long)](tag, "blocks") {
   def hash= column[Array[Byte]]("hash")
@@ -52,7 +52,7 @@ class RichestClosures(tag:Tag) extends Table[(Int, Array[Byte], Long)](tag, "ric
   def hash= column[Array[Byte]]("hash")
   def balance= column[Long]("balance", O.Nullable)
   def * =  (block_height, hash, balance)
-  def idx1 = index("idxx1", (block_height), unique = false)
+  def idx1 = index("idxx2", (block_height), unique = false)
 }
 
 class Addresses(tag:Tag) extends Table[(Array[Byte], Array[Byte])](tag, "addresses") {

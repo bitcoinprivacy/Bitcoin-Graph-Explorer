@@ -1,9 +1,9 @@
-
 package actions
 
+import java.util.Calendar
 import scala.collection.mutable.ArrayBuffer
 import scala.slick.jdbc._
-import scala.slick.driver.MySQLDriver.simple._
+import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import util._
 import core._
@@ -28,7 +28,7 @@ object FastAddressClosure extends AddressClosure {
     }
       val txList = Compiled(txListQuery _)
 
-    val step = 20000
+    val step = 1000000
 
 
     @annotation.tailrec
@@ -43,7 +43,7 @@ object FastAddressClosure extends AddressClosure {
           val addressesPerTxList = txAndAddressList.groupBy(_._1) - newStart
           // remove last tx from list
           val hashList = addressesPerTxList.values map (_ map (p=>Hash(p._2)))
-          println("folding and merging")
+          println("folding and merging " + Calendar.getInstance().getTime() )
           val newTree = {
             hashList.foldLeft(tree)(
               (t,l) => {

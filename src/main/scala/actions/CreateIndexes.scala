@@ -17,7 +17,7 @@ object CreateIndexes {
     // get outputs from address
     for (query <- List(
       "create index address on movements (address);",
-      "create unique index tx_idx  on movements (transaction_hash, `index`);",
+      """create unique index tx_idx  on movements (transaction_hash, "index");""",
       "create index  spent_in_transaction_hash2 on movements (spent_in_transaction_hash, address);",
       "create index height_in on movements (height_in);",
       "create index height_out_in on movements (height_out, height_in);",

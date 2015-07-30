@@ -12,7 +12,7 @@ import scalax.file.{Path,FileSystem}
 import scala.slick.jdbc.meta._
 import org.bitcoinj.core._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
-import scala.slick.driver.MySQLDriver.simple._
+import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
 import java.nio.ByteBuffer
@@ -136,7 +136,10 @@ trait FastBlockReader extends BlockReader
     //println("DEBUG: Inserting data to database ...") 
 
     if (vectorBlocks.length > 0)
-      (Q.u + "insert into blocks VALUES " + vectorBlocks.mkString(",")).execute
+    {
+	val convertedVectorBlocks = vectorBlocks map { case (a,b,c,d,e) => (a.array.toArray,b,c,d,e) }
+	blockDB.insertAll(convertedVectorBlocks:_*)
+    }
     if (vectorMovements.length > 0)
     { def ohc(e:Option[Hash]):Array[Byte] = e.getOrElse(Hash.zero(0)).array.toArray
                 
@@ -202,20 +205,5 @@ trait FastBlockReader extends BlockReader
 
   }
 
-  def initializeDB: Unit =
-  { 
-    deleteIfExists(stats, movements, blockDB, addresses, richestAddresses, richestClosures, utxo)
-    stats.ddl.create
-    movements.ddl.create
-    blockDB.ddl.create
-    utxo.ddl.create
-    addresses.ddl.create
-    richestAddresses.ddl.create
-    richestClosures.ddl.create
-    (Q.u + "alter table movements modify column address varbinary(401)").execute
-    (Q.u + "alter table addresses modify column hash varbinary(401)").execute
-    (Q.u + "alter table addresses modify column representant varbinary(401)").execute
-    (Q.u + "alter table movements modify column transaction_hash varbinary(32)").execute
-    (Q.u + "alter table movements modify column spent_in_transaction_hash varbinary(32)").execute 
-  }
+
 } 

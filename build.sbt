@@ -4,7 +4,7 @@ name := "Bitcoin Graph Explorer"
 
 version := "2.0"
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.11.7"
 
 // additional libraries
 libraryDependencies ++= Seq(
@@ -16,7 +16,7 @@ libraryDependencies ++= Seq(
         "org.bitcoinj" % "bitcoinj-core" % "0.12",
 //	"org.neo4j" % "neo4j-scala" % "0.2.0-M2-SNAPSHOT",
   //  "org.iq80.leveldb"%"leveldb"%"0.6",
-    "mysql"%"mysql-connector-java"%"5.1.26",
+"org.postgresql" % "postgresql" % "9.4-1200-jdbc41",
   //"org.xerial" % "sqlite-jdbc" % "3.7.15-M1",
   //"org.mariadb.jdbc" % "mariadb-java-client" % "1.1.8",
      // "com.sagesex" %% "json-rpc-client" % "0.0.1",
