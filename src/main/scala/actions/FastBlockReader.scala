@@ -32,7 +32,7 @@ trait FastBlockReader extends BlockReader
   var outOfOrderInputMap: immutable.HashMap[(Hash,Int),(Hash,Int)]  = immutable.HashMap()
   var vectorMovements: Vector[(Hash, Hash, Option[Hash], Int, Long, Int, Int)] = Vector()
   var vectorBlocks: Vector[(Hash, Int, Int, Long, Long)]  = Vector()
-  
+
   var totalOutIn: Int = 0
 
   def useDatabase: Boolean = true
@@ -47,18 +47,17 @@ trait FastBlockReader extends BlockReader
       }
       yield address
 
-    
+
 
     var index = 0
 
     for (output <- outputsInTransaction(trans))
     {
-      val addressOption: Option[Hash] = getAddressFromOutput(output: TransactionOutput) match { 
+      val addressOption: Option[Hash] = getAddressFromOutput(output: TransactionOutput) match {
          case Some(value) => Some(Hash(value))
           case None => None
         }
-        
-      //val addressOption: Option[Hash] = Some(Hash(getAddressFromOutput(output: TransactionOutput).getOrElse(None)))
+
       val value = output.getValue.value
 
       if (outOfOrderInputMap.contains(transactionHash, index))
@@ -98,7 +97,7 @@ trait FastBlockReader extends BlockReader
     vectorBlocks = Vector()
     totalOutIn = 0
     println("DEBUG: Initiating database")
-    initializeDB    
+    initializeDB
   }
 
   def post = {
@@ -128,21 +127,21 @@ trait FastBlockReader extends BlockReader
     println(outOfOrderInputMap.size + " unmatched Inputs")
     //for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
     //  insertInsertIntoList(Some(transactionHash), Some(outpointTransactionHash), None, Some(outpointIndex), None, None)
-    
+
   }
 
   def saveDataToDB: Unit =
   {
-    //println("DEBUG: Inserting data to database ...") 
+    //println("DEBUG: Inserting data to database ...")
 
     if (vectorBlocks.length > 0)
     {
-	val convertedVectorBlocks = vectorBlocks map { case (a,b,c,d,e) => (a.array.toArray,b,c,d,e) }
-	blockDB.insertAll(convertedVectorBlocks:_*)
+        val convertedVectorBlocks = vectorBlocks map { case (a,b,c,d,e) => (a.array.toArray,b,c,d,e) }
+        blockDB.insertAll(convertedVectorBlocks:_*)
     }
     if (vectorMovements.length > 0)
     { def ohc(e:Option[Hash]):Array[Byte] = e.getOrElse(Hash.zero(0)).array.toArray
-                
+
         def vectorMovementsConverter[A,B,C,D](v:Vector[(Hash,Hash,Option[Hash],A,B,C,D)]) = v map {
           case (a,b,c,d,e,f,g) => (Hash.hashToArray(a),Hash.hashToArray(b),ohc(c),d,e,f,g) }
 
@@ -150,17 +149,17 @@ trait FastBlockReader extends BlockReader
 
         movements.insertAll(convertedVectorMovements:_*)
       }
-     
+
 
     vectorMovements = Vector()
     vectorBlocks = Vector()
-    
+
     //println("DEBUG: Data inserted")
   }
 
 
 // block
-  def insertBlock(s: (Hash, Int, Int, Long, Long)) = 
+  def insertBlock(s: (Hash, Int, Int, Long, Long)) =
   {
     if (vectorMovements.length + vectorBlocks.length >= populateTransactionSize)
       saveDataToDB
@@ -168,7 +167,7 @@ trait FastBlockReader extends BlockReader
   }
 
   // movments
-  def insertMovement(s: (Hash, Hash, Option[Hash], Int, Long, Int, Int)) = 
+  def insertMovement(s: (Hash, Hash, Option[Hash], Int, Long, Int, Int)) =
   {
     if (vectorMovements.length + vectorBlocks.length >= populateTransactionSize)
       saveDataToDB
@@ -176,7 +175,7 @@ trait FastBlockReader extends BlockReader
     vectorMovements +:= s
   }
 
-  
+
   def includeInput(input: TransactionInput, transactionHash: Hash, blockOut: Int): Option[Hash] =
   {
     totalOutIn += 1
@@ -192,7 +191,7 @@ trait FastBlockReader extends BlockReader
           transactionHash, outpointTransactionHash, Some(address), outpointIndex, value, blockIn, blockOut)
 
       outputMap -= (outpointTransactionHash -> outpointIndex)
-      
+
       Some (address)
     }
 
@@ -206,4 +205,4 @@ trait FastBlockReader extends BlockReader
   }
 
 
-} 
+}

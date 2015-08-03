@@ -35,10 +35,10 @@ trait BitcoinDB {
     }
 
   def countInputs: Int =
-    //transactionDBSession
-    //{
+    transactionDBSession
+  {
     movements.length.run
-  //}
+  }
 
   def existsOutput(transactionHash: Hash, index: Int): Boolean =
     {
@@ -49,7 +49,7 @@ trait BitcoinDB {
     }
 
   def initializeDB: Unit =
-  { 
+  {
     deleteIfExists(stats, movements, blockDB, addresses, richestAddresses, richestClosures, utxo)
     stats.ddl.create
     movements.ddl.create
@@ -62,6 +62,6 @@ trait BitcoinDB {
 //    (Q.u + "alter table addresses alter column hash varbinary(401)").execute
 //    (Q.u + "alter table addresses alter column representant varbinary(401)").execute
 //    (Q.u + "alter table movements alter column transaction_hash varbinary(32)").execute
-//    (Q.u + "alter table movements alter column spent_in_transaction_hash varbinary(32)").execute 
+//    (Q.u + "alter table movements alter column spent_in_transaction_hash varbinary(32)").execute
   }
 }

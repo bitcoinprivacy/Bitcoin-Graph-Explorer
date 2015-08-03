@@ -1,63 +1,53 @@
 package actions
 
+import core._
 import java.util.Calendar
-import scala.collection.mutable.ArrayBuffer
+import scala.slick.driver.JdbcDriver.simple._
 import scala.slick.jdbc._
-import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import util._
-import core._
 
 object FastAddressClosure extends AddressClosure {
   def generateTree =
   {
-    def intToByteArray(x:Int): Array[Byte] = {
-      val buf = new ArrayBuffer[Byte](2)
-      for(i <- 0 until 2) {
-        buf += ((x >>> (2 - i - 1 << 3)) & 0xFF).toByte
-      }
-      buf.toArray
-    }
+    val step = conf.getInt("closureReadSize")
 
-    def txListQuery(start: Column[Array[Byte]], step: ConstColumn[Long]) = {
+    val movementCount = countInputs
+
+    def txListQuery(start: ConstColumn[Long]) = {
+      val emptyArray = Hash.zero(0).array.toArray
       transactionDBSession {
-        movements.filter(p => p.transaction_hash >= start).sortBy(_.transaction_hash.asc).take(step).map(p => (p.transaction_hash,p.address))
-
-        // select hex(address) from movements where transaction_hash > X'abc1' order by transaction_hash asc limit 16000; mysql stupidity workaround
+        for (q <- movements.drop(start).take(step).filter(_.address =!= emptyArray))
+          yield (q.spent_in_transaction_hash, q.address)
+        // in order to read quickly from db, we need to read in the order of insertion
       }
     }
-      val txList = Compiled(txListQuery _)
-
-    val step = 1000000
-
+    val txList = Compiled(txListQuery _)
 
     @annotation.tailrec
-    def addNextRows(start: Array[Byte], tree: DisjointSets[Hash]): DisjointSets[Hash] = {
-      println("reading " + step + " elements from " + Hash(start))
-      val txAndAddressList = transactionDBSession { txList(start,step).run.toVector }
+    def addNextRows(start: Long, tree: DisjointSets[Hash]): DisjointSets[Hash] = {
+      println("reading " + step + " elements from " + start)
+      val txAndAddressList = transactionDBSession { txList(start).run.toVector }
       txAndAddressList.lastOption match
       {
-        case None => tree
-        case Some((newStart,_)) =>
+        case None => tree // empty List, we are finished
+        case Some((newStartTx,_)) =>
 
-          val addressesPerTxList = txAndAddressList.groupBy(_._1) - newStart
-          // remove last tx from list
-          val hashList = addressesPerTxList.values map (_ map (p=>Hash(p._2)))
+          val addressesPerTxMap = txAndAddressList.groupBy(_._1)
+
+          def hashList(addressesPerTxMap: Map[Array[Byte],Seq[(Array[Byte],Array[Byte])]]) = addressesPerTxMap.values map (_ map (p=>Hash(p._2)))
           println("folding and merging " + Calendar.getInstance().getTime() )
-          val newTree = {
-            hashList.foldLeft(tree)(
-              (t,l) => {
-                insertInputsIntoTree(l,t)
-              }
-            )
-          }
-          addNextRows(newStart, newTree)
+          def newTree(hashList: Iterable[Seq[Hash]]) = hashList.foldLeft (tree) ((t,l) => insertInputsIntoTree(l,t))
+
+          if (start+step < movementCount) // not finished. remove last (possibly splitted) tx and recurse
+            addNextRows(start+step-addressesPerTxMap(newStartTx).length, newTree(hashList(addressesPerTxMap - newStartTx)))
+          else // finished
+            newTree(hashList(addressesPerTxMap))
       }
 
     }
 
-
-    addNextRows(Hash.zero(1).array.toArray, new DisjointSets[Hash](collection.immutable.HashMap.empty))
+    addNextRows(0, new DisjointSets[Hash](collection.immutable.HashMap.empty))
    }
 }
 
