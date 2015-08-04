@@ -10,13 +10,13 @@ import com.typesafe.config.ConfigFactory
 import util._
 
 trait BitcoinDB {
-  val blockDB = TableQuery[Blocks]
-  val addresses = TableQuery[Addresses]
-  val movements = TableQuery[Movements]
-  val richestAddresses = TableQuery[RichestAddresses]
-  val richestClosures = TableQuery[RichestClosures]
-  val stats = TableQuery[Stats]
-  val utxo = TableQuery[UTXO]
+  def blockDB = TableQuery[Blocks]
+  def addresses = TableQuery[Addresses]
+  def movements = TableQuery[Movements]
+  def richestAddresses = TableQuery[RichestAddresses]
+  def richestClosures = TableQuery[RichestClosures]
+  def stats = TableQuery[Stats]
+  def utxo = TableQuery[UTXO]
 
   def USERNAME = conf.getString("username")
   def PASSWORD = conf.getString("password")
@@ -38,6 +38,11 @@ trait BitcoinDB {
     transactionDBSession
   {
     movements.length.run
+  }
+
+  def blockCount: Int = transactionDBSession
+  {
+    blockDB.map(_.block_height).max.run.get
   }
 
   def existsOutput(transactionHash: Hash, index: Int): Boolean =
