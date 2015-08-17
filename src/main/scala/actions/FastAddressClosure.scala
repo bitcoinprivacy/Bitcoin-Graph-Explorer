@@ -33,7 +33,8 @@ object FastAddressClosure extends AddressClosure with BitcoinDB {
       hashList.foldLeft (tree) ((t,l) => insertInputsIntoTree(l,t))
     }
 
-    (0 until blockCount by step).foldRight (new DisjointSets[Hash](collection.mutable.Map.empty))(addBlock)
+    val table: LmdbMap = LmdbMap.create("closures")
+    (0 until blockCount by step).foldRight (new DisjointSets[Hash])(addBlock)
    }
 }
 

@@ -24,13 +24,16 @@ libraryDependencies ++= Seq(
     "com.typesafe.slick" %% "slick" % "2.1.0",
   "com.typesafe" % "config" % "1.2.1",
       //"com.typesafe.play" %% "play" % "2.2.0"
-      "org.scalacheck" %% "scalacheck" % "1.11.3" % "test",
+      "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
       "org.scalatest" %% "scalatest" % "2.1.5" % "test",
-  "com.github.scala-incubator.io" %% "scala-io-file" % "0.4.3-1"
+  "com.github.scala-incubator.io" %% "scala-io-file" % "0.4.3-1",
+  "org.deephacks.lmdbjni" % "lmdbjni" % "0.4.2",
+      "org.deephacks.lmdbjni" % "lmdbjni-linux64" % "0.4.2"
   //  "org.mapdb" % "mapdb" % "2.0-alpha2"
 //  "net.openhft" % "koloboke-api-jdk6-7" % "0.6.7",
 // "net.openhft" % "koloboke-impl-jdk6-7" % "0.6.7"
 //  "com.github.vlsi.compactmap" % "compactmap" % "1.2.1"
+
 )
 
 resolvers += "Local Maven Repository" at "file:///"+Path.userHome.absolutePath+"/.m2/repository"
@@ -53,10 +56,10 @@ packageOptions in (Compile, packageBin) <+= (target, externalDependencyClasspath
   Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> relativePaths.reduceOption(_ + " " + _).getOrElse(""))
  }
 
-javaOptions in run += "-Xmx12G"
+javaOptions in run += "-Xmx4G"
 
 
-javaOptions in run += "-Xms100M"
+javaOptions in run += "-Xms1G"
 
 javaOptions in run += "-Dcom.sun.management.jmxremote.port=3333"
 javaOptions in run += "-Dcom.sun.management.jmxremote.authenticate=false"

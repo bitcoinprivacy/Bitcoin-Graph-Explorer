@@ -23,7 +23,8 @@ import collection.JavaConversions._
 trait FastBlockReader extends BlockReader
 {
   // txhash -> ((index -> (address,value)),blockIn)
-  var outputMap: immutable.Map[(Hash,Int),(Hash,Long,Int)] = new UTXOs (immutable.HashMap[Hash,Hash]())
+  lazy val table: LmdbMap = LmdbMap.create("utxos")
+  lazy val outputMap: UTXOs = new UTXOs (table)
 
 
   //DBMaker.heapDB.transactionDisable.asyncWriteFlushDelay(100).make.getHashMap[(Hash,Int),(Hash,Long,Int)]("utxo")
@@ -32,6 +33,8 @@ trait FastBlockReader extends BlockReader
   var outOfOrderInputMap: immutable.HashMap[(Hash,Int),(Hash,Int)]  = immutable.HashMap()
   var vectorMovements: Vector[(Hash, Hash, Option[Hash], Int, Long, Int, Int)] = Vector()
   var vectorBlocks: Vector[(Hash, Int, Int, Long, Long)]  = Vector()
+  lazy val  unmatchedClosure: mutable.HashMap[Hash,(Option[Hash],Int)] = mutable.HashMap() // spent_in_tx -> (Representant, count)
+  lazy val closures = new DisjointSets(new ClosureMap(LmdbMap.create("closures")))
 
   var totalOutIn: Int = 0
 
@@ -42,12 +45,42 @@ trait FastBlockReader extends BlockReader
     val transactionHash = Hash(trans.getHash.getBytes)
 
     val addresses =
-      for {input <- inputsInTransaction(trans)
-        address <- includeInput(input,transactionHash, blockHeight)
+      for {
+        input <- inputsInTransaction(trans)
+        addressOption = includeInput(input,transactionHash, blockHeight)
+        if (addressOption != Some(Hash.zero(0)))
       }
-      yield address
+      yield addressOption
 
-
+    // ifnumberOfAddresses more than 1
+    //   if all NONE
+    //     unmatchedX += spent_in_tx -> (None, numberOfAddresses)
+    //   else
+    //     unmatchedX += spent_in_tx -> (first_Some, numberOfNones)
+    //      for (x <- Somes) add(x)
+    //       union (Somes)
+    val numberOfAddresses = addresses.size
+    if (numberOfAddresses > 1)
+    {
+      val numberOfNones = addresses.count(_ == None)
+      val firstAddress = addresses.find(_ != None)
+      firstAddress match {
+        case None =>
+          unmatchedClosure += (transactionHash -> (None, numberOfAddresses))
+        case (Some(someAddress)) =>
+          unmatchedClosure += (transactionHash -> (someAddress, numberOfNones))
+          // add and union all elements
+          closures.union{
+            for {
+              someAddress <- addresses.filter(_ != None)
+              address <- someAddress
+            } yield {
+              closures.add(address)
+              address
+            }
+          }
+      }
+    }
 
     var index = 0
 
@@ -65,6 +98,31 @@ trait FastBlockReader extends BlockReader
         val (inputTxHash, blockOut) = outOfOrderInputMap(transactionHash, index)
 
         insertMovement(inputTxHash, transactionHash, addressOption, index, value, blockHeight, blockOut)
+
+        // if (unmatchedX.contains(spent_in)
+        //   add(address), dec
+        //    case None => Some(address)
+        //    case Some(e) => union(e, address)
+        //  if int=0 delete
+
+
+
+        for {
+          address <- addressOption
+          (addOpt, count) <- unmatchedClosure.get(inputTxHash)
+        }
+        {
+          closures add address
+
+          for (add <- addOpt)
+            closures.union(add, address)
+
+          if (count == 1)
+            unmatchedClosure -= inputTxHash
+          else
+            unmatchedClosure.update(inputTxHash, (Some(address), count-1))
+
+        }
 
         outOfOrderInputMap -= (transactionHash -> index)
       }
@@ -91,7 +149,6 @@ trait FastBlockReader extends BlockReader
   }
 
   def pre  = {
-    outputMap = new UTXOs (immutable.HashMap[Hash,Hash]())
     outOfOrderInputMap = immutable.HashMap.empty
     vectorMovements = Vector()
     vectorBlocks = Vector()
@@ -101,10 +158,11 @@ trait FastBlockReader extends BlockReader
   }
 
   def post = {
-    saveUnmatchedOutputs
+    //saveUnmatchedOutputs
     saveUnmatchedInputs
     saveDataToDB
-
+    table.commit
+    // insert all elements from closures into the addresses table
     println("DONE: " + totalOutIn + " movements, " + transactionCounter + " transactions saved in " + (System.currentTimeMillis - startTime)/1000 + "s")
   }
 

@@ -20,7 +20,7 @@ import java.lang.System
 trait AddressClosure
 {
   def adaptTreeIfNecessary(tree: DisjointSets[Hash]):  DisjointSets[Hash] = tree
-  
+
   def generateTree: DisjointSets[Hash]
 
   def insertInputsIntoTree(addresses: Iterable[Hash], tree: DisjointSets[Hash]): DisjointSets[Hash] =
@@ -28,17 +28,17 @@ trait AddressClosure
     val addedTree = addresses.foldLeft(tree)((t:DisjointSets[Hash],a:Hash) => t.add(a))
     addedTree.union(addresses)
   }
-    
+
 
   def insertValuesIntoTree(databaseResults: HashMap[Hash, Array[Hash]], tree: DisjointSets[Hash]) =
   {
     println("Insering values into tree");
     val start = System.currentTimeMillis
 
-    databaseResults.foldLeft(tree)((t,l) => insertInputsIntoTree(l._2,t)) 
-    
+    databaseResults.foldLeft(tree)((t,l) => insertInputsIntoTree(l._2,t))
+
     println("Values inserted")
-    
+
   }
 
   def saveTree(tree: DisjointSets[Hash]): Int =
@@ -48,12 +48,14 @@ trait AddressClosure
     val totalElements = tree.elements.size
     var counter = 0
     var counterTotal = 0
-    
+
     println("DEBUG: Saving tree to database...")
     var counterFinal = 0
-    tree.elements.keys.foldLeft(tree){(t,value) => 
-      val (parent, newTree) = tree.find(value)
-      queries +:= (value.array.toArray, parent.array.toArray)
+    tree.elements.keys.foldLeft(tree){(t,value) =>
+      val (parentOption, newTree) = tree.find(value)
+      for (parent <- parentOption )
+        queries +:= (value.array.toArray, parent.array.toArray)
+
       counter += 1
       counterTotal += 1
       counterFinal += 1
@@ -69,11 +71,11 @@ trait AddressClosure
       }
       newTree
     }
-    
+
     println("DONE: Saved until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/counterTotal+1))
 
     saveElementsToDatabase(queries, counter)
-    
+
     totalElements
   }
 
@@ -94,5 +96,5 @@ trait AddressClosure
   println("DONE: Total of %s addresses closured in %s s, %s µs per address" format
     (countSave, totalTime / 1000, 1000 * totalTime / (countSave + 1)))
 }
- 
- 
+
+

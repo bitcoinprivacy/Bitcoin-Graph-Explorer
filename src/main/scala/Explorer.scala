@@ -28,7 +28,6 @@ object Explorer extends App{
       object InitializeBlockReader extends BitcoinDRawFileBlockSource with FastBlockReader //needs to be in this order for linearization
       InitializeBlockReader
       CreateIndexes
-      FastAddressClosure
       CreateAddressIndexes
     case "closure"::rest             =>
       FastAddressClosure
@@ -37,17 +36,17 @@ object Explorer extends App{
     case "stats"::rest =>
       SlowStatistics
     case "resume"::rest               =>
-      object ResumeBlockReader extends BitcoinDRawFileBlockSource with SlowBlockReader //needs to be in this order for linearization
-      ResumeBlockReader
+//      object ResumeBlockReader extends HttpBlockSource with SlowBlockReader //needs to be in this order for linearization
+  //    ResumeBlockReader
       // new SlowAddressClosure(ResumeBlockReader.savedMovements)
       //new SlowAddressBalance(ResumeBlockReader.savedMovements)
       // apply required to call the methods more than one time,
       // which is required for the loop run bge
-      SlowStatistics.apply
-      SlowClosureGini.apply
-      SlowAddressGini.apply
-      SlowRichestAddresses.apply
-      SlowRichestClosures.apply
+    //  SlowStatistics.apply
+     // SlowClosureGini.apply
+     // SlowAddressGini.apply
+     // SlowRichestAddresses.apply
+     // SlowRichestClosures.apply
     case "test_utxo"::rest =>
       val test = readUTXOs
       println("wir sind geil")
