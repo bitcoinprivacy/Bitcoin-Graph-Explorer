@@ -13,7 +13,7 @@ libraryDependencies ++= Seq(
 //	"junit" % "junit" % "4.8" % "test->default", // For JUnit 4 testing
 //      "ch.qos.logback" % "logback-classic" % "0.9.26" % "compile->default", // Logging
     "org.slf4j" % "slf4j-simple" % "1.7.5",
-        "org.bitcoinj" % "bitcoinj-core" % "0.12",
+        "org.bitcoinj" % "bitcoinj-core" % "0.13.1",
 //	"org.neo4j" % "neo4j-scala" % "0.2.0-M2-SNAPSHOT",
   //  "org.iq80.leveldb"%"leveldb"%"0.6",
 "org.postgresql" % "postgresql" % "9.4-1200-jdbc41",
@@ -56,7 +56,7 @@ packageOptions in (Compile, packageBin) <+= (target, externalDependencyClasspath
   Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> relativePaths.reduceOption(_ + " " + _).getOrElse(""))
  }
 
-javaOptions in run += "-Xmx4G"
+javaOptions in run += "-Xmx8G"
 
 
 javaOptions in run += "-Xms1G"

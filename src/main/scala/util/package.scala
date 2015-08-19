@@ -13,12 +13,12 @@ package object util extends BitcoinDB
 {
   val conf = ConfigFactory.load()
 
-  var closureTransactionSize = conf.getInt("closureTransactionSize")
-  var closureReadSize = conf.getInt("closureReadSize")
-  var populateTransactionSize = conf.getInt("populateTransactionSize")
-  var balanceTransactionSize = conf.getInt("balanceTransactionSize")
-  var blockHashListFile= conf.getString("blockHashListFile")
-  var dustLimit = conf.getLong("dustLimit")
+  val closureTransactionSize = conf.getInt("closureTransactionSize")
+  val closureReadSize = conf.getInt("closureReadSize")
+  val populateTransactionSize = conf.getInt("populateTransactionSize")
+  val balanceTransactionSize = conf.getInt("balanceTransactionSize")
+  val blockHashListFile= conf.getString("blockHashListFile")
+  val dustLimit = conf.getLong("dustLimit")
 
   println(blockHashListFile)
 

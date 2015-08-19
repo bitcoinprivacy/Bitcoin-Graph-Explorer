@@ -29,7 +29,7 @@ class Stats(tag:Tag) extends Table[(Int, Int, Int, Int, Int, Int, Int, Int, Int,
   def total_addresses = column[Int]("total_addresses")
   def total_closures = column[Int]("total_closures")
   def total_addresses_with_balance = column[Int]("total_addresses_with_balance")
-  def total_closures_with_balance = column[Int]("total_closures_with_balance") 
+  def total_closures_with_balance = column[Int]("total_closures_with_balance")
   def total_addresses_no_dust = column[Int]("total_addresses_no_dust")
   def total_closures_no_dust = column[Int]("total_closures_no_dust")
   def gini_closure = column[Double]("gini_closure")
@@ -44,7 +44,7 @@ class RichestAddresses(tag:Tag) extends Table[(Int, Array[Byte], Long)](tag, "ri
   def hash= column[Array[Byte]]("hash")
   def balance= column[Long]("balance", O.Nullable)
   def * =  (block_height, hash, balance)
-  def idx1 = index("idxx1", (block_height), unique = false)  
+  def idx1 = index("idxx1", (block_height), unique = false)
 }
 
 class RichestClosures(tag:Tag) extends Table[(Int, Array[Byte], Long)](tag, "richest_closures") {
@@ -58,7 +58,6 @@ class RichestClosures(tag:Tag) extends Table[(Int, Array[Byte], Long)](tag, "ric
 class Addresses(tag:Tag) extends Table[(Array[Byte], Array[Byte])](tag, "addresses") {
   def hash= column[Array[Byte]]("hash")
   def representant = column[Array[Byte]]("representant")
-
 
   def * = (hash,representant)
 }
@@ -87,7 +86,7 @@ class UTXO(tag:Tag) extends Table[(Array[Byte], Array[Byte], Int, Long, Int)](ta
   def transaction_hash = column[Array[Byte]]("transaction_hash")
   // Address can be a single byte 00 plus 20-byte address, or a 2-hex number plus several addresses
   // Non decoded addresses are represented as X'', since mysql cannot manage index over NULL values
-  def address = column[Array[Byte]]("address") 
+  def address = column[Array[Byte]]("address")
   def index = column[Int]("index")
   def value = column[Long]("value")
   def block_height = column[Int]("block_height")

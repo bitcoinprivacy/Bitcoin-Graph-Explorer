@@ -25,20 +25,30 @@ object Explorer extends App{
       object InitializeBlockReader extends BitcoinDRawFileBlockSource with FastBlockReader //needs to be in this order for linearization
       InitializeBlockReader
     case "populate"::rest             =>
-      object InitializeBlockReader extends BitcoinDRawFileBlockSource with FastBlockReader //needs to be in this order for linearization
+
+      initializeReaderTables
+      object InitializeBlockReader extends BitcoinDRawFileBlockSource with PopulateBlockReader //needs to be in this order for linearization
       InitializeBlockReader
       CreateIndexes
+      initializeClosureTables
+      new FastAddressClosure(LmdbMap.create("closures"), InitializeBlockReader.processedBlocks)
       CreateAddressIndexes
+
     case "closure"::rest             =>
-      FastAddressClosure
+
+      initializeClosureTables
+      new FastAddressClosure(LmdbMap.create("closures"), (0 until 100000).toVector)
       CreateAddressIndexes
 
     case "stats"::rest =>
+
       SlowStatistics
+
     case "resume"::rest               =>
-//      object ResumeBlockReader extends HttpBlockSource with SlowBlockReader //needs to be in this order for linearization
-  //    ResumeBlockReader
-      // new SlowAddressClosure(ResumeBlockReader.savedMovements)
+      object ResumeBlockReader extends PeerSource with ResumeBlockReader  //needs to be in this order for linearization
+      ResumeBlockReader
+      new ResumeClosure(LmdbMap.open("closures"), ResumeBlockReader.processedBlocks)
+    // new SlowAddressClosure(ResumeBlockReader.savedMovements)
       //new SlowAddressBalance(ResumeBlockReader.savedMovements)
       // apply required to call the methods more than one time,
       // which is required for the loop run bge
@@ -67,25 +77,18 @@ object Explorer extends App{
     case "bge"::rest =>
       import sys.process._
 
-      while (new java.io.File("/nix/bge/lock").exists)
+      while (new java.io.File("/root/Bitcoin-Graph-Explorer/blockchain/lock").exists)
       {
-        val cmd = Seq("cat", "/nix/.bitcoin/blocklist.txt") #| Seq( "wc", "-l")
-        val cmd2 = Seq("mysql", "movements", "--host=172.17.0.61", "--port" ,"3306", "-u", "root", "-ptrivial", "-se", "select max(block_height) from blocks") #| Seq("cut", "-f1")
-        val from = Integer.parseInt(cmd2.lines.head,10)
+        val cmd = Seq("cat", "/root/.bitcoin/blocklist.txt") #| Seq( "wc", "-l")
+        val from = blockCount
         val to = Integer.parseInt(cmd.lines.head, 10) - 1
 
         if (to > from+2)
         {
           println("Reading blocks from " +from + " to " +to)
-          object ResumeBlockReader extends BitcoinDRawFileBlockSource with SlowBlockReader //needs to be in this order for linearization
+          object ResumeBlockReader extends PeerSource with ResumeBlockReader  //needs to be in this order for linearization
           ResumeBlockReader
-          //new SlowAddressClosure(ResumeBlockReader.savedMovements)
-          //new SlowAddressBalance(ResumeBlockReader.savedMovements)
-          SlowStatistics.apply
-          SlowClosureGini.apply
-          SlowAddressGini.apply
-          SlowRichestAddresses.apply
-          SlowRichestClosures.apply
+          new ResumeClosure(LmdbMap.open("closures"), ResumeBlockReader.processedBlocks)
         }
         else
         {
@@ -94,7 +97,6 @@ object Explorer extends App{
         }
       }
       println("process stopped")
-
 
 
     case _=> println("""

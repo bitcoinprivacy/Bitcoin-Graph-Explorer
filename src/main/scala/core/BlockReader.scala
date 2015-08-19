@@ -21,6 +21,7 @@ trait BlockReader extends BlockSource {
   def useDatabase: Boolean
   def post: Unit
 
+  var processedBlocks: Vector[Int] = Vector.empty
   var savedBlockSet: Set[Hash] = Set.empty
   val longestChain: Map[Hash, Int] = getLongestBlockChainHashSet
   var transactionCounter = 0
@@ -35,7 +36,7 @@ trait BlockReader extends BlockSource {
 
     for (c <- savedBlocks)
       savedBlockSet = savedBlockSet + Hash(c)
-    
+
     process
     post
   }
@@ -63,7 +64,7 @@ trait BlockReader extends BlockSource {
     val blockHash = Hash(b.getHash.getBytes)
     val blockHeight = longestChain.getOrElse(blockHash, 0)
     val accepted = (longestChain contains blockHash) && !(savedBlockSet contains blockHash)
-    
+
     accepted
   }
 
@@ -75,7 +76,7 @@ trait BlockReader extends BlockSource {
 
   lazy val filteredBlockSource =
   {
-    blockSource.drop(savedBlockSet.size) withFilter blockFilter
+    blockSource withFilter blockFilter
   }
 
   def transactionsInBlock(b: Block) =
@@ -92,9 +93,9 @@ trait BlockReader extends BlockSource {
     (for {t: Transaction <- transactionsInBlock(b)
      o: TransactionOutput <- outputsInTransaction(t)}
     yield o.getValue.value).sum
-      
 
-  // TODO: replace 0 0 with txs and btcs from the transaction set 
+
+  // TODO: replace 0 0 with txs and btcs from the transaction set
   lazy val transactionSource: Iterator[(Transaction,Int)] = {
     filteredBlockSource flatMap { b => saveBlock(Hash(b.getHash.getBytes), b.getTransactions.size,getTxValue(b),b.getTimeSeconds); transactionsInBlock(b) map ((_, longestChain.getOrElse(Hash(b.getHash.getBytes), 0)))}
   }

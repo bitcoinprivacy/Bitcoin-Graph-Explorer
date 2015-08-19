@@ -9,7 +9,7 @@ package core
  */
 import util._
 import java.io._
-import scala.slick.driver.MySQLDriver.simple._
+import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
 import scala.collection.mutable.HashMap
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
@@ -54,7 +54,9 @@ trait AddressClosure
     tree.elements.keys.foldLeft(tree){(t,value) =>
       val (parentOption, newTree) = tree.find(value)
       for (parent <- parentOption )
-        queries +:= (value.array.toArray, parent.array.toArray)
+        {
+          queries +:= (value.array.toArray, parent.array.toArray)
+        }
 
       counter += 1
       counterTotal += 1
@@ -67,12 +69,12 @@ trait AddressClosure
       }
       if (counterFinal % 1000000 == 0) {
         counterFinal = 0
-        println("DEBUG: Saved until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/counterTotal))
+        println("DEBUG: Saved until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/(counterTotal+1)))
       }
       newTree
     }
 
-    println("DONE: Saved until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/counterTotal+1))
+    println("DONE: Saved until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/(counterTotal+1)))
 
     saveElementsToDatabase(queries, counter)
 
@@ -83,7 +85,10 @@ trait AddressClosure
   {
     val start = System.currentTimeMillis
     transactionDBSession {
-      addresses.insertAll(queries: _*)
+      try{ addresses.insertAll(queries: _*) } catch {
+        case e: java.sql.BatchUpdateException => throw(e.getNextException)
+
+      }
     }
   }
   println("applying closure ")

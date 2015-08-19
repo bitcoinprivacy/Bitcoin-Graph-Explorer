@@ -42,7 +42,7 @@ trait BitcoinDB {
 
   def blockCount: Int = transactionDBSession
   {
-    blockDB.map(_.block_height).max.run.get
+    blockDB.length.run
   }
 
   def existsOutput(transactionHash: Hash, index: Int): Boolean =
@@ -53,20 +53,20 @@ trait BitcoinDB {
         `index` = """ + index).list.head > 0
     }
 
-  def initializeDB: Unit =
+  def initializeReaderTables: Unit =
   {
-    deleteIfExists(stats, movements, blockDB, addresses, richestAddresses, richestClosures, utxo)
-    stats.ddl.create
-    movements.ddl.create
-    blockDB.ddl.create
-    utxo.ddl.create
-    addresses.ddl.create
-    richestAddresses.ddl.create
-    richestClosures.ddl.create
-//    (Q.u + "alter table movements alter column address varbinary(401)").execute
-//    (Q.u + "alter table addresses alter column hash varbinary(401)").execute
-//    (Q.u + "alter table addresses alter column representant varbinary(401)").execute
-//    (Q.u + "alter table movements alter column transaction_hash varbinary(32)").execute
-//    (Q.u + "alter table movements alter column spent_in_transaction_hash varbinary(32)").execute
+    transactionDBSession{
+      deleteIfExists(movements, blockDB, utxo)
+      movements.ddl.create
+      blockDB.ddl.create
+      utxo.ddl.create
+    }
+  }
+
+  def initializeClosureTables: Unit = {
+    transactionDBSession{
+      deleteIfExists(addresses)
+      addresses.ddl.create
+    }
   }
 }

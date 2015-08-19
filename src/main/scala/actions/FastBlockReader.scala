@@ -33,8 +33,8 @@ trait FastBlockReader extends BlockReader
   var outOfOrderInputMap: immutable.HashMap[(Hash,Int),(Hash,Int)]  = immutable.HashMap()
   var vectorMovements: Vector[(Hash, Hash, Option[Hash], Int, Long, Int, Int)] = Vector()
   var vectorBlocks: Vector[(Hash, Int, Int, Long, Long)]  = Vector()
-  lazy val  unmatchedClosure: mutable.HashMap[Hash,(Option[Hash],Int)] = mutable.HashMap() // spent_in_tx -> (Representant, count)
-  lazy val closures = new DisjointSets(new ClosureMap(LmdbMap.create("closures")))
+//  lazy val  unmatchedClosure: mutable.HashMap[Hash,(Option[Hash],Int)] = mutable.HashMap() // spent_in_tx -> (Representant, count)
+//  lazy val closures = new DisjointSets(new ClosureMap(LmdbMap.create("closures")))
 
   var totalOutIn: Int = 0
 
@@ -59,28 +59,29 @@ trait FastBlockReader extends BlockReader
     //     unmatchedX += spent_in_tx -> (first_Some, numberOfNones)
     //      for (x <- Somes) add(x)
     //       union (Somes)
-    val numberOfAddresses = addresses.size
-    if (numberOfAddresses > 1)
-    {
-      val numberOfNones = addresses.count(_ == None)
-      val firstAddress = addresses.find(_ != None)
-      firstAddress match {
-        case None =>
-          unmatchedClosure += (transactionHash -> (None, numberOfAddresses))
-        case (Some(someAddress)) =>
-          unmatchedClosure += (transactionHash -> (someAddress, numberOfNones))
-          // add and union all elements
-          closures.union{
-            for {
-              someAddress <- addresses.filter(_ != None)
-              address <- someAddress
-            } yield {
-              closures.add(address)
-              address
-            }
-          }
-      }
-    }
+
+    // val numberOfAddresses = addresses.size
+    // if (numberOfAddresses > 1)
+    // {
+    //   val numberOfNones = addresses.count(_ == None)
+    //   val firstAddress = addresses.find(_ != None)
+    //   firstAddress match {
+    //     case None =>
+    //       unmatchedClosure += (transactionHash -> (None, numberOfAddresses))
+    //     case (Some(someAddress)) =>
+    //       unmatchedClosure += (transactionHash -> (someAddress, numberOfNones))
+    //       // add and union all elements
+    //       closures.union{
+    //         for {
+    //           someAddress <- addresses.filter(_ != None)
+    //           address <- someAddress
+    //         } yield {
+    //           closures.add(address)
+    //           address
+    //         }
+    //       }
+    //   }
+    // }
 
     var index = 0
 
@@ -107,22 +108,22 @@ trait FastBlockReader extends BlockReader
 
 
 
-        for {
-          address <- addressOption
-          (addOpt, count) <- unmatchedClosure.get(inputTxHash)
-        }
-        {
-          closures add address
+        // for {
+        //   address <- addressOption
+        //   (addOpt, count) <- unmatchedClosure.get(inputTxHash)
+        // }
+        // {
+        //   closures add address
 
-          for (add <- addOpt)
-            closures.union(add, address)
+        //   for (add <- addOpt)
+        //     closures.union(add, address)
 
-          if (count == 1)
-            unmatchedClosure -= inputTxHash
-          else
-            unmatchedClosure.update(inputTxHash, (Some(address), count-1))
+        //   if (count == 1)
+        //     unmatchedClosure -= inputTxHash
+        //   else
+        //     unmatchedClosure.update(inputTxHash, (Some(address), count-1))
 
-        }
+        // }
 
         outOfOrderInputMap -= (transactionHash -> index)
       }
@@ -144,6 +145,7 @@ trait FastBlockReader extends BlockReader
 
   def saveBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long) = {
     val height = longestChain.getOrElse(b,0)
+    processedBlocks +:= height
     println("DONE: Saved block " + height)
     insertBlock(b, height, txs, btcs, tstamp)
   }
@@ -153,12 +155,10 @@ trait FastBlockReader extends BlockReader
     vectorMovements = Vector()
     vectorBlocks = Vector()
     totalOutIn = 0
-    println("DEBUG: Initiating database")
-    initializeDB
   }
 
   def post = {
-    //saveUnmatchedOutputs
+    saveUnmatchedOutputs
     saveUnmatchedInputs
     saveDataToDB
     table.commit
@@ -214,6 +214,8 @@ trait FastBlockReader extends BlockReader
 
     //println("DEBUG: Data inserted")
   }
+
+  def processSavedMovements(v: Vector[(Hash, Hash, Option[Hash], Int, Long, Int, Int)]): Unit = {}
 
 
 // block

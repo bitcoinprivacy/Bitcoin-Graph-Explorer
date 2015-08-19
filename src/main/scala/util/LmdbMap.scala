@@ -56,6 +56,8 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
   env.setMapSize(1024 * 1024 * 1024 * 1024L) // 1TB
   var db = env.openDatabase("test")
   //var tx = env.createWriteTransaction
+
+  // TODO: review why it is not working to use tx directly instead of caching the elements
   val cache: Map[Hash,Hash] = Map.empty
   val transactionSize = conf.getInt("lmbdTransactionSize")
 
@@ -75,21 +77,18 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
     cache += kv
 
     if (cache.size == transactionSize)
-    {
-      val t = System.currentTimeMillis
-      val tx = env.createWriteTransaction
-       for (kv <- cache)
-         db.put(tx, kv._1.array.toArray, kv._2.array.toArray)
-      tx.commit
-      println("commit took " + (System.currentTimeMillis - t) + " ms")
-      cache.clear
-    }
+      commit
 
     this
   }
 
   def getFromDB(key: Hash): Option[Hash] = {
-    db.get(key) match {
+
+    (if (tx != None)
+      db.get(tx.get, key)
+    else
+      db.get(key)
+    ) match {
       case null => None
       case e => Some(Hash(e))
     }
@@ -98,12 +97,30 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
   // Members declared in scala.collection.MapLike
   def get(key: Hash): Option[Hash] = cache.get(key).orElse(getFromDB(key))
 
-  def iterator: Iterator[(Hash, Hash)] = asScalaIterator(db.iterate(env.createReadTransaction())) map (
-    p => (Hash(p.getKey), Hash(p.getValue)))
+
+  var tx: Option[Transaction] = None
+
+  def iterator: Iterator[(Hash, Hash)] =  {
+
+    for (t <- tx){
+      t.abort
+    }
+
+    tx = Some(env.createReadTransaction)
+    asScalaIterator(db.iterate(tx.get))map (
+      p => (Hash(p.getKey), Hash(p.getValue)))
+  }
+
+
 
   def commit = {
-    //tx.commit
-    //tx = env.createWriteTransaction
+    val t = System.currentTimeMillis
+      val tx = env.createWriteTransaction
+       for (kv <- cache)
+         db.put(tx, kv._1.array.toArray, kv._2.array.toArray)
+      tx.commit
+      println("commit took " + (System.currentTimeMillis - t) + " ms")
+    cache.clear
   }
   //override def get(key: A): Option[B] = ???
   //override def iterator: Iterator[(A, B)] = ???
