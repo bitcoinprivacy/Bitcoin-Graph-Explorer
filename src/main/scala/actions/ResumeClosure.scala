@@ -7,7 +7,10 @@ import scala.slick.jdbc._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import util._
 
-class ResumeClosure(table: LmdbMap, blockHeights: Vector[Int]) extends FastAddressClosure(table: LmdbMap, blockHeights: Vector[Int]) {
+class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeights: Vector[Int]) {
+
+  val table = LmdbMap.open("closures")
+  override lazy val unionFindTable = new ClosureMap(table)
 
   override def insertInputsIntoTree(addressList: Iterable[Hash], tree: DisjointSets[Hash]): DisjointSets[Hash] =
   {
@@ -21,7 +24,7 @@ class ResumeClosure(table: LmdbMap, blockHeights: Vector[Int]) extends FastAddre
     val newRep = representantOpt.get
 
     transactionDBSession {
-      val byAddress = addresses.findBy( t => t.hash)
+      val byAddress = addresses.findBy(_.hash) // TODO: Compile?
 
       val foundRepresentantOption = byAddress(newRep.array.toArray).firstOption
 
@@ -40,7 +43,11 @@ class ResumeClosure(table: LmdbMap, blockHeights: Vector[Int]) extends FastAddre
     result
   }
 
-  override def saveTree(tree: DisjointSets[Hash]): Int = 0
+  override def saveTree(tree: DisjointSets[Hash]): Int =  // don't replace the postgres DB
+  {
+    table.commit // but don't forget to flush
+    0
+  }
 
 }
 

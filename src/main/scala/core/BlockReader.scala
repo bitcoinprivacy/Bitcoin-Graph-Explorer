@@ -26,8 +26,7 @@ trait BlockReader extends BlockSource {
   val longestChain: Map[Hash, Int] = getLongestBlockChainHashSet
   var transactionCounter = 0
   var startTime = System.currentTimeMillis
-  var savedMovements: Map[(Hash,Int),(Option[Array[Byte]],Option[Array[Byte]],Option[Long],Option[Int])] = Map.empty
-              // tx_hash,index -> spent_tx,address,value,height
+
   if (useDatabase) transactionDBSession{
     pre
 

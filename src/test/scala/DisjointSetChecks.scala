@@ -1,8 +1,9 @@
 import scala.collection.immutable.Set
+import util.DisjointSets
 import org.scalacheck._
 import Arbitrary._
 import Prop.{forAll, BooleanOperators}
-import util._
+
 
 object DSSpecification extends Properties("DisjointSets") {
 

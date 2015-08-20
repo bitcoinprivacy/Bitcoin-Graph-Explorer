@@ -4,6 +4,7 @@ import scala.collection.convert.WrapAsScala._
 import org.fusesource.lmdbjni._
 import org.fusesource.lmdbjni.Constants._
 import scala.collection.mutable.Map
+import Hash._
 
 object LmdbMap
 {
@@ -67,7 +68,7 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
     if (cache.contains(key))
       cache -= key
     else
-      db.delete(key.array.toArray)
+      db.delete(key)
 
     this
   }
@@ -116,8 +117,8 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
   def commit = {
     val t = System.currentTimeMillis
       val tx = env.createWriteTransaction
-       for (kv <- cache)
-         db.put(tx, kv._1.array.toArray, kv._2.array.toArray)
+       for (kv <- cache.toVector.sortBy(_._1)) //sort before insertion, this might be faster
+         db.put(tx, kv._1, kv._2)
       tx.commit
       println("commit took " + (System.currentTimeMillis - t) + " ms")
     cache.clear

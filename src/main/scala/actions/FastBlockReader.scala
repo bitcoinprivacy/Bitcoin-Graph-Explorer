@@ -1,33 +1,19 @@
 package actions
 
-import java.io.File
-
 import core._
-import util._
-import util.Hash._
-
-import scala.collection._
-import scalax.file.{Path,FileSystem}
-
-import scala.slick.jdbc.meta._
 import org.bitcoinj.core._
-import scala.slick.jdbc.{GetResult, StaticQuery => Q}
+import scala.collection._
+import scala.collection.JavaConversions._
 import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
+import util._
 
-import java.nio.ByteBuffer
+// A FastBlockReader is a BlockReader that uses an UTXO set map
+class FastBlockReader(val table: mutable.Map[Hash,Hash] = LmdbMap.create("utxos")) extends BlockReader {
 
-import collection.JavaConversions._
+  // (txhash,index) -> (address,value,blockIn)
+  val outputMap: UTXOs = new UTXOs (table)
 
-
-trait FastBlockReader extends BlockReader
-{
-  // txhash -> ((index -> (address,value)),blockIn)
-  lazy val table: LmdbMap = LmdbMap.create("utxos")
-  lazy val outputMap: UTXOs = new UTXOs (table)
-
-
-  //DBMaker.heapDB.transactionDisable.asyncWriteFlushDelay(100).make.getHashMap[(Hash,Int),(Hash,Long,Int)]("utxo")
 
   //  outpoint -> (txhash,block_out)
   var outOfOrderInputMap: immutable.HashMap[(Hash,Int),(Hash,Int)]  = immutable.HashMap()
@@ -52,6 +38,7 @@ trait FastBlockReader extends BlockReader
       }
       yield addressOption
 
+    // TODO: put this direct closure stuff in an extra trait for testing purposes
     // ifnumberOfAddresses more than 1
     //   if all NONE
     //     unmatchedX += spent_in_tx -> (None, numberOfAddresses)
@@ -85,8 +72,7 @@ trait FastBlockReader extends BlockReader
 
     var index = 0
 
-    for (output <- outputsInTransaction(trans))
-    {
+    for (output <- outputsInTransaction(trans)) {
       val addressOption: Option[Hash] = getAddressFromOutput(output: TransactionOutput) match {
          case Some(value) => Some(Hash(value))
           case None => None
@@ -127,21 +113,21 @@ trait FastBlockReader extends BlockReader
 
         outOfOrderInputMap -= (transactionHash -> index)
       }
-      else
-      {
+      else {
         val address = addressOption match
         {
           case Some(address) => address
           case None =>          Hash.zero(0)
         }
 
-        outputMap += ((transactionHash,index) -> (address, value, blockHeight))
+        addUTXO(blockHeight, transactionHash, index, value, address)
       }
 
       totalOutIn += 1
       index += 1
     }
   }
+
 
   def saveBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long) = {
     val height = longestChain.getOrElse(b,0)
@@ -158,27 +144,12 @@ trait FastBlockReader extends BlockReader
   }
 
   def post = {
-    saveUnmatchedOutputs
     saveUnmatchedInputs
     saveDataToDB
-    table.commit
-    // insert all elements from closures into the addresses table
+
     println("DONE: " + totalOutIn + " movements, " + transactionCounter + " transactions saved in " + (System.currentTimeMillis - startTime)/1000 + "s")
   }
 
-  def saveUnmatchedOutputs: Unit =
-  {
-    for (i <- 0  until outputMap.size - populateTransactionSize by populateTransactionSize)
-    {
-      var vectorUTXO:  Vector[(Array[Byte], Array[Byte], Int, Long, Int)] = Vector()
-      for (((transactionHash,index), (address, value, blockHeight)) <- outputMap.slice(i, i+populateTransactionSize))
-      {
-          vectorUTXO +:= (transactionHash.array.toArray, address.array.toArray, index, value,blockHeight)
-      }
-
-      utxo.insertAll(vectorUTXO:_*)
-    }
-  }
 
   def saveUnmatchedInputs: Unit =
   {
@@ -226,7 +197,7 @@ trait FastBlockReader extends BlockReader
     vectorBlocks +:= s
   }
 
-  // movments
+  // movements
   def insertMovement(s: (Hash, Hash, Option[Hash], Int, Long, Int, Int)) =
   {
     if (vectorMovements.length + vectorBlocks.length >= populateTransactionSize)
@@ -245,23 +216,31 @@ trait FastBlockReader extends BlockReader
 
     if (outputMap.contains(outpointTransactionHash, outpointIndex))
     {
-      val (address,value,blockIn) = outputMap(outpointTransactionHash, outpointIndex)
+      val (address, value, blockIn) = outputMap(outpointTransactionHash, outpointIndex)
 
       insertMovement(
           transactionHash, outpointTransactionHash, Some(address), outpointIndex, value, blockIn, blockOut)
-
-      outputMap -= (outpointTransactionHash -> outpointIndex)
+      removeUTXO(outpointTransactionHash, outpointIndex)
 
       Some (address)
     }
 
-    else
-    {
+    else {
       outOfOrderInputMap += ((outpointTransactionHash, outpointIndex) -> (transactionHash,blockOut))
       None
     }
 
 
+  }
+
+  // the following 2 methods have been factored out so we can extend their behavior in subclass ResumeBlockReader
+
+  def addUTXO(blockHeight: Int, transactionHash: util.Hash, index: Int, value: Long, address: util.Hash): UTXOs = {
+    outputMap += ((transactionHash,index) -> (address, value, blockHeight))
+  }
+
+  def removeUTXO(outpointTransactionHash: util.Hash, outpointIndex: Int): UTXOs = {
+    outputMap -= (outpointTransactionHash -> outpointIndex)
   }
 
 

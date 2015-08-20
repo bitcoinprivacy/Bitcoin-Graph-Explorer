@@ -12,42 +12,33 @@ import core._
  */
 object Explorer extends App{
   args.toList match{
-    // we could write a version of populate that just
-    // parse the blocks - tx - outputs - inputs
+
     case "test-addresses"::rest =>
-      object TestBlockReader extends BitcoinDRawFileBlockSource with TestBlockReader //needs to be in this order for linearization
+      object TestBlockReader extends BitcoinDRawFileBlockSource with TestBlockReader
       TestBlockReader
     case "analyze-script"::rest             =>
       (new ScriptReader)
     case "test-script"::rest             =>
       (new ScriptTester)
     case "reader"::rest           =>
-      object InitializeBlockReader extends BitcoinDRawFileBlockSource with FastBlockReader //needs to be in this order for linearization
+      object InitializeBlockReader extends FastBlockReader with BitcoinDRawFileBlockSource
       InitializeBlockReader
     case "populate"::rest             =>
-
       initializeReaderTables
-      object InitializeBlockReader extends BitcoinDRawFileBlockSource with PopulateBlockReader //needs to be in this order for linearization
-      InitializeBlockReader
+      PopulateBlockReader
       CreateIndexes
-      initializeClosureTables
-      new FastAddressClosure(LmdbMap.create("closures"), InitializeBlockReader.processedBlocks)
-      CreateAddressIndexes
+      closure(PopulateBlockReader.processedBlocks)
 
     case "closure"::rest             =>
 
-      initializeClosureTables
-      new FastAddressClosure(LmdbMap.create("closures"), (0 until 100000).toVector)
-      CreateAddressIndexes
+      closure((0 until blockCount).toVector)
 
     case "stats"::rest =>
 
       SlowStatistics
 
     case "resume"::rest               =>
-      object ResumeBlockReader extends PeerSource with ResumeBlockReader  //needs to be in this order for linearization
-      ResumeBlockReader
-      new ResumeClosure(LmdbMap.open("closures"), ResumeBlockReader.processedBlocks)
+      resume
     // new SlowAddressClosure(ResumeBlockReader.savedMovements)
       //new SlowAddressBalance(ResumeBlockReader.savedMovements)
       // apply required to call the methods more than one time,
@@ -86,9 +77,7 @@ object Explorer extends App{
         if (to > from+2)
         {
           println("Reading blocks from " +from + " to " +to)
-          object ResumeBlockReader extends PeerSource with ResumeBlockReader  //needs to be in this order for linearization
-          ResumeBlockReader
-          new ResumeClosure(LmdbMap.open("closures"), ResumeBlockReader.processedBlocks)
+          resume
         }
         else
         {
@@ -116,5 +105,16 @@ object Explorer extends App{
        test-script: read the blockchain/scripts.log file and perform a custom test over each line.
        analyze-script: read and print an inform from blockchain/scripts.log.
     """)
+  }
+
+  def closure(blockList:Vector[Int]) = {
+    initializeClosureTables
+    new PopulateClosure(blockList)
+    CreateAddressIndexes
+
+  }
+
+  def resume = {
+    new ResumeClosure((new ResumeBlockReader).processedBlocks)
   }
 }

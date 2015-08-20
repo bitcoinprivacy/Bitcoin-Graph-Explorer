@@ -4,7 +4,7 @@ import scala.collection._
 
 @SerialVersionUID(100L)
 class Hash(val array: mutable.WrappedArray[Byte]) extends AnyVal with Serializable {
-  // this is a convenient, lightweight (value class) abstraction for 
+  // this is a convenient, lightweight (value class) abstraction for
   // wrapped Arrays (which already have correct deep equals and hashCode)
   // fast toString/toHex methods adapted from xsbt/Mark Harrah
   // see license terms for these methods below
@@ -49,6 +49,9 @@ object Hash {
 
   implicit def hashToArray(a: Hash): Array[Byte] = a.array.toArray
 
+  import Ordering.Implicits.seqDerivedOrdering
+  implicit def orderingByWrappedArray: Ordering[Hash] =
+        Ordering.by(p => p.array)
 }
 
 // license terms for the toHex/toString method:

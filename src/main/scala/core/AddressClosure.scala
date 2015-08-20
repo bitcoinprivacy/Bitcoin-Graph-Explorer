@@ -11,17 +11,37 @@ import util._
 import java.io._
 import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.{GetResult, StaticQuery => Q}
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.Map
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import java.lang.System
+import java.util.Calendar
 
-
-
-trait AddressClosure
+class AddressClosure(blockHeights: Vector[Int])
 {
-  def adaptTreeIfNecessary(tree: DisjointSets[Hash]):  DisjointSets[Hash] = tree
+  lazy val unionFindTable: Map[Hash,(Int,Hash)] = Map.empty
 
-  def generateTree: DisjointSets[Hash]
+  def saveTree(tree: DisjointSets[Hash]): Int
+
+  def generateTree: DisjointSets[Hash] =
+  {
+    val step = conf.getInt("closureReadSize")
+
+    def addBlocks(startIndex: Int, tree: DisjointSets[Hash]): DisjointSets[Hash] = {
+      val blocks = blockHeights.slice(startIndex,startIndex+step)
+      println("reading block " + startIndex + " " + Calendar.getInstance().getTime())
+      val txAndAddressList = transactionDBSession { txListQuery(blocks).run.toVector }
+      val addressesPerTxMap = txAndAddressList.groupBy(p=>Hash(p._1))
+      val hashList = addressesPerTxMap.values map (_ map (p=>Hash(p._2)))
+      val nontrivials = hashList filter (_.length > 1)
+
+      println("folding and merging " + nontrivials.size + Calendar.getInstance().getTime() )
+      nontrivials.foldLeft (tree) ((t,l) => insertInputsIntoTree(l,t))
+    }
+
+    val result = (0 until blockHeights.length by step).foldRight(new DisjointSets[Hash](unionFindTable))(addBlocks)
+    println("finished generation")
+    result
+  }
 
   def insertInputsIntoTree(addresses: Iterable[Hash], tree: DisjointSets[Hash]): DisjointSets[Hash] =
   {
@@ -29,72 +49,10 @@ trait AddressClosure
     addedTree.union(addresses)
   }
 
-
-  def insertValuesIntoTree(databaseResults: HashMap[Hash, Array[Hash]], tree: DisjointSets[Hash]) =
-  {
-    println("Insering values into tree");
-    val start = System.currentTimeMillis
-
-    databaseResults.foldLeft(tree)((t,l) => insertInputsIntoTree(l._2,t))
-
-    println("Values inserted")
-
-  }
-
-  def saveTree(tree: DisjointSets[Hash]): Int =
-  {
-    val timeStart = System.currentTimeMillis
-    var queries: Vector[(Array[Byte], Array[Byte])] = Vector()
-    val totalElements = tree.elements.size
-    var counter = 0
-    var counterTotal = 0
-
-    println("DEBUG: Saving tree to database...")
-    var counterFinal = 0
-    tree.elements.keys.foldLeft(tree){(t,value) =>
-      val (parentOption, newTree) = tree.find(value)
-      for (parent <- parentOption )
-        {
-          queries +:= (value.array.toArray, parent.array.toArray)
-        }
-
-      counter += 1
-      counterTotal += 1
-      counterFinal += 1
-      if (counter == closureTransactionSize)
-      {
-        saveElementsToDatabase(queries, counter)
-        queries = Vector()
-        counter = 0
-      }
-      if (counterFinal % 1000000 == 0) {
-        counterFinal = 0
-        println("DEBUG: Saved until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/(counterTotal+1)))
-      }
-      newTree
-    }
-
-    println("DONE: Saved until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/(counterTotal+1)))
-
-    saveElementsToDatabase(queries, counter)
-
-    totalElements
-  }
-
-  def saveElementsToDatabase(queries: Vector[(Array[Byte], Array[Byte])], counter: Int): Unit =
-  {
-    val start = System.currentTimeMillis
-    transactionDBSession {
-      try{ addresses.insertAll(queries: _*) } catch {
-        case e: java.sql.BatchUpdateException => throw(e.getNextException)
-
-      }
-    }
-  }
   println("applying closure ")
   val timeStart = System.currentTimeMillis
 
-  val countSave = saveTree(adaptTreeIfNecessary(generateTree))
+  val countSave = saveTree(generateTree)
 
   val totalTime = System.currentTimeMillis - timeStart
 

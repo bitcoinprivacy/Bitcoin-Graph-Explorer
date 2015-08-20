@@ -53,6 +53,17 @@ trait BitcoinDB {
         `index` = """ + index).list.head > 0
     }
 
+  def txListQuery(blocks: Seq[Int]) = {
+    val emptyArray = Hash.zero(0).array.toArray
+    transactionDBSession {
+      for (q <- movements.filter(_.height_out inSet blocks).filter(_.address =!= emptyArray))
+      yield (q.spent_in_transaction_hash, q.address)
+      // in order to read quickly from db, we need to read in the order of insertion
+    }
+  }
+  //  val txList = Compiled(txListQuery _) doesn't work with inSet
+
+
   def initializeReaderTables: Unit =
   {
     transactionDBSession{
