@@ -39,24 +39,10 @@ object LmdbMap
 class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
     extends collection.mutable.Map[Hash,Hash] with collection.mutable.MapLike[Hash,Hash, LmdbMap]{
 
-  var currentTransactionSize = 0
-
-  // File dir = new File("/tmp/mdb");
-  // //setLmdbLibraryPath();
-  // valueVal = new JNI.MDB_val();
-  // keyVal = new JNI.MDB_val();
-  // recreateDir(dir);
- // var env = new Env();
-//  env.open(dir.getAbsolutePath());
-//  env.setMapSize(4_294_967_296L);
-//  database = env.openDatabase("test");
-
-
   var env = new Env()
   env.open(conf.getString("mdb.path") + "/" + name, NOSYNC)
   env.setMapSize(1024 * 1024 * 1024 * 1024L) // 1TB
   var db = env.openDatabase("test")
-  //var tx = env.createWriteTransaction
 
   // TODO: review why it is not working to use tx directly instead of caching the elements
   val cache: Map[Hash,Hash] = Map.empty
@@ -83,21 +69,8 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
     this
   }
 
-  def getFromDB(key: Hash): Option[Hash] = {
-
-    (if (tx != None)
-      db.get(tx.get, key)
-    else
-      db.get(key)
-    ) match {
-      case null => None
-      case e => Some(Hash(e))
-    }
-  }
-
   // Members declared in scala.collection.MapLike
   def get(key: Hash): Option[Hash] = cache.get(key).orElse(getFromDB(key))
-
 
   var tx: Option[Transaction] = None
 
@@ -113,53 +86,28 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
   }
 
 
+  def getFromDB(key: Hash): Option[Hash] = {
+    val result = tx match { // check if we have a read tx open
+      case Some(tx) =>
+        db.get(tx, key)
+      case None =>
+        db.get(key)
+    }
+    result match {
+      case null => None
+      case e => Some(Hash(e))
+    }
+  }
+
 
   def commit = {
     val t = System.currentTimeMillis
-      val tx = env.createWriteTransaction
-       for (kv <- cache.toVector.sortBy(_._1)) //sort before insertion, this might be faster
-         db.put(tx, kv._1, kv._2)
-      tx.commit
-      println("commit took " + (System.currentTimeMillis - t) + " ms")
+    val tx = env.createWriteTransaction
+    for (kv <- cache.toVector.sortBy(_._1)) //sort before insertion, this might be faster
+      db.put(tx, kv._1, kv._2)
+    tx.commit
+    println("commit took " + (System.currentTimeMillis - t) + " ms")
     cache.clear
   }
-  //override def get(key: A): Option[B] = ???
-  //override def iterator: Iterator[(A, B)] = ???
-  //override def + [B1 >: B](kv: (A, B1)): LmdbMap[A,B] = ???
-  //override def -(key: A): LmdbMap[A,B] = ???
 
 }
-
-// Opening and closing the database.
-
-// try (Env env = new Env("/tmp/mydb")) {
-//   try (Database db = env.openDatabase()) {
-//     ... // use the db
-//   }
-// }
-// Putting, getting, and deleting key/values.
-
-// db.put(bytes("Tampa"), bytes("rocks"));
-// String value = string(db.get(bytes("Tampa")));
-// db.delete(bytes("Tampa"));
-// Iterating and seeking key/values forward and backward.
-
-// try (EntryIterator it = db.iterate()) {
-//   for (Entry next : it.iterable()) {
-//   }
-// }
-
-// try (EntryIterator it = db.iterateBackward()) {
-//   for (Entry next : it.iterable()) {
-//   }
-// }
-
-// byte[] key = bytes("London");
-// try (EntryIterator it = db.seek(key)) {
-//   for (Entry next : it.iterable()) {
-//   }
-// }
-
-// try (EntryIterator it = db.seekBackward(key))) {
-// ransaction tx = -----------------env.createWriteTransaction()) {
-
