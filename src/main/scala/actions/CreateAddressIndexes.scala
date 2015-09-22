@@ -11,9 +11,17 @@ object CreateAddressIndexes {
   val time = System.currentTimeMillis
 
   transactionDBSession {
-    (Q.u + "create index representant on addresses (representant)").execute
-    (Q.u + "create unique index hash on addresses (hash)").execute
-  }
+    for (query <- List(
+      "create index representant on addresses (representant)",
+        "create unique index hash on addresses (hash)"
+    ))
+    {
+      Q.updateNA(query).execute
+      println("DEBUG: Finished "+ query)
+    }
+
+
+   }
 
   println("DONE: Indexes created in %s s" format (System.currentTimeMillis - time)/1000)
 

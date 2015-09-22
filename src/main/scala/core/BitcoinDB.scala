@@ -17,6 +17,8 @@ trait BitcoinDB {
   def richestClosures = TableQuery[RichestClosures]
   def stats = TableQuery[Stats]
   def utxo = TableQuery[UTXO]
+  def balances = TableQuery[Balances]
+  def closureBalances = TableQuery[ClosureBalances]
 
   def USERNAME = conf.getString("username")
   def PASSWORD = conf.getString("password")
@@ -78,6 +80,17 @@ trait BitcoinDB {
     transactionDBSession{
       deleteIfExists(addresses)
       addresses.ddl.create
+    }
+  }
+
+  def initializeBalanceTable: Unit = {
+    transactionDBSession{
+      deleteIfExists(balances, stats, richestAddresses, richestClosures, closureBalances)
+      balances.ddl.create
+      stats.ddl.create
+      richestAddresses.ddl.create
+      richestClosures.ddl.create
+      closureBalances.ddl.create
     }
   }
 }

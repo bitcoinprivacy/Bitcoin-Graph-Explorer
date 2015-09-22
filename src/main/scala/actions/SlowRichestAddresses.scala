@@ -22,10 +22,10 @@ object SlowRichestAddresses extends BitcoinDB {
         into richest_addresses
        select
         (select max(block_height) from blocks) as block_height,
-        hash,
+       address,
         balance
       from
-        addresses
+        balances
       order by
         balance desc
       limit 1000

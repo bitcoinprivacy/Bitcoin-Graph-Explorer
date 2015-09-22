@@ -7,36 +7,32 @@ import core.BitcoinDB
 /**
  * Created by yzark on 15.12.14.
  */
-object SlowStatistics extends BitcoinDB {
+class SlowStatistics(addressGini: Double, closureGini: Double) extends BitcoinDB {
   // TODO: write output
-  def apply = {
+
     println("DEBUG: Calculating stats...")
 
-    val startTIme = System.currentTimeMillis
+    val startTime = System.currentTimeMillis
     transactionDBSession {
-      (Q.u +  """
+      val query =   """
        insert
-        into stats
-       select
+        into stats select
         (select max(block_height) from blocks),
-        sum(balance)/100000000,
+        (select sum(balance)/100000000 from balances),
         (select sum(txs) from blocks),
         (select count(1) from addresses),
         (select count(distinct(representant)) from addresses),
-        count(1),
-        count(distinct(representant)),
-        (select count(1) from addresses where balance > 546),
-        (select count(distinct(representant)) from addresses where balance > 546),
-        0,
-        0,
-        """+ (System.currentTimeMillis/1000).toString +"""
-      from
-        addresses
-      where
-        balance > 0
-    ;""").execute
+        (select count(1) from balances),
+        (select count(1) from closure_balances),
+        (select count(1) from balances where balance > 546),
+        (select count(1) from closure_balances where balance > 546),
+        """+closureGini.toString+""",
+        """+addressGini.toString+""",
+        """+ (System.currentTimeMillis/1000).toString +""";"""
+      println(query)
 
-      println("DONE: Stats calculated in " + (System.currentTimeMillis - startTIme)/1000 + "s");
-    }
+  (Q.u + query).execute
+      println("DONE: Stats calculated in " + (System.currentTimeMillis - startTime)/1000 + "s");
+
   }
 }

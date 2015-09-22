@@ -12,25 +12,17 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 object FastAddressBalance extends BitcoinDB {
   var clock = System.currentTimeMillis
   transactionDBSession {
-    println("DEBUG: Updating addresses ...")
-    Q.updateNA("" +
-      " UPDATE IGNORE" +
-      "  addresses " +
-      "SET" +
-      " balance = (select sum(value) from movements where spent_in_transaction_hash is null and address = addresses.hash group by address) " +
-      ";").execute
 
-    Q.updateNA("INSERT IGNORE " +
-      " INTO addresses select " +
-      "   address, address, sum(value) " +
-      " FROM " +
-      "   movements " +
-      " WHERE " +
-      " spent_in_transaction_hash is null group by address" +
-      ";").execute;
+    Q.updateNA("insert into balances select address, sum(value) as balance from utxo group by address;").execute
 
-    (Q.u + "create index addresses_balance on addresses(balance)").execute
+    (Q.u + "create index addresses_balance on balances(address)").execute
+    (Q.u + "create index balance on balances(balance)").execute
 
-    println("DONE: Addresses updated in %s s" format (System.currentTimeMillis - clock)/1000)
+    Q.updateNA("insert into closure_balances select a.representant, sum(b.balance) as balance from balances b, addresses a where b.address = a.hash group by a.representant;").execute
+
+    (Q.u + "create index addresses_balance_2 on closure_balances(representant)").execute
+    (Q.u + "create index balance_2 on closure_balances(balance)").execute
+
+    println("DONE: Balances updated in %s s" format (System.currentTimeMillis - clock)/1000)
   }
 }

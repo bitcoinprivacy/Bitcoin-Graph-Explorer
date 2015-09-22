@@ -34,7 +34,7 @@ package object util extends BitcoinDB
 
 
 
-  def toArrayBuf[A:IntOrLong](x:A, INTBYTES:Int = 4)(implicit f:IntOrLong[A]): ArrayBuffer[Byte] = {
+  def toArrayBuf[A:IntOrLong](x:A)(implicit f:IntOrLong[A]): ArrayBuffer[Byte] = {
     val buf = new ArrayBuffer[Byte](f.length)
     for(i <- 0 until f.length) {
       buf += f.&(f.>>>(x,(f.length - i - 1 << 3)), 0xFF).toByte

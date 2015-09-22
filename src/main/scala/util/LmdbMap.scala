@@ -103,7 +103,7 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
   def commit = {
     val t = System.currentTimeMillis
     val tx = env.createWriteTransaction
-    for (kv <- cache.toVector.sortBy(_._1)) //sort before insertion, this might be faster
+    for (kv <- cache)
       db.put(tx, kv._1, kv._2)
     tx.commit
     println("commit took " + (System.currentTimeMillis - t) + " ms")

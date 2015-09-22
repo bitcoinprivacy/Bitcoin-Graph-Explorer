@@ -7,10 +7,10 @@ import util._
 import util.Hash._
 
 
-object PopulateBlockReader extends FastBlockReader
+object PopulateBlockReader extends FastBlockReader with core.BitcoinDRawFileBlockSource
 {
   // txhash -> ((index -> (address,value)),blockIn)
-  override lazy val table: LmdbMap = LmdbMap.create("utxos")
+  override val table: LmdbMap = LmdbMap.create("utxos")
 
   override def post = {
     saveUnmatchedOutputs

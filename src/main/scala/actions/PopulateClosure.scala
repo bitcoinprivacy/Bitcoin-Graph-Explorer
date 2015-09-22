@@ -6,10 +6,11 @@ import scala.slick.driver.JdbcDriver.simple._
 import scala.slick.jdbc._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import util._
+import Hash._
 
 class PopulateClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeights)
 {
-  val table = LmdbMap.create("closures")
+  lazy val table = LmdbMap.create("closures")
   override lazy val unionFindTable = new ClosureMap(table)
 
   def saveTree(tree: DisjointSets[Hash]): Int =
@@ -22,12 +23,15 @@ class PopulateClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHei
 
     println("DEBUG: Saving tree to database...")
     var counterFinal = 0
-    tree.elements.keys.foldLeft(tree){(t,value) =>
-      val (parentOption, newTree) = tree.find(value)
-      for (parent <- parentOption )
-        {
-          queries +:= (value.array.toArray, parent.array.toArray)
-        }
+    // tree.elements.keys.foldLeft(tree){(t,value) =>
+    //   val (parentOption, newTree) = tree.find(value)
+    //   for (parent <- parentOption )
+    table.commit
+
+    for (key <- tree.elements.keys)
+    {
+      val parent = tree.onlyFind(key) // this is a hack to only copy the db, without find improvements
+      queries +:= (hashToArray(key), hashToArray(parent))  // because it appears to be bad to iterate and write at the same time in lmdb
 
       counter += 1
       counterTotal += 1
@@ -42,7 +46,7 @@ class PopulateClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHei
         counterFinal = 0
         println("DEBUG: Saved until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/(counterTotal+1)))
       }
-      newTree
+      // newTree
     }
 
     println("DONE: Saved until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/(counterTotal+1)))

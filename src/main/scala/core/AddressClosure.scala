@@ -16,7 +16,7 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import java.lang.System
 import java.util.Calendar
 
-class AddressClosure(blockHeights: Vector[Int])
+abstract class AddressClosure(blockHeights: Vector[Int])
 {
   lazy val unionFindTable: Map[Hash,(Int,Hash)] = Map.empty
 

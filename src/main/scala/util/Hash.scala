@@ -3,7 +3,7 @@ package util
 import scala.collection._
 
 @SerialVersionUID(100L)
-class Hash(val array: mutable.WrappedArray[Byte]) extends AnyVal with Serializable {
+class Hash(val array: mutable.WrappedArray[Byte]) extends AnyVal {
   // this is a convenient, lightweight (value class) abstraction for
   // wrapped Arrays (which already have correct deep equals and hashCode)
   // fast toString/toHex methods adapted from xsbt/Mark Harrah

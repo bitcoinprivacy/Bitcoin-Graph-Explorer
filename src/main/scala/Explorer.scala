@@ -33,9 +33,18 @@ object Explorer extends App{
 
       closure((0 until blockCount).toVector)
 
+    case "fastStats"::rest =>
+
+      initializeBalanceTable
+      FastAddressBalance
+      val (a,b) = SlowAddressGini.execute
+      new SlowStatistics(a,b)
+      SlowRichestAddresses.apply
+      SlowRichestClosures.apply
+
     case "stats"::rest =>
 
-      SlowStatistics
+//      SlowStatistics(0,1)
 
     case "resume"::rest               =>
       resume
@@ -63,8 +72,8 @@ object Explorer extends App{
     case "index_1"::rest =>
       CreateIndexes
     case "gini"::rest =>
-      SlowAddressGini.apply
-      SlowClosureGini.apply
+      //SlowAddressGini.apply
+      //SlowClosureGini.apply
     case "bge"::rest =>
       import sys.process._
 

@@ -9,7 +9,7 @@ import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import util._
 
 // A FastBlockReader is a BlockReader that uses an UTXO set map
-class FastBlockReader(val table: mutable.Map[Hash,Hash] = LmdbMap.create("utxos")) extends BlockReader {
+abstract class FastBlockReader(val table: mutable.Map[Hash,Hash] = LmdbMap.create("utxos")) extends BlockReader {
 
   // (txhash,index) -> (address,value,blockIn)
   val outputMap: UTXOs = new UTXOs (table)

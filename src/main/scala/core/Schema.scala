@@ -62,6 +62,20 @@ class Addresses(tag:Tag) extends Table[(Array[Byte], Array[Byte])](tag, "address
   def * = (hash,representant)
 }
 
+class Balances(tag:Tag) extends Table[(Array[Byte], Long)](tag, "balances") {
+  def address= column[Array[Byte]]("address")
+  def balance = column[Long]("balance")
+
+  def * = (address,balance)
+}
+
+class ClosureBalances(tag:Tag) extends Table[(Array[Byte], Long)](tag, "closure_balances") {
+  def representant= column[Array[Byte]]("representant")
+  def balance = column[Long]("balance")
+
+  def * = (representant,balance)
+}
+
 class Movements(tag:Tag) extends Table[(Array[Byte], Array[Byte], Array[Byte], Int, Long, Int, Int)](tag, "movements") {
   def transaction_hash = column[Array[Byte]]("transaction_hash")
   // Address can be a single byte 00 plus 20-byte address, or a 2-hex number plus several addresses

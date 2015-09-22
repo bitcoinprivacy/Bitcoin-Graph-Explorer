@@ -22,13 +22,9 @@ object SlowRichestClosures extends BitcoinDB {
       select
         (select max(block_height) from blocks) as block_height,
         representant as address,
-        sum(balance) as balance
+        balance
       from
-        addresses
-      where
-        balance > 0
-      group by
-        representant
+        closure_balances
       order by
         balance desc
       limit 1000

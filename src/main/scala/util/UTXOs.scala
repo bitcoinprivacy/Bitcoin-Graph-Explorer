@@ -52,7 +52,7 @@ class UTXOs(val table: Map[Hash,Hash]) extends Map[(Hash,Int),(Hash,Long,Int)]
   override def empty = new UTXOs(Map())
 
   def toHash(h:Hash,i:Int) = new Hash(h.array ++ toArrayBuf(i))
-  def toHash(a:Hash,v:Long,b:Int) = new Hash((toArrayBuf(v,8) ++ toArrayBuf(b) ++ a.array).toArray)
+  def toHash(a:Hash,v:Long,b:Int) = new Hash((toArrayBuf(v) ++ toArrayBuf(b) ++ a.array).toArray)
 
 }
 
