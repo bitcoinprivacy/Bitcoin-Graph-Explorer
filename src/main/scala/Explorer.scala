@@ -36,10 +36,7 @@ object Explorer extends App {
     case "fastStats"::rest =>
 
       initializeStatsTables
-      createBalanceTables
-      insertStatistics
-      insertRichestAddresses
-      insertRichestClosures
+      makeNewStats
 
     case "stats"::rest =>
 
@@ -71,8 +68,8 @@ object Explorer extends App {
     case "index_1"::rest =>
       createIndexes
     case "gini"::rest =>
-      //SlowAddressGini.apply
-      //SlowClosureGini.apply
+      println("addresses: "+ getGini(balances))
+      println("closures: " + getGini(closureBalances))
     case "bge"::rest =>
       import sys.process._
 
@@ -86,6 +83,8 @@ object Explorer extends App {
         {
           println("Reading blocks from " +from + " to " +to)
           resume
+          println("DEBUG: making new stats")
+          makeNewStats
         }
         else
         {
@@ -124,5 +123,12 @@ object Explorer extends App {
 
   def resume = {
     new ResumeClosure((new ResumeBlockReader).processedBlocks)
+  }
+
+  def makeNewStats = {
+    createBalanceTables
+    insertStatistics
+    insertRichestAddresses
+    insertRichestClosures
   }
 }
