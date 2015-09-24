@@ -26,7 +26,7 @@ object Explorer extends App {
     case "populate"::rest             =>
       initializeReaderTables
       PopulateBlockReader
-      CreateIndexes
+      createIndexes
       closure(PopulateBlockReader.processedBlocks)
 
     case "closure"::rest             =>
@@ -35,12 +35,11 @@ object Explorer extends App {
 
     case "fastStats"::rest =>
 
-      initializeBalanceTable
-      FastAddressBalance
-      val (a,b) = SlowAddressGini.execute
-      new SlowStatistics(a,b)
-      SlowRichestAddresses.apply
-      SlowRichestClosures.apply
+      initializeStatsTables
+      createBalanceTables
+      insertStatistics
+      insertRichestAddresses
+      insertRichestClosures
 
     case "stats"::rest =>
 
@@ -65,12 +64,12 @@ object Explorer extends App {
       println("Wir waren geil")
 
     case "richest"::rest =>
-      SlowRichestClosures.apply
-      SlowRichestAddresses.apply
+      insertRichestAddresses
+      insertRichestClosures
     case "index_2"::rest =>
-      CreateAddressIndexes
+      createAddressIndexes
     case "index_1"::rest =>
-      CreateIndexes
+      createIndexes
     case "gini"::rest =>
       //SlowAddressGini.apply
       //SlowClosureGini.apply
@@ -119,7 +118,7 @@ object Explorer extends App {
   def closure(blockList:Vector[Int]) = {
     initializeClosureTables
     new PopulateClosure(blockList)
-    CreateAddressIndexes
+    createAddressIndexes
 
   }
 

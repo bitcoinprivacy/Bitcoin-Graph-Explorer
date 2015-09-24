@@ -3,6 +3,7 @@ package actions
 import scala.collection.JavaConversions._
 import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
+import core.FastBlockReader
 import util._
 import util.Hash._
 

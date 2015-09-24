@@ -42,7 +42,7 @@ class Stats(tag:Tag) extends Table[(Int, Int, Int, Int, Int, Int, Int, Int, Int,
 class RichestAddresses(tag:Tag) extends Table[(Int, Array[Byte], Long)](tag, "richest_addresses") {
   def block_height = column[Int]("block_height")
   def hash= column[Array[Byte]]("hash")
-  def balance= column[Long]("balance", O.Nullable)
+  def balance= column[Long]("balance")
   def * =  (block_height, hash, balance)
   def idx1 = index("idxx1", (block_height), unique = false)
 }
@@ -50,7 +50,7 @@ class RichestAddresses(tag:Tag) extends Table[(Int, Array[Byte], Long)](tag, "ri
 class RichestClosures(tag:Tag) extends Table[(Int, Array[Byte], Long)](tag, "richest_closures") {
   def block_height = column[Int]("block_height")
   def hash= column[Array[Byte]]("hash")
-  def balance= column[Long]("balance", O.Nullable)
+  def balance= column[Long]("balance")
   def * =  (block_height, hash, balance)
   def idx1 = index("idxx2", (block_height), unique = false)
 }
@@ -62,16 +62,18 @@ class Addresses(tag:Tag) extends Table[(Array[Byte], Array[Byte])](tag, "address
   def * = (hash,representant)
 }
 
-class Balances(tag:Tag) extends Table[(Array[Byte], Long)](tag, "balances") {
-  def address= column[Array[Byte]]("address")
+trait BalanceField { this: Table[_] =>
   def balance = column[Long]("balance")
+}
+
+class Balances(tag:Tag) extends Table[(Array[Byte], Long)](tag, "balances") with BalanceField {
+  def address= column[Array[Byte]]("address")
 
   def * = (address,balance)
 }
 
-class ClosureBalances(tag:Tag) extends Table[(Array[Byte], Long)](tag, "closure_balances") {
+class ClosureBalances(tag:Tag) extends Table[(Array[Byte], Long)](tag, "closure_balances") with BalanceField {
   def representant= column[Array[Byte]]("representant")
-  def balance = column[Long]("balance")
 
   def * = (representant,balance)
 }
