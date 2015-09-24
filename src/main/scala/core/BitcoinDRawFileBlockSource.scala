@@ -9,8 +9,10 @@ import scala.collection.convert.WrapAsScala._
 // In java that should be implements libs.BlockSource
 trait BitcoinDRawFileBlockSource extends BlockSource
 {
-  val params = MainNetParams.get
-  val context = new Context(params)
-  private val loader = new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)
+  def params = MainNetParams.get
+  
+  private lazy val loader = {val context = new Context(params) // had to put this here because of scala trait initialization madness
+    new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)}
+ 
   override def blockSource: Iterator[Block] = asScalaIterator(loader)
 }

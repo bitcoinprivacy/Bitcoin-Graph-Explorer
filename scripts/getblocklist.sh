@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 fromblocks=$(cat ../.bitcoin/blocklist.txt | wc -l)
 blocks=`expr $(bitcoin-cli getblockcount) - 5`
 

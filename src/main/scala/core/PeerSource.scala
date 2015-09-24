@@ -25,10 +25,9 @@ trait PeerSource extends BlockSource {
   peerGroup.waitForPeers(1).get();
   val peer = peerGroup.getConnectedPeers().get(0);
 
-  val lines = scala.io.Source.fromFile(blockHashListFile).getLines.drop(blockCount).take(100)
+  val lines = scala.io.Source.fromFile(blockHashListFile).getLines.drop(blockCount)
   override def blockSource = {
     val x = for (line <- lines) yield {
-
       val blockHash = Sha256Hash.wrap(line.toLowerCase);
       val future = peer.getBlock(blockHash);
       System.out.println("Waiting for node to send us the requested block: " + blockHash);

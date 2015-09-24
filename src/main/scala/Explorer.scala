@@ -10,7 +10,7 @@ import core._
  * Time: 12:36 PM
  * To change this template use File | Settings | File Templates.
  */
-object Explorer extends App{
+object Explorer extends App {
   args.toList match{
 
     case "test-addresses"::rest =>

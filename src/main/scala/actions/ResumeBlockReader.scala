@@ -10,7 +10,7 @@ import util.Hash._
 class ResumeBlockReader extends FastBlockReader with PeerSource
 {
   // txhash -> ((index -> (address,value)),blockIn)
-  override val table: LmdbMap = LmdbMap.open("utxos")
+  override lazy val table: LmdbMap = LmdbMap.open("utxos")
 
   override def removeUTXO(outpointTransactionHash: util.Hash, outpointIndex: Int): UTXOs = {
     val a:  Array[Byte] = outpointTransactionHash.array.toArray
