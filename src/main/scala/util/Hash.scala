@@ -18,7 +18,8 @@ class Hash(val array: mutable.WrappedArray[Byte]) extends AnyVal {
         buffer append toHex((bi >>> 4).asInstanceOf[Byte])
         buffer append toHex((bi & 0x0F).asInstanceOf[Byte])
       }
-      "X'" + buffer.toString + "'"
+      buffer.toString
+      
     }
   private def toHex(b: Byte): Char =
     {

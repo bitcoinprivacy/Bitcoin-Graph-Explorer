@@ -4,7 +4,7 @@ name := "Bitcoin Graph Explorer"
 
 version := "2.0"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.6"
 
 // additional libraries
 libraryDependencies ++= Seq(
