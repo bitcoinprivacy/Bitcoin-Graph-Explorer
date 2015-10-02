@@ -11,6 +11,7 @@ import util.Hash._
 object PopulateBlockReader extends FastBlockReader with core.BitcoinDRawFileBlockSource
 {
   // txhash -> ((index -> (address,value)),blockIn)
+  // need to override this here to get the specialized type
   override lazy val table: LmdbMap = LmdbMap.create("utxos")
 
   override def post = {
@@ -21,16 +22,16 @@ object PopulateBlockReader extends FastBlockReader with core.BitcoinDRawFileBloc
 
   def saveUnmatchedOutputs: Unit =
   {
-    for (i <- 0  until outputMap.size - populateTransactionSize by populateTransactionSize)
-    {
-      var vectorUTXO:  Vector[(Array[Byte], Array[Byte], Int, Long, Int)] = Vector()
-      for (((transactionHash,index), (address, value, blockHeight)) <- outputMap.slice(i, i+populateTransactionSize))
-      {
-          vectorUTXO +:= (transactionHash.array.toArray, address.array.toArray, index, value,blockHeight)
+    var vectorUTXO:  Vector[(Array[Byte], Array[Byte], Int, Long, Int)] = Vector()
+    for (((transactionHash,index), (address, value, blockHeight)) <- outputMap){
+      vectorUTXO +:= (transactionHash.array.toArray, address.array.toArray, index, value,blockHeight)
+      if (vectorUTXO.size == populateTransactionSize){
+        utxo.insertAll(vectorUTXO:_*)
+        vectorUTXO = Vector()
       }
-
-      utxo.insertAll(vectorUTXO:_*)
     }
+    utxo.insertAll(vectorUTXO:_*)
+
   }
 
 }

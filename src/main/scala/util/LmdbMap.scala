@@ -75,6 +75,7 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
   var tx: Option[Transaction] = None
 
   def iterator: Iterator[(Hash, Hash)] =  {
+    commit
 
     for (t <- tx){
       t.abort
@@ -108,6 +109,5 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
     tx.commit
     println("commit took " + (System.currentTimeMillis - t) + " ms")
     cache.clear
-  }
-
+  } 
 }

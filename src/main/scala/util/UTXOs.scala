@@ -5,7 +5,7 @@ import scala.collection.mutable._
 
 import java.nio.ByteBuffer
 
-class UTXOs(val table: Map[Hash,Hash]) extends Map[(Hash,Int),(Hash,Long,Int)]
+class UTXOs(table: =>  Map[Hash,Hash]) extends Map[(Hash,Int),(Hash,Long,Int)]
     with MapLike[(Hash,Int),(Hash,Long,Int),UTXOs] { // we put the address last in the array because it is variable length
 
   def toTriple(hash: Hash) = {
@@ -26,6 +26,8 @@ class UTXOs(val table: Map[Hash,Hash]) extends Map[(Hash,Int),(Hash,Long,Int)]
         this
     }
   }
+
+
 
   def -=(key: (util.Hash, Int)): UTXOs.this.type = {
     key match {

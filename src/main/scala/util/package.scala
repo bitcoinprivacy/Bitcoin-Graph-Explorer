@@ -11,18 +11,18 @@ import collection.mutable.ArrayBuffer
 
 package object util extends BitcoinDB
 {
-  val conf = ConfigFactory.load()
+  lazy val conf = ConfigFactory.load()
 
-  val closureTransactionSize = conf.getInt("closureTransactionSize")
-  val closureReadSize = conf.getInt("closureReadSize")
-  val populateTransactionSize = conf.getInt("populateTransactionSize")
-  val balanceTransactionSize = conf.getInt("balanceTransactionSize")
-  val blockHashListFile= conf.getString("blockHashListFile")
-  val dustLimit = conf.getLong("dustLimit")
+  lazy val closureTransactionSize = conf.getInt("closureTransactionSize")
+  lazy val closureReadSize = conf.getInt("closureReadSize")
+  lazy val populateTransactionSize = conf.getInt("populateTransactionSize")
+  lazy val balanceTransactionSize = conf.getInt("balanceTransactionSize")
+  lazy val blockHashListFile= conf.getString("blockHashListFile")
+  lazy val dustLimit = conf.getLong("dustLimit")
 
   println(blockHashListFile)
 
-  val arrayNull = Hash.zero(1).array.toArray
+  lazy val arrayNull = Hash.zero(1).array.toArray
 
 
   def getLongestBlockChainHashSet: Map[Hash,Int] =
