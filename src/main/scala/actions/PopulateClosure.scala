@@ -64,11 +64,9 @@ class PopulateClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHei
     transactionDBSession {
       try{ addresses.insertAll(queries: _*) } catch {
         case e: java.sql.BatchUpdateException => throw(e.getNextException)
-
       }
     }
   }
-
 }
 
 

@@ -27,6 +27,7 @@ class Stats(tag:Tag) extends Table[(Int, Int, Int, Int, Int, Int, Int, Int, Int,
   def total_bitcoins_in_addresses = column[Int]("total_bitcoins_in_addresses")
   def total_transactions = column[Int]("total_transactions")
   def total_addresses = column[Int]("total_addresses")
+  //def total_closured_addresses = column[Int]("total_closured_addresses")
   def total_closures = column[Int]("total_closures")
   def total_addresses_with_balance = column[Int]("total_addresses_with_balance")
   def total_closures_with_balance = column[Int]("total_closures_with_balance")

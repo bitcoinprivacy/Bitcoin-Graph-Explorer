@@ -28,7 +28,7 @@ abstract class FastBlockReader extends BlockReader {
   def saveTransaction(trans: Transaction, blockHeight: Int) =
   {
     val transactionHash = Hash(trans.getHash.getBytes)
-
+    println("saving transaction from block " + transactionHash)
     val addresses =
       for {
         input <- inputsInTransaction(trans)

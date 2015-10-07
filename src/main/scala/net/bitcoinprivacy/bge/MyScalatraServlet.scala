@@ -49,10 +49,6 @@ class MyScalatraServlet extends BgeStack  with JacksonJsonSupport  {
     Movement.getMovements(Hash(hexAddress(params("ad"))),1)
   }
 
-  get("/movements/:ad") {
-    Movement.getMovements(Hash(hexAddress(params("ad"))),1)
-  }
-
   get("/inputs/:tx") {
     Movement.getInputs(Hash(hex2bytes(params("tx"))),1)
   }
@@ -61,7 +57,7 @@ class MyScalatraServlet extends BgeStack  with JacksonJsonSupport  {
     Movement.getOutputs(Hash(hex2bytes(params("tx"))),1)
   }
 
- 
+  get("/stats") {Stats.getStats}
 
   def hexAddress(stringAddress: String): String = {
     val arrayAddress = stringAddress.split(",")

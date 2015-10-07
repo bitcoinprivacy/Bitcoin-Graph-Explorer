@@ -77,11 +77,11 @@ object Explorer extends App {
       {
         val cmd = Seq("cat", "/root/.bitcoin/blocklist.txt") #| Seq( "wc", "-l")
         val from = blockCount
-        val to = Integer.parseInt(cmd.lines.head, 10) - 1
-
-        if (to > from+2)
+        val to = Integer.parseInt(cmd.lines.head, 10)
+        println("From " + from + " to " + to)
+        if (to > from)
         {
-          println("Reading blocks from " +from + " to " +to)
+          println("Reading blocks from " + (from-1) + " to " +(to-1))
           resume
           println("DEBUG: making new stats")
           makeNewStats

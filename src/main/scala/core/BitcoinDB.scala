@@ -107,7 +107,7 @@ trait BitcoinDB {
         (Q.u + "create index balance on balances(balance)").execute
 
       Q.updateNA("insert into closure_balances select a.representant, sum(b.balance) as balance from balances b, addresses a where b.address = a.hash group by a.representant;").execute
-
+      //Q.updateNA("insert into closure_balances select a.address, a.balance from balances a left outer join  addresses b on a.address = b.hash where b.representant is null").execute
       (Q.u + "create index addresses_balance_2 on closure_balances(representant)").execute
         (Q.u + "create index balance_2 on closure_balances(balance)").execute
 
@@ -171,6 +171,7 @@ trait BitcoinDB {
         (select max(block_height) from blocks),
         (select sum(balance)/100000000 from balances),
         (select sum(txs) from blocks),
+        
         (select count(1) from addresses),
         (select count(distinct(representant)) from addresses),
         (select count(1) from balances),
@@ -189,8 +190,9 @@ trait BitcoinDB {
 
   def getGini[A <: Table[_] with BalanceField](balanceTable: TableQuery[A]): (Long, Double) = {
     println("DEBUG: calculating Gini: " + balanceTable + java.util.Calendar.getInstance().getTime())
-
-    val balanceVector = balanceTable.map(_.balance).filter(_ > dustLimit).sorted.run.toVector
+    val balanceVector = transactionDBSession {
+       balanceTable.map(_.balance).filter(_ > dustLimit).sorted.run.toVector
+    }
     val balances = balanceVector.map(_.toDouble)
     
     val n: Long = balances.length
@@ -241,7 +243,8 @@ trait BitcoinDB {
              "create index height_out_in on movements (height_out, height_in);",
              "create index address_utxo on utxo (address)",
              "create index height_utxo on utxo (block_height)",
-             "create index  block_height on blocks(block_height);"))
+             "create index tx_utxo on utxo (transaction_hash, index)",
+              "create index  block_height on blocks(block_height);"))
 
       {
         Q.updateNA(query).execute
