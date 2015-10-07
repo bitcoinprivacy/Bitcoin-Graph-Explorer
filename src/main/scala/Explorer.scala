@@ -28,6 +28,9 @@ object Explorer extends App {
       PopulateBlockReader
       createIndexes
       closure(PopulateBlockReader.processedBlocks)
+      initializeStatsTables
+      makeNewStats
+
 
     case "closure"::rest             =>
 
@@ -75,6 +78,7 @@ object Explorer extends App {
 
       while (new java.io.File("/root/Bitcoin-Graph-Explorer/blockchain/lock").exists)
       {
+        "/root/Bitcoin-Graph-Explorer/scripts/getblocklist.sh".!
         val cmd = Seq("cat", "/root/.bitcoin/blocklist.txt") #| Seq( "wc", "-l")
         val from = blockCount
         val to = Integer.parseInt(cmd.lines.head, 10)
