@@ -11,7 +11,7 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
 
   lazy val table = LmdbMap.open("closures")
   override lazy val unionFindTable = new ClosureMap(table)
-  val startTableSize = unionFindTable.size
+  
 
   override def insertInputsIntoTree(addressList: Iterable[Hash], tree: DisjointSets[Hash]): DisjointSets[Hash] =
   {
@@ -46,8 +46,9 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
 
   override def saveTree(tree: DisjointSets[Hash]): Int =  // don't replace the postgres DB
   {
-    table.commit // but don't forget to flush
-    tree.elements.size - startTableSize // return the number of new elements in the union-find structure
+    val no = tree.elements.size - startTableSize // return the number of new elements in the union-find structure
+    table.close // but don't forget to flush
+    no
   }
 
 }

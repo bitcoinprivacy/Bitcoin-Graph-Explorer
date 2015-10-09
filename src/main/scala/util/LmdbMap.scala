@@ -109,5 +109,10 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
     tx.commit
     println("commit took " + (System.currentTimeMillis - t) + " ms")
     cache.clear
-  } 
+  }
+
+  def close = {
+    commit
+    env.close
+  }
 }

@@ -51,7 +51,7 @@ abstract class AddressClosure(blockHeights: Vector[Int])
 
   println("applying closure ")
   val timeStart = System.currentTimeMillis
-
+  val startTableSize = unionFindTable.size
   val countSave = saveTree(generateTree)
 
   val totalTime = System.currentTimeMillis - timeStart

@@ -17,7 +17,7 @@ object PopulateBlockReader extends FastBlockReader with core.BitcoinDRawFileBloc
   override def post = {
     saveUnmatchedOutputs
     super.post
-    table.commit
+    table.close
   }
 
   def saveUnmatchedOutputs: Unit =

@@ -53,7 +53,7 @@ class PopulateClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHei
 
     saveElementsToDatabase(queries, counter)
 
-    table.commit
+    table.close
 
     totalElements
   }

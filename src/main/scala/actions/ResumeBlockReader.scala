@@ -16,7 +16,6 @@ class ResumeBlockReader extends FastBlockReader with PeerSource
     val a:  Array[Byte] = outpointTransactionHash.array.toArray
     val query = utxo.filter(p => (p.transaction_hash === a && p.index === outpointIndex))
     query.delete
-
     outputMap -= (outpointTransactionHash -> outpointIndex)
 
   }
@@ -29,8 +28,7 @@ class ResumeBlockReader extends FastBlockReader with PeerSource
   override def post = {
     println("finishing ...")
     super.post
-    table.commit
+    table.close
     stop
   }
-
 }
