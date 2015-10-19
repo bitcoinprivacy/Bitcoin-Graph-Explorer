@@ -19,4 +19,12 @@ trait BgeStack extends ScalatraServlet with ScalateSupport {
     } orElse serveStaticResource() getOrElse resourceNotFound()
   }
 
+  error {
+    case e: Throwable => {
+      List(e.toString)
+    
+    }
+  
+  }
+
 }

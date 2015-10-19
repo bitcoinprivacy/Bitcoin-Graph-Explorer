@@ -40,19 +40,13 @@ class Stats(tag:Tag) extends Table[(Int, Int, Int, Int, Int, Int, Int, Int, Int,
   def * =  (block_height, total_bitcoins_in_addresses, total_transactions, total_addresses, total_closures, total_addresses_with_balance, total_closures_with_balance, total_addresses_no_dust, total_closures_no_dust, gini_closure, gini_address, tstamp)
 }
 
-class RichestAddresses(tag:Tag) extends Table[(Int, Array[Byte], Long)](tag, "richest_addresses") {
-  def block_height = column[Int]("block_height")
-  def hash= column[Array[Byte]]("hash")
-  def balance= column[Long]("balance")
+class RichestAddresses(tag:Tag) extends Table[(Int, Array[Byte], Long)](tag, "richest_addresses") with HashField with BalanceField with BlockHeightField {
   def * =  (block_height, hash, balance)
   def idx1 = index("idxx1", (block_height), unique = false)
 }
 
-class RichestClosures(tag:Tag) extends Table[(Int, Array[Byte], Long)](tag, "richest_closures") {
-  def block_height = column[Int]("block_height")
-  def hash= column[Array[Byte]]("hash")
-  def balance= column[Long]("balance")
-  def * =  (block_height, hash, balance)
+class RichestClosures(tag:Tag) extends Table[(Int, Array[Byte], Long)](tag, "richest_closures") with HashField with BalanceField with BlockHeightField {
+    def * =  (block_height, hash, balance)
   def idx1 = index("idxx2", (block_height), unique = false)
 }
 
@@ -66,6 +60,15 @@ class Addresses(tag:Tag) extends Table[(Array[Byte], Array[Byte])](tag, "address
 trait BalanceField { this: Table[_] =>
   def balance = column[Long]("balance")
 }
+
+trait HashField  { this: Table[_] =>
+  def hash = column[Array[Byte]]("hash")
+}
+
+trait BlockHeightField  { this: Table[_] =>
+  def block_height = column[Int]("block_height")
+}
+
 
 class Balances(tag:Tag) extends Table[(Array[Byte], Long)](tag, "balances") with BalanceField {
   def address= column[Array[Byte]]("address")

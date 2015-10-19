@@ -51,10 +51,8 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
   override def empty: LmdbMap = new LmdbMap
 
   def -=(key: Hash): LmdbMap.this.type = {
-    if (cache.contains(key))
-      cache -= key
-    else
-      db.delete(key)
+    cache -= key
+    db.delete(key)
 
     this
   }
@@ -74,16 +72,31 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
 
   var tx: Option[Transaction] = None
 
-  def iterator: Iterator[(Hash, Hash)] =  {
-    commit
-
-    for (t <- tx){
-      t.abort
+  implicit class OurIterator(i: Iterator[(Hash,Hash)]) extends Iterator[(Hash, Hash)]{
+    override def hasNext = {
+      if (!i.hasNext){
+        for (t <- tx)
+          t.abort
+        tx = None
+        false
+      }
+      else
+        true
     }
 
+    override def next = i.next
+  }
+
+  def iterator: OurIterator =  {
+    commit
+
+    for (t <- tx)
+      t.abort
+
     tx = Some(env.createReadTransaction)
-    asScalaIterator(db.iterate(tx.get))map (
-      p => (Hash(p.getKey), Hash(p.getValue)))
+   
+    asScalaIterator(db.iterate(tx.get)) map (
+        p => (Hash(p.getKey), Hash(p.getValue)))
   }
 
 

@@ -12,7 +12,7 @@ import org.bitcoinj.core.{Address => BitcoinJAddress}
 import org.bitcoinj.params.MainNetParams
 
 
-class MyScalatraServlet extends BgeStack  with JacksonJsonSupport  {
+class MyScalatraServlet extends BgeStack  with core.BitcoinDB with JacksonJsonSupport  {
 
   protected implicit lazy val jsonFormats: Formats = DefaultFormats
 
@@ -32,32 +32,55 @@ class MyScalatraServlet extends BgeStack  with JacksonJsonSupport  {
     </html>
   }
 
-  get("/blocks") {
-    Block.getBlocks(1)
+  implicit def paramConv(pName: String) = params(pName).toInt
+  def ad = Hash(hexAddress(params("ad")))
+  def tx = Hash(hex2bytes(params("tx")))
+  def from = "from"
+  def until = "until" 
+  // BLOCKS
+
+  get("/blocks/:from/:until") {
+    Block.getBlocks(from, until)
   }
 
-  get("/utxos/:ad") {
-    UTXO.getUTXOs(Hash(hexAddress(params("ad"))),1)
+  get("/blocks/summary"){
+    Block.getSummary
   }
 
-  get("/tx_utxos/:tx") {
-    UTXO.getUTXOsByTransaction(Hash(hex2bytes(params("tx"))),1)
+  get("/utxos/:ad/:from/:until") {
+    UTXO.getUTXOs(ad,from,until)
+  }
+
+  get("/tx_utxos/:tx/:from/:until") {
+    UTXO.getUTXOsByTransaction(tx,from,until)
   }
 
 
-  get("/movements/:ad") {
-    Movement.getMovements(Hash(hexAddress(params("ad"))),1)
+  get("/movements/:ad/:from/:until") {
+    Movement.getMovements(ad,from,until)
   }
 
-  get("/inputs/:tx") {
-    Movement.getInputs(Hash(hex2bytes(params("tx"))),1)
+  get("/inputs/:tx/:from/:until") {
+    Movement.getInputs(tx,from,until)
   }
 
-  get("/outputs/:tx") {
-    Movement.getOutputs(Hash(hex2bytes(params("tx"))),1)
+  get("/outputs/:tx/:from/:until") {
+    Movement.getOutputs(tx,from,until)
   }
 
   get("/stats") {Stats.getStats}
+
+  get("/wallet/:ad/:from/:until"){
+    Address.getWallet(ad,from,until)
+  }
+
+  get("/richlist/:table/:from/:until") {
+    params("table") match {
+      case "addresses" => Address.getAddressList(richestAddresses,from,until)
+      case "wallets" => Address.getAddressList(richestClosures,from,until)
+      case _ => List()
+    }
+  }
 
   def hexAddress(stringAddress: String): String = {
     val arrayAddress = stringAddress.split(",")

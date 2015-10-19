@@ -45,7 +45,7 @@ abstract class AddressClosure(blockHeights: Vector[Int])
 
   def insertInputsIntoTree(addresses: Iterable[Hash], tree: DisjointSets[Hash]): DisjointSets[Hash] =
   {
-    val addedTree = addresses.foldLeft(tree)((t:DisjointSets[Hash],a:Hash) => t.add(a))
+    val addedTree = addresses.foldLeft(tree)((t:DisjointSets[Hash],a:Hash) => t add a)
     addedTree.union(addresses)
   }
 
