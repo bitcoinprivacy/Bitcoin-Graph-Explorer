@@ -31,8 +31,7 @@ class Hash(val array: mutable.WrappedArray[Byte]) extends AnyVal {
     }
 
   def toSomeArray = Some(array.toArray)
-
- }
+}
 
 object Hash {
   def apply(array: Array[Byte]): Hash = new Hash(array)

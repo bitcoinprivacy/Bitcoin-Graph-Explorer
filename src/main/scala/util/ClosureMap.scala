@@ -40,6 +40,7 @@ class ClosureMap(val table: Map[Hash,Hash]) extends Map[Hash,(Int,Hash)]
 
   def iterator = table.iterator map {case (h1,h2) => (h1,toTuple(h2))}
 
+  override def size = table.size
   override def empty = new ClosureMap(Map())
 
   def toHash(i: Int, h:Hash) = new Hash(toArrayBuf(i).toArray ++ h.array)

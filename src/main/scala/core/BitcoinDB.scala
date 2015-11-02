@@ -97,6 +97,7 @@ trait BitcoinDB {
   def createBalanceTables = {
     var clock = System.currentTimeMillis
     transactionDBSession {
+      println("DEBUG: Updating balances")
       deleteIfExists(balances, closureBalances)
       balances.ddl.create
       closureBalances.ddl.create
@@ -117,7 +118,7 @@ trait BitcoinDB {
 
   def insertRichestClosures = {
     println("DEBUG: Calculating richest closure list...")
-    
+    var startTime = System.currentTimeMillis
     transactionDBSession {
       Q.updateNA( """
       insert
@@ -132,12 +133,14 @@ trait BitcoinDB {
         balance desc
       limit 1000
       ;""").execute
+      println("RichestList calculated in " + (System.currentTimeMillis - startTime)/1000 + "s")
     }
   }
 
   def insertRichestAddresses = {
 
     println("DEBUG: Calculating richest address list...")
+    var startTime = System.currentTimeMillis
 
     transactionDBSession {
       Q.updateNA( """
@@ -153,6 +156,7 @@ trait BitcoinDB {
         balance desc
       limit 1000
     ;""").execute
+      println("RichestList calculated in " + (System.currentTimeMillis - startTime)/1000 + "s")
     }
   }
 
@@ -190,6 +194,8 @@ trait BitcoinDB {
 
   def getGini[A <: Table[_] with BalanceField](balanceTable: TableQuery[A]): (Long, Double) = {
     println("DEBUG: calculating Gini: " + balanceTable + java.util.Calendar.getInstance().getTime())
+    val time = System.currentTimeMillis
+
     val balanceVector = transactionDBSession {
        balanceTable.map(_.balance).filter(_ > dustLimit).sorted.run.toVector
     }
@@ -200,6 +206,7 @@ trait BitcoinDB {
     val summe = balances.sum
     val mainSum = balances.zipWithIndex.map(p => p._1*(p._2+1.0)/n).sum
     val gini:Double = 2.0*mainSum/(summe) - (n+1.0)/n
+    println("DONE: gini calculated in " + (System.currentTimeMillis - time)/1000 + "s")
     (n, gini)
   }
 

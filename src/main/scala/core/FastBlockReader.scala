@@ -130,9 +130,9 @@ abstract class FastBlockReader extends BlockReader {
 
   def saveBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long) = {
     val height = longestChain.getOrElse(b,0)
-    processedBlocks +:= height
-    println("DONE: Saved block " + height)
+    processedBlocks :+= height
     insertBlock(b, height, txs, btcs, tstamp)
+    println("DEBUG: Saving block " + height + " consisting of " + txs + " txs at " + java.util.Calendar.getInstance().getTime() )
   }
 
   def pre  = {
@@ -160,24 +160,18 @@ abstract class FastBlockReader extends BlockReader {
 
   def saveDataToDB: Unit =
   {
-    //println("DEBUG: Inserting data to database ...")
+    val amount = vectorBlocks.length + vectorMovements.length
+    println("DEBUG: Saving blocks/movements (" + amount + ")  into database ...")
 
-    if (vectorBlocks.length > 0)
-    {
-        val convertedVectorBlocks = vectorBlocks map { case (a,b,c,d,e) => (a.array.toArray,b,c,d,e) }
-        blockDB.insertAll(convertedVectorBlocks:_*)
-    }
-    if (vectorMovements.length > 0)
-    { def ohc(e:Option[Hash]):Array[Byte] = e.getOrElse(Hash.zero(0)).array.toArray
+    val convertedVectorBlocks = vectorBlocks map { case (a,b,c,d,e) => (a.array.toArray,b,c,d,e) }
+    blockDB.insertAll(convertedVectorBlocks:_*)
 
-        def vectorMovementsConverter[A,B,C,D](v:Vector[(Hash,Hash,Option[Hash],A,B,C,D)]) = v map {
-          case (a,b,c,d,e,f,g) => (Hash.hashToArray(a),Hash.hashToArray(b),ohc(c),d,e,f,g) }
-
-        val convertedVectorMovements = vectorMovementsConverter(vectorMovements)
-
-        movements.insertAll(convertedVectorMovements:_*)
-      }
-
+    def ohc(e:Option[Hash]):Array[Byte] = e.getOrElse(Hash.zero(0)).array.toArray
+    def vectorMovementsConverter[A,B,C,D](v:Vector[(Hash,Hash,Option[Hash],A,B,C,D)]) = v map {
+      case (a,b,c,d,e,f,g) => (Hash.hashToArray(a),Hash.hashToArray(b),ohc(c),d,e,f,g) }
+    val convertedVectorMovements = vectorMovementsConverter(vectorMovements)
+    movements.insertAll(convertedVectorMovements:_*)
+   
 
     vectorMovements = Vector()
     vectorBlocks = Vector()
@@ -185,10 +179,7 @@ abstract class FastBlockReader extends BlockReader {
     //println("DEBUG: Data inserted")
   }
 
-  def processSavedMovements(v: Vector[(Hash, Hash, Option[Hash], Int, Long, Int, Int)]): Unit = {}
-
-
-// block
+  // block
   def insertBlock(s: (Hash, Int, Int, Long, Long)) =
   {
     if (vectorMovements.length + vectorBlocks.length >= populateTransactionSize)

@@ -10,7 +10,7 @@ import scala.collection.JavaConverters._
 import scala.slick.driver.JdbcDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
-// extends libs.BlockSource means that it depends on a libs.BlockSource
+// extends BlockSource means that it depends on a BlockSource
 trait BlockReader extends BlockSource {
 
   def saveTransaction(transaction: Transaction, blockHeight: Int)
@@ -31,10 +31,10 @@ trait BlockReader extends BlockSource {
     pre
 
     val savedBlocks = for (b <- blockDB)
-      yield (b.hash)
+      yield b.hash
 
     for (c <- savedBlocks)
-      savedBlockSet = savedBlockSet + Hash(c)
+      savedBlockSet += Hash(c)
 
     process
     post
@@ -140,12 +140,14 @@ trait BlockReader extends BlockSource {
 
   def noAddressParsePossible(output: TransactionOutput) = {
     try {
-      println("ERROR:"+output.getParentTransaction.getHash+":"+output.getScriptPubKey.toString)
+      //println("ERROR:"+output.getParentTransaction.getHash+":"+output.getScriptPubKey.toString)
+      // TODO: save it to the database?
       None
     }
     catch {
       case e: Exception =>
-        println("ERROR:"+output.getParentTransaction.getHash+":"+e.getMessage)
+        //println("ERROR:"+output.getParentTransaction.getHash+":"+e.getMessage)
+        // TODO: save it to the database?
         None
     }
   }

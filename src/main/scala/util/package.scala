@@ -20,8 +20,6 @@ package object util extends BitcoinDB
   lazy val blockHashListFile= conf.getString("blockHashListFile")
   lazy val dustLimit = conf.getLong("dustLimit")
 
-  println(blockHashListFile)
-
   lazy val arrayNull = Hash.zero(1).array.toArray
 
 

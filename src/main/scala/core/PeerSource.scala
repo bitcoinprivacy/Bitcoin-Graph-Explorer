@@ -25,14 +25,14 @@ trait PeerSource extends BlockSource {
 
   lazy val addr = new PeerAddress(InetAddress.getLocalHost(), params.getPort());
   
-  lazy val lines = scala.io.Source.fromFile(blockHashListFile).getLines.drop(blockCount).take(1000)
+  lazy val lines = scala.io.Source.fromFile(blockHashListFile).getLines.drop(blockCount)
   override def blockSource = {
     peerGroup.start();
     peerGroup.addAddress(addr);
     peerGroup.waitForPeers(1).get();
     val peer = peerGroup.getConnectedPeers().get(0);
 
-    val x = for (line <- lines) yield {
+    for (line <- lines) yield {
       val blockHash = Sha256Hash.wrap(line.toLowerCase);
       val future = peer.getBlock(blockHash);
       System.out.println("Waiting for node to send us the requested block: " + blockHash);
@@ -41,7 +41,6 @@ trait PeerSource extends BlockSource {
 
     
 
-    x
   }
 
   def stop = {

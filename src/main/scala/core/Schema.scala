@@ -36,6 +36,7 @@ class Stats(tag:Tag) extends Table[(Int, Int, Int, Int, Int, Int, Int, Int, Int,
   def gini_closure = column[Double]("gini_closure")
   def gini_address = column[Double]("gini_address")
   def tstamp = column[Long]("tstamp")
+  
 
   def * =  (block_height, total_bitcoins_in_addresses, total_transactions, total_addresses, total_closures, total_addresses_with_balance, total_closures_with_balance, total_addresses_no_dust, total_closures_no_dust, gini_closure, gini_address, tstamp)
 }

@@ -72,22 +72,24 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
 
   var tx: Option[Transaction] = None
 
-  implicit class OurIterator(i: Iterator[(Hash,Hash)]) extends Iterator[(Hash, Hash)]{
+  implicit class TxAbortingIterator(i: Iterator[(Hash,Hash)]) extends Iterator[(Hash, Hash)]
+  {
     override def hasNext = {
-      if (!i.hasNext){
-        for (t <- tx)
+      val hN = i.hasNext
+
+      if (!hN)
+        for (t <- tx) {
           t.abort
-        tx = None
-        false
-      }
-      else
-        true
+          tx = None
+        }
+
+      hN
     }
 
     override def next = i.next
   }
 
-  def iterator: OurIterator =  {
+  def iterator: TxAbortingIterator =  {
     commit
 
     for (t <- tx)
@@ -99,6 +101,10 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
         p => (Hash(p.getKey), Hash(p.getValue)))
   }
 
+  override def size: Int ={
+    commit
+    db.stat.getEntries.toInt
+  }
 
   def getFromDB(key: Hash): Option[Hash] = {
     val result = tx match { // check if we have a read tx open

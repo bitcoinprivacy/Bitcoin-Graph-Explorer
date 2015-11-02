@@ -10,9 +10,9 @@ import org.scalatra.json._
 import net.bitcoinprivacy.bge.models._
 import org.bitcoinj.core.{Address => BitcoinJAddress}
 import org.bitcoinj.params.MainNetParams
+import org.scalatra.CorsSupport
 
-
-class MyScalatraServlet extends BgeStack  with core.BitcoinDB with JacksonJsonSupport  {
+class MyScalatraServlet extends BgeStack  with core.BitcoinDB with JacksonJsonSupport with CorsSupport {
 
   protected implicit lazy val jsonFormats: Formats = DefaultFormats
 
@@ -21,6 +21,9 @@ class MyScalatraServlet extends BgeStack  with core.BitcoinDB with JacksonJsonSu
   before() {
     contentType = formats("json")
   
+  }
+  options("/*"){
+    response.setHeader("Access-Control-Allow-Headers", request.getHeader("Access-Control-Request-Headers"));
   }
 
   get("/") {
@@ -35,6 +38,7 @@ class MyScalatraServlet extends BgeStack  with core.BitcoinDB with JacksonJsonSu
   implicit def paramConv(pName: String) = params(pName).toInt
   def ad = Hash(hexAddress(params("ad")))
   def tx = Hash(hex2bytes(params("tx")))
+  def block_height = "block_height"
   def from = "from"
   def until = "until" 
   // BLOCKS
@@ -68,18 +72,33 @@ class MyScalatraServlet extends BgeStack  with core.BitcoinDB with JacksonJsonSu
     Movement.getOutputs(tx,from,until)
   }
 
-  get("/stats") {Stats.getStats}
+  get("/stats") {
+    Stats.getAdvancedStats
+  }
+
+  get("/stats/historial") {
+//    response.setHeader("Access-Control-Allow-Headers", request.getHeader("Access-Control-Request-Headers"))
+    Stats.getStats
+  }
 
   get("/wallet/:ad/:from/:until"){
     Address.getWallet(ad,from,until)
   }
 
-  get("/richlist/:table/:from/:until") {
-    params("table") match {
-      case "addresses" => Address.getAddressList(richestAddresses,from,until)
-      case "wallets" => Address.getAddressList(richestClosures,from,until)
-      case _ => List()
-    }
+  get("/txs/:block_height/:from/:until"){
+    Transaction.get(block_height, from, until)
+  }
+
+  get("/txs/:block_height/summary"){
+    Block.getBlocks(block_height, (block_height: Int) + 1).headOption
+  }
+
+  get("/richlist/addresses/:from/:until") {
+    Address.getAddressList(richestAddresses,from,until)
+  }
+
+  get("/richlist/wallets/:from/:until") {
+    Address.getAddressList(richestClosures,from,until)  
   }
 
   def hexAddress(stringAddress: String): String = {

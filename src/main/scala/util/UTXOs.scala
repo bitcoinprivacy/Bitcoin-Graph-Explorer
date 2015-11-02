@@ -53,6 +53,8 @@ class UTXOs(table: =>  Map[Hash,Hash]) extends Map[(Hash,Int),(Hash,Long,Int)]
 
   override def empty = new UTXOs(Map())
 
+  override def size = table.size
+  
   def toHash(h:Hash,i:Int) = new Hash(h.array ++ toArrayBuf(i))
   def toHash(a:Hash,v:Long,b:Int) = new Hash((toArrayBuf(v) ++ toArrayBuf(b) ++ a.array).toArray)
 

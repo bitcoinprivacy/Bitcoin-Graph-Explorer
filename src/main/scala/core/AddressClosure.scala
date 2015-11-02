@@ -28,13 +28,14 @@ abstract class AddressClosure(blockHeights: Vector[Int])
 
     def addBlocks(startIndex: Int, tree: DisjointSets[Hash]): DisjointSets[Hash] = {
       val blocks = blockHeights.slice(startIndex,startIndex+step)
-      println("reading block " + startIndex + " " + Calendar.getInstance().getTime())
+      for (blockNo <- blocks.headOption)
+        println("reading " + blocks.length + " blocks from " + blockNo + " at " + Calendar.getInstance().getTime())
       val txAndAddressList = transactionDBSession { txListQuery(blocks).run.toVector }
       val addressesPerTxMap = txAndAddressList.groupBy(p=>Hash(p._1))
       val hashList = addressesPerTxMap.values map (_ map (p=>Hash(p._2)))
       val nontrivials = hashList filter (_.length > 1)
 
-      println("folding and merging " + nontrivials.size + Calendar.getInstance().getTime() )
+      println("folding and merging " + nontrivials.size + Calendar.getInstance().getTime())
       nontrivials.foldLeft (tree) ((t,l) => insertInputsIntoTree(l,t))
     }
 
