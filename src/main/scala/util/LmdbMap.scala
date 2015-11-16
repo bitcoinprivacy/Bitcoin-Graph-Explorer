@@ -113,6 +113,7 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
       case None =>
         db.get(key)
     }
+
     result match {
       case null => None
       case e => Some(Hash(e))

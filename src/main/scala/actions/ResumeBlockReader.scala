@@ -11,27 +11,34 @@ class ResumeBlockReader extends FastBlockReader with PeerSource
 {
   // txhash -> ((index -> (address,value)),blockIn)
   override lazy val table: LmdbMap = LmdbMap.open("utxos")
-
-  var deleteQuery = utxo.filter(_.transaction_hash === hashToArray(Hash.zero(0))) //should be empty
-  var deleteCounter = 0
+  lazy val changedAddresses: collection.mutable.Map[Hash, Long] = collection.mutable.Map()
+ // var deleteQuery = utxo.filter(_.transaction_hash === hashToArray(Hash.zero(0))) //should be empty
+ // var deleteCounter = 0
 
   override def removeUTXO(outpointTransactionHash: util.Hash, outpointIndex: Int): UTXOs = {
     val a:  Array[Byte] = outpointTransactionHash
-    deleteQuery ++ utxo.filter(p => (p.transaction_hash === a && p.index === outpointIndex))
-    deleteCounter += 1
-    if (deleteCounter >= populateTransactionSize)
-    {
-      println ("deleting")
-      deleteQuery.delete
-      deleteQuery = utxo.filter(_.transaction_hash === hashToArray(Hash.zero(0))) //should be empty
-      deleteCounter = 0
-      println ("done deleting")
-    }
+    //deleteQuery = deleteQuery ++
+    utxo.filter(p => (p.transaction_hash === a && p.index === outpointIndex)).delete
+    //deleteCounter += 1
+    // if (deleteCounter >= populateTransactionSize)
+    // {
+    //   println ("deleting")
+    //   deleteQuery.delete
+    //   deleteQuery = utxo.filter(_.transaction_hash === hashToArray(Hash.zero(0))) //should be empty
+    //   deleteCounter = 0
+    //   println ("done deleting")
+    // }
+
+    val (address, value, _) = outputMap((outpointTransactionHash, outpointIndex))
+    val newValue = changedAddresses.getOrElse(address, 0L)-value
+    changedAddresses += (address -> newValue)
     outputMap -= (outpointTransactionHash -> outpointIndex)
 
   }
 
   override def addUTXO(blockHeight: Int, transactionHash: util.Hash, index: Int, value: Long, address: util.Hash): UTXOs = {
+    val newValue = changedAddresses.getOrElse(address, 0L)+value
+    changedAddresses += (address -> newValue)
     insertUTXO((transactionHash,address,index,value,blockHeight))
     outputMap += ((transactionHash,index) -> (address, value, blockHeight))
   }
@@ -39,14 +46,14 @@ class ResumeBlockReader extends FastBlockReader with PeerSource
   override def pre = {
     super.pre
     vectorUTXOs = Vector()
-    deleteQuery = utxo.filter(_.transaction_hash === hashToArray(Hash.zero(0))) //should be empty
+  //  deleteQuery = utxo.filter(_.transaction_hash === hashToArray(Hash.zero(0))) //should be empty
   }
 
   override def post = {
     println("finishing ...")
     stop
     saveUTXOs
-    deleteQuery.delete
+  //  deleteQuery.delete
     super.post
     table.close
   }

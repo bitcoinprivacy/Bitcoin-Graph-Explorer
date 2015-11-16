@@ -22,9 +22,9 @@ class MyScalatraServlet extends BgeStack  with core.BitcoinDB with JacksonJsonSu
     contentType = formats("json")
   
   }
-  options("/*"){
-    response.setHeader("Access-Control-Allow-Headers", request.getHeader("Access-Control-Request-Headers"));
-  }
+    //  options("/*"){
+    // response.setHeader("Access-Control-Allow-Headers", request.getHeader("Access-Control-Request-Headers"));
+ // /}
 
   get("/") {
     <html>
@@ -35,12 +35,13 @@ class MyScalatraServlet extends BgeStack  with core.BitcoinDB with JacksonJsonSu
     </html>
   }
 
-  implicit def paramConv(pName: String) = params(pName).toInt
+
   def ad = Hash(hexAddress(params("ad")))
   def tx = Hash(hex2bytes(params("tx")))
-  def block_height = "block_height"
-  def from = "from"
-  def until = "until" 
+  def block_height = params("block_height").toInt
+  def from = params("from").toInt
+  def until = params("until").toInt
+  def limit = params("limit").toLong
   // BLOCKS
 
   get("/blocks/:from/:until") {
@@ -52,37 +53,61 @@ class MyScalatraServlet extends BgeStack  with core.BitcoinDB with JacksonJsonSu
   }
 
   get("/utxos/:ad/:from/:until") {
-    UTXO.getUTXOs(ad,from,until)
+    UTXO.getUtxosByAd(ad,from,until)
+  }
+
+  get("utxos/:ad/summary") {
+    UTXO.getUtxosByAdSummary(ad)
   }
 
   get("/tx_utxos/:tx/:from/:until") {
-    UTXO.getUTXOsByTransaction(tx,from,until)
+    UTXO.getUtxosByTx(tx,from,until)
   }
 
+  get("tx_utxos/:tx/summary") {
+    UTXO.getUtxosByTxSummary(tx)
+  }
 
   get("/movements/:ad/:from/:until") {
     Movement.getMovements(ad,from,until)
   }
 
+  get("/movements/:ad/summary") {
+    Movement.getMovementsSummary(ad)
+  }
+
+
   get("/inputs/:tx/:from/:until") {
     Movement.getInputs(tx,from,until)
+  }
+
+  get("/inputs/:tx/summary") {
+    Movement.getInputsSummary(tx)
   }
 
   get("/outputs/:tx/:from/:until") {
     Movement.getOutputs(tx,from,until)
   }
 
-  get("/stats") {
-    Stats.getAdvancedStats
+  get("/outputs/:tx/summary") {
+    Movement.getOutputsSummary(tx)
   }
 
-  get("/stats/historial") {
-//    response.setHeader("Access-Control-Allow-Headers", request.getHeader("Access-Control-Request-Headers"))
+  get("/stats") {
     Stats.getStats
+  }
+
+  get("/stats/history") {
+    response.setHeader("Access-Control-Allow-Headers", request.getHeader("Access-Control-Request-Headers"))
+    Stats.getAllStats
   }
 
   get("/wallet/:ad/:from/:until"){
     Address.getWallet(ad,from,until)
+  }
+
+  get("/wallet/:ad/summary"){
+    Address.getWalletSummary(ad)
   }
 
   get("/txs/:block_height/:from/:until"){
@@ -90,7 +115,7 @@ class MyScalatraServlet extends BgeStack  with core.BitcoinDB with JacksonJsonSu
   }
 
   get("/txs/:block_height/summary"){
-    Block.getBlocks(block_height, (block_height: Int) + 1).headOption
+    Summary(Block.getBlocks(block_height, (block_height: Int) + 1).headOption.map(_.tx).getOrElse(0))
   }
 
   get("/richlist/addresses/:from/:until") {
@@ -99,6 +124,10 @@ class MyScalatraServlet extends BgeStack  with core.BitcoinDB with JacksonJsonSu
 
   get("/richlist/wallets/:from/:until") {
     Address.getAddressList(richestClosures,from,until)  
+  }
+
+  get("/distribution/:limit") {
+    Distribution.get(limit)
   }
 
   def hexAddress(stringAddress: String): String = {

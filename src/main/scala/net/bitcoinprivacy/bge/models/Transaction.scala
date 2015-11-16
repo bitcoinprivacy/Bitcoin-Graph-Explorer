@@ -23,6 +23,8 @@ object Transaction extends core.BitcoinDB
       txList.run.toVector.map{p => Transaction(Hash(p._1).toString, p._2.getOrElse(0L) )}
 
     }
+
+ 
 }
 
 

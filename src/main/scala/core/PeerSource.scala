@@ -14,10 +14,10 @@ import scala.collection.convert.WrapAsScala._
 trait PeerSource extends BlockSource {
   def params = MainNetParams.get
   
-  private lazy val loader = {
-    val context = new Context(params)
-    new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)
-  }
+  // private lazy val loader = {
+  //   val context = new Context(params)
+  //   new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)
+  // }
 
   lazy val blockStore = new MemoryBlockStore(params);
   lazy val chain = new BlockChain(params, blockStore);
@@ -26,6 +26,7 @@ trait PeerSource extends BlockSource {
   lazy val addr = new PeerAddress(InetAddress.getLocalHost(), params.getPort());
   
   lazy val lines = scala.io.Source.fromFile(blockHashListFile).getLines.drop(blockCount)
+
   override def blockSource = {
     peerGroup.start();
     peerGroup.addAddress(addr);
@@ -41,9 +42,9 @@ trait PeerSource extends BlockSource {
 
     
 
-  }
+  }.take(1)
 
   def stop = {
-    peerGroup.stopAsync();
+    peerGroup.stopAsync()
   }
 }

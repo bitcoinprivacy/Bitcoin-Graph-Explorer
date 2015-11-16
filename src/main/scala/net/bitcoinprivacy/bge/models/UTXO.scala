@@ -9,9 +9,9 @@ import util.Hash
 
 case class UTXO(tx: String, value:Long)
 
-object UTXO extends core.BitcoinDB
+object UTXO extends core.BitcoinDB 
 {
-  def getUTXOs(address: Array[Byte], from: Int, until: Int) =
+  def getUtxosByAd(address: Array[Byte], from: Int, until: Int) =
     transactionDBSession{
 
       val utxos = for (b<- utxo.filter(_.address===address).drop(from).take(until-from)) 
@@ -21,17 +21,23 @@ object UTXO extends core.BitcoinDB
 
     }
 
-  def getUTXOsByTransaction(transactionHash: Array[Byte], from: Int, until: Int) =
+  def getUtxosByTx(transactionHash: Array[Byte], from: Int, until: Int) =
     transactionDBSession {
 
       val outputsFromUTXOS = for (b<-utxo.filter(_.transaction_hash===transactionHash).drop(from).take(until-from))
                              yield (b.transaction_hash, b.value)
 
-      
-
       outputsFromUTXOS.run.toVector map (p => UTXO(Hash(p._1).toString, p._2))
+    }
 
+  def getUtxosByAdSummary(address: Array[Byte]) =
+    transactionDBSession{
+      Summary(utxo.filter(_.address===address).size.run)
+    }
 
+  def getUtxosByTxSummary(transactionHash: Array[Byte]) =
+    transactionDBSession {
+      Summary(utxo.filter(_.transaction_hash===transactionHash).size.run)
     }
 
 }

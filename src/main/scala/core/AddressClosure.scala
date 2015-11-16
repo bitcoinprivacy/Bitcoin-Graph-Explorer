@@ -57,7 +57,7 @@ abstract class AddressClosure(blockHeights: Vector[Int])
 
   val totalTime = System.currentTimeMillis - timeStart
 
-  println("DONE: Total of %s addresses closured in %s s, %s µs per address" format
+  println("DONE: Total of %s addresses added to closures in %s s, %s µs per address" format
     (countSave, totalTime / 1000, 1000 * totalTime / (countSave + 1)))
 }
 

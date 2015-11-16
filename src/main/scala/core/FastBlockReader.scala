@@ -184,6 +184,7 @@ abstract class FastBlockReader extends BlockReader {
   {
     if (vectorMovements.length + vectorBlocks.length >= populateTransactionSize)
       saveDataToDB
+
     vectorBlocks +:= s
   }
 
@@ -214,13 +215,11 @@ abstract class FastBlockReader extends BlockReader {
 
       Some (address)
     }
-
     else {
       outOfOrderInputMap += ((outpointTransactionHash, outpointIndex) -> (transactionHash,blockOut))
+
       None
     }
-
-
   }
 
   // the following 2 methods have been factored out so we can extend their behavior in subclass ResumeBlockReader

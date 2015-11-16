@@ -116,23 +116,70 @@ trait BitcoinDB {
     }
   }
 
+  def updateBalanceTables(changedAddresses: collection.mutable.Map[Hash,Long]) = {
+    var clock = System.currentTimeMillis
+    println("DEBUG: Updating balances ...")
+ 
+    transactionDBSession {
+
+      val adsAndBalances = for ((address, change) <- changedAddresses)
+                           yield (address,
+                                  balances.filter(_.address === Hash.hashToArray(address)).
+                                    map (_.balance).firstOption.getOrElse(0L) + change)
+      for ((address, balance) <- adsAndBalances)
+        balances.insertOrUpdate(Hash.hashToArray(address), balance)
+
+      val table = LmdbMap.open("closures")
+      val unionFindTable = new ClosureMap(table)
+      val closures = new DisjointSets[Hash](unionFindTable)
+
+      val repsAndChanges: collection.mutable.Map[Hash,Long] = collection.mutable.Map()
+      for ((address, balance) <- adsAndBalances -= Hash.zero(0))
+      {
+        val repOpt = closures.find(address)._1
+
+        for (rep <- repOpt){
+          val newBalance = repsAndChanges.getOrElse(rep, 0L) + balance
+          repsAndChanges += (rep -> newBalance)
+        }
+      }
+
+      val repsAndBalances = for ((rep, change) <- repsAndChanges)
+                           yield (rep,
+                                  closureBalances.filter(_.representant === Hash.hashToArray(rep)).
+                                    map (_.balance).firstOption.getOrElse(0L) + change)
+      for ((address, balance) <- repsAndBalances)
+          closureBalances.insertOrUpdate(Hash.hashToArray(address), balance)
+
+      table.close
+
+      println("DONE: %s balances updated in %s s, %s µs per address "
+                format
+                (adsAndBalances.size, (System.currentTimeMillis - clock)/1000, (System.currentTimeMillis - clock)*1000/(adsAndBalances.size+1)))
+    
+    }
+  }
+
   def insertRichestClosures = {
     println("DEBUG: Calculating richest closure list...")
     var startTime = System.currentTimeMillis
     transactionDBSession {
-      Q.updateNA( """
-      insert
-        into richest_closures
-      select
-        (select max(block_height) from blocks) as block_height,
-        representant as address,
-        balance
-      from
-        closure_balances
-      order by
-        balance desc
-      limit 1000
-      ;""").execute
+      val bh = blockCount-1
+      val topClosures = closureBalances.sortBy(_.balance.desc).take(1000).run.toVector
+      val topAddresses = richestAddresses.sortBy(_.block_height.desc).take(1000).run.toVector
+      val repsAndBalances = topAddresses map { p =>  
+        (addresses.filter(_.hash === p._2).map(_.representant).firstOption.getOrElse(p._2),p._3)
+      }
+      val topClosureReps = topClosures map (p => Hash(p._1)) //need Hash in order to compare
+      val filtered = for {
+        (rep,bal) <- repsAndBalances
+        if (!topClosureReps.contains(Hash(rep)))
+      } yield (rep, bal)
+
+      val mixed = filtered ++ topClosures
+      val mixedWithBh = for ((rep,bal) <- mixed) yield (bh,rep,bal)
+      richestClosures.insertAll(mixedWithBh: _*)
+
       println("RichestList calculated in " + (System.currentTimeMillis - startTime)/1000 + "s")
     }
   }
@@ -152,6 +199,7 @@ trait BitcoinDB {
         balance
       from
         balances
+      where address!= ''
       order by
         balance desc
       limit 1000
@@ -173,24 +221,42 @@ trait BitcoinDB {
        insert
         into stats select
         (select max(block_height) from blocks),
-        (select sum(balance)/100000000 from balances),
-        (select sum(txs) from blocks),
-        
-        (select count(1) from addresses),
-        (select count(distinct(representant)) from addresses),
-        (select count(1) from balances),
-        (select count(1) from closure_balances),
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
         """ + nonDustAddresses + """,
         """ + nonDustClosures + """,
         """ + closureGini + """,
         """ + addressGini + """,
         """+ (System.currentTimeMillis/1000).toString +""";"""
 
+      /*
+       val query =   """
+       insert
+       into stats select
+       (select max(block_height) from blocks),
+       (select sum(balance)/100000000 from balances),
+       (select sum(txs) from blocks),
+       
+       (select count(1) from addresses),
+       (select count(distinct(representant)) from addresses),
+       (select count(1) from balances),
+       (select count(1) from closure_balances),
+       """ + nonDustAddresses + """,
+       """ + nonDustClosures + """,
+       """ + closureGini + """,
+       """ + addressGini + """,
+       """+ (System.currentTimeMillis/1000).toString +""";"""
+       */
       (Q.u + query).execute
       println("DONE: Stats calculated in " + (System.currentTimeMillis - startTime)/1000 + "s");
 
   }
 }
+
 
   def getGini[A <: Table[_] with BalanceField](balanceTable: TableQuery[A]): (Long, Double) = {
     println("DEBUG: calculating Gini: " + balanceTable + java.util.Calendar.getInstance().getTime())
@@ -251,7 +317,7 @@ trait BitcoinDB {
              "create index address_utxo on utxo (address)",
              "create index height_utxo on utxo (block_height)",
              "create index tx_utxo on utxo (transaction_hash, index)",
-              "create index  block_height on blocks(block_height);"))
+              "create index block_height on blocks(block_height);"))
 
       {
         Q.updateNA(query).execute

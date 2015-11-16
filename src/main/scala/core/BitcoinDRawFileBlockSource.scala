@@ -11,7 +11,8 @@ trait BitcoinDRawFileBlockSource extends BlockSource
 {
   def params = MainNetParams.get
   
-  private lazy val loader = {val context = new Context(params) // had to put this here because of scala trait initialization madness
+  private lazy val loader = {
+    val context = new Context(params) // had to put this here because of scala trait initialization madness
     new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)}
  
   override def blockSource: Iterator[Block] = asScalaIterator(loader)

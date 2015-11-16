@@ -49,10 +49,10 @@ trait BlockReader extends BlockSource {
     for ((transaction, blockHeight) <- transactionSource) {
       saveTransaction(transaction, blockHeight)
 
-      if (transactionCounter % 10000 == 0) {
-        val t = System.currentTimeMillis - startTime
-        //println("DEBUG: Processed %s transactions in %s s using %s µs/tx" format(transactionCounter , t/1000, 1000 * t / (transactionCounter+1)))
-      }
+      // if (transactionCounter % 10000 == 0) {
+      //   val t = System.currentTimeMillis - startTime
+      //   //println("DEBUG: Processed %s transactions in %s s using %s µs/tx" format(transactionCounter , t/1000, 1000 * t / (transactionCounter+1)))
+      // }
 
       transactionCounter += 1
     }
@@ -61,10 +61,7 @@ trait BlockReader extends BlockSource {
 
   def blockFilter(b: Block) = {
     val blockHash = Hash(b.getHash.getBytes)
-    val blockHeight = longestChain.getOrElse(blockHash, 0)
-    val accepted = (longestChain contains blockHash) && !(savedBlockSet contains blockHash)
-
-    accepted
+    (longestChain contains blockHash) && !(savedBlockSet contains blockHash)
   }
 
   def withoutDuplicates(b: Block, t: Transaction): Boolean =
@@ -74,9 +71,8 @@ trait BlockReader extends BlockSource {
         Hash(t.getHash.getBytes) == Hash("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599"))
 
   lazy val filteredBlockSource =
-  {
     blockSource withFilter blockFilter
-  }
+
 
   def transactionsInBlock(b: Block) =
     b.getTransactions.asScala filter (t => withoutDuplicates(b, t))
@@ -94,10 +90,14 @@ trait BlockReader extends BlockSource {
     yield o.getValue.value).sum
 
 
-  // TODO: replace 0 0 with txs and btcs from the transaction set
-  lazy val transactionSource: Iterator[(Transaction,Int)] = {
-    filteredBlockSource flatMap { b => saveBlock(Hash(b.getHash.getBytes), b.getTransactions.size,getTxValue(b),b.getTimeSeconds); transactionsInBlock(b) map ((_, longestChain.getOrElse(Hash(b.getHash.getBytes), 0)))}
-  }
+  // TODO: replace 0 0 with txs and btcs from the transaction set // TODO: ask Jorge what that means
+  lazy val transactionSource: Iterator[(Transaction,Int)] = 
+    filteredBlockSource flatMap { b =>
+      val blockHash = Hash(b.getHash.getBytes)
+      saveBlock(blockHash, b.getTransactions.size,getTxValue(b),b.getTimeSeconds)
+      transactionsInBlock(b) map ((_, longestChain.getOrElse(blockHash, 0)))
+    }
+ 
 
   def getAddressFromOutput(output: TransactionOutput): Option[Array[Byte]] =
     bitcoinjParseScript(output).

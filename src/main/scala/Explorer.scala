@@ -19,24 +19,24 @@ object Explorer extends App {
       createIndexes
       closure(PopulateBlockReader.processedBlocks)
       initializeStatsTables
-      makeNewStats
+      populateStats
 
     case "resume"::rest =>
       import sys.process._
 
       while (new java.io.File("/root/Bitcoin-Graph-Explorer/blockchain/lock").exists)
       {
-        "/root/Bitcoin-Graph-Explorer/scripts/getblocklist.sh".! // TODO: replace this script by a scala function entirely!
+        "/root/Bitcoin-Graph-Explorer/scripts/getblocklist.sh".! // TODO: replace this script with a scala function entirely!
         val cmd = Seq("cat", "/root/.bitcoin/blocklist.txt") #| Seq( "wc", "-l")
         val from = blockCount
         val to = Integer.parseInt(cmd.lines.head, 10)
-        println("From " + from + " to " + to)
+        
         if (to > from)
         {
-          println("Reading blocks from " + (from-1) + " to " +(to-1))
+          println("Reading blocks from " + from + " until " + to)
           resume
-          println("DEBUG: making new stats")
-          makeNewStats
+          // TODO: open LMDB tables in Explorer and keep them open
+         
         }
         else
         {
@@ -64,10 +64,20 @@ object Explorer extends App {
   }
 
   def resume = {
-    new ResumeClosure((new ResumeBlockReader).processedBlocks)
+    val read = new ResumeBlockReader
+    new ResumeClosure(read.processedBlocks)
+    println("DEBUG: making new stats")
+    resumeStats(read.changedAddresses)
   }
 
-  def makeNewStats = {
+  def resumeStats(changedAddresses: collection.mutable.Map[Hash,Long]) = {
+    updateBalanceTables(changedAddresses)
+    insertStatistics
+    insertRichestAddresses
+    insertRichestClosures
+  }
+
+  def populateStats = {
     createBalanceTables
     insertStatistics
     insertRichestAddresses
