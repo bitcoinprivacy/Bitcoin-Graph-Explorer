@@ -25,7 +25,7 @@ trait PeerSource extends BlockSource {
 
   lazy val addr = new PeerAddress(InetAddress.getLocalHost(), params.getPort());
   
-  lazy val lines = scala.io.Source.fromFile(blockHashListFile).getLines.drop(blockCount)
+  lazy val lines = scala.io.Source.fromFile(blockHashListFile).getLines.drop(blockCount).take(100)
 
   override def blockSource = {
     peerGroup.start();
@@ -42,7 +42,7 @@ trait PeerSource extends BlockSource {
 
     
 
-  }.take(1)
+  }
 
   def stop = {
     peerGroup.stopAsync()

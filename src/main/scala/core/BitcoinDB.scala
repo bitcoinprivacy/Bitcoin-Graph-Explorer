@@ -126,8 +126,14 @@ trait BitcoinDB {
                            yield (address,
                                   balances.filter(_.address === Hash.hashToArray(address)).
                                     map (_.balance).firstOption.getOrElse(0L) + change)
-      for ((address, balance) <- adsAndBalances)
-        balances.insertOrUpdate(Hash.hashToArray(address), balance)
+      for {
+        (address, balance) <- adsAndBalances
+        addressArray = Hash.hashToArray(address)
+      }
+      if (balance != 0L)
+        balances.insertOrUpdate(addressArray, balance)
+      else
+        balances.filter(_.address === addressArray).delete
 
       val table = LmdbMap.open("closures")
       val unionFindTable = new ClosureMap(table)
@@ -148,8 +154,14 @@ trait BitcoinDB {
                            yield (rep,
                                   closureBalances.filter(_.representant === Hash.hashToArray(rep)).
                                     map (_.balance).firstOption.getOrElse(0L) + change)
-      for ((address, balance) <- repsAndBalances)
-          closureBalances.insertOrUpdate(Hash.hashToArray(address), balance)
+      for { // TODO: make code DRYer by unifiying this in a common function with the same functionality above for balances
+        (address, balance) <- repsAndBalances
+        addressArray = Hash.hashToArray(address)
+      }
+      if (balance != 0L)
+        closureBalances.insertOrUpdate(addressArray, balance)
+      else
+        closureBalances.filter(_.representant === addressArray).delete
 
       table.close
 
@@ -219,28 +231,10 @@ trait BitcoinDB {
     transactionDBSession {
       val query =   """
        insert
-        into stats select
-        (select max(block_height) from blocks),
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        """ + nonDustAddresses + """,
-        """ + nonDustClosures + """,
-        """ + closureGini + """,
-        """ + addressGini + """,
-        """+ (System.currentTimeMillis/1000).toString +""";"""
-
-      /*
-       val query =   """
-       insert
        into stats select
        (select max(block_height) from blocks),
        (select sum(balance)/100000000 from balances),
        (select sum(txs) from blocks),
-       
        (select count(1) from addresses),
        (select count(distinct(representant)) from addresses),
        (select count(1) from balances),
@@ -250,7 +244,7 @@ trait BitcoinDB {
        """ + closureGini + """,
        """ + addressGini + """,
        """+ (System.currentTimeMillis/1000).toString +""";"""
-       */
+      
       (Q.u + query).execute
       println("DONE: Stats calculated in " + (System.currentTimeMillis - startTime)/1000 + "s");
 
