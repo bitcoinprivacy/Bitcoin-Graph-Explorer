@@ -116,6 +116,40 @@ trait BitcoinDB {
     }
   }
 
+  def countUTXOs = {
+    transactionDBSession {
+      val values = (for (u <- utxo)
+      yield
+        u.value).run.toVector
+
+      (values.size, values.sum)
+    }
+  }
+
+  def copyUTXOs = {
+    lazy val table = LmdbMap.open("utxos")
+    lazy val outputMap: UTXOs = new UTXOs (table)
+    
+    // (txhash,index) -> (address,value,blockIn)
+
+    import Hash.hashToArray
+    val values = for (((txhash,index),(address,value,blockIn)) <- outputMap.view)  //makes it a lazy collection
+                 yield (hashToArray(txhash),hashToArray(address),index,value,blockIn)
+
+    transactionDBSession{
+      deleteIfExists(utxo)
+      utxo.ddl.create
+      values.grouped(100000).foldLeft(0){
+        case (count,group) =>
+          println(count + " elements read at " + java.util.Calendar.getInstance().getTime())
+          val seq = group.toSeq
+          utxo.insertAll(seq: _*)
+          count+seq.size
+      }
+    }
+    table.close
+  }
+
   def updateBalanceTables(changedAddresses: collection.mutable.Map[Hash,Long]) = {
     var clock = System.currentTimeMillis
     println("DEBUG: Updating balances ...")
@@ -292,7 +326,7 @@ trait BitcoinDB {
 
   }
 
-  def createIndexes {
+  def createIndexes = {
 
     println("DEBUG: Creating indexes ...")
     val time = System.currentTimeMillis
@@ -324,4 +358,33 @@ trait BitcoinDB {
 
   }
 
+  def lastCompletedHeight: Int = transactionDBSession{
+    stats.map(_.block_height).max.run.getOrElse(0)
+  }
+
+  def rollBack = transactionDBSession {
+
+    val blockHeight = blockCount - 1
+    stats.filter(_.block_height === blockHeight).delete
+    richestAddresses.filter(_.block_height === blockHeight).delete
+    richestClosures.filter(_.block_height === blockHeight).delete
+    val table = LmdbMap.open("utxos")
+    val utxoTable = new UTXOs(table)
+
+    val utxoQuery = utxo.filter(_.block_height === blockHeight)
+    
+    for ((tx,idx) <- utxoQuery.map(p => (p.transaction_hash,p.index)).run)
+      utxoTable -= Hash(tx) -> idx
+    utxoQuery.delete
+
+    val movementQuery = movements.filter(_.height_out === blockHeight)
+    val utxoRows = movementQuery.filter(_.height_in =!= blockHeight).map(p => (p.transaction_hash,p.address, p.index, p.value, p.height_in)).run
+    for ((tx,ad,idx,v,h) <- utxoRows)
+      utxoTable += ((Hash(tx) -> idx) -> (Hash(ad),v,h))
+    utxo.insertAll(utxoRows:_*)   
+
+    blockDB.filter(_.block_height === blockHeight).delete
+
+    table.close
+  }
 }

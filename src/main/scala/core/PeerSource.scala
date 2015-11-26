@@ -36,8 +36,10 @@ trait PeerSource extends BlockSource {
     for (line <- lines) yield {
       val blockHash = Sha256Hash.wrap(line.toLowerCase);
       val future = peer.getBlock(blockHash);
-      System.out.println("Waiting for node to send us the requested block: " + blockHash);
-      future.get();
+      System.out.println("Waiting for node to send us the requested block: " + blockHash + " at " + java.util.Calendar.getInstance().getTime());
+      val res = future.get();
+      System.out.println("Block received at " + java.util.Calendar.getInstance().getTime())
+      res
     }
 
     

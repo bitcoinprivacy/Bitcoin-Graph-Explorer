@@ -72,33 +72,52 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
 
   var tx: Option[Transaction] = None
 
-  implicit class TxAbortingIterator(i: Iterator[(Hash,Hash)]) extends Iterator[(Hash, Hash)]
-  {
-    override def hasNext = {
-      val hN = i.hasNext
+  // implicit class TxAbortingIterator(i: Iterator[(Hash,Hash)]) extends Iterator[(Hash, Hash)]
+  // {
+  //   override def hasNext = {
+  //     val hN = i.hasNext
 
-      if (!hN)
-        for (t <- tx) {
-          t.abort
-          tx = None
-        }
+  //     if (!hN)
+  //       for (t <- tx) {
+  //         t.abort
+  //         tx = None
+  //       }
 
-      hN
-    }
+  //     hN
+  //   }
 
-    override def next = i.next
-  }
+  //   override def next = i.next
+  // }
 
-  def iterator: TxAbortingIterator =  {
+  def iterator: Iterator[(Hash,Hash)] =  {
     commit
 
     for (t <- tx)
       t.abort
 
     tx = Some(env.createReadTransaction)
-   
-    asScalaIterator(db.iterate(tx.get)) map (
-        p => (Hash(p.getKey), Hash(p.getValue)))
+
+    // asScalaIterator(db.iterate(tx.get)) map (
+    //     p => (Hash(p.getKey), Hash(p.getValue)))
+
+    new Iterator[(Hash,Hash)] {
+      val cursor = db.bufferCursor(tx.get)
+      cursor.first()
+
+      def hasNext = {
+        val hN = cursor.next()
+
+        if (!hN)
+          for (t <- tx) {
+            t.abort
+            tx = None
+          }
+
+        hN
+      }
+
+      def next = (Hash(cursor.keyBytes()),Hash(cursor.valBytes()))
+    }
   }
 
   override def size: Int ={

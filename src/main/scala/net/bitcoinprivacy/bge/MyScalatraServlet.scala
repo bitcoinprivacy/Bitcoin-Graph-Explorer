@@ -45,6 +45,7 @@ class MyScalatraServlet extends BgeStack  with core.BitcoinDB with JacksonJsonSu
   // BLOCKS
 
   get("/blocks/:from/:until") {
+    response.setHeader("Access-Control-Allow-Headers", request.getHeader("Access-Control-Request-Headers"))
     Block.getBlocks(from, until)
   }
 

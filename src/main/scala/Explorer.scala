@@ -24,8 +24,19 @@ object Explorer extends App {
     case "resume"::rest =>
       import sys.process._
 
+      val lch = lastCompletedHeight
+      val bc = blockCount
+
       while (new java.io.File("/root/Bitcoin-Graph-Explorer/blockchain/lock").exists)
       {
+        for (i <- (lch +1 until bc).reverse){
+          println("rolling back block " + i + " at " + java.util.Calendar.getInstance().getTime())
+          rollBack
+        }
+        
+        if (lch != bc-1)
+          populateStats
+
         "/root/Bitcoin-Graph-Explorer/scripts/getblocklist.sh".! // TODO: replace this script with a scala function entirely!
         val cmd = Seq("cat", "/root/.bitcoin/blocklist.txt") #| Seq( "wc", "-l")
         val from = blockCount
@@ -35,8 +46,6 @@ object Explorer extends App {
         {
           println("Reading blocks from " + from + " until " + to)
           resume
-          // TODO: open LMDB tables in Explorer and keep them open
-         
         }
         else
         {
@@ -46,6 +55,11 @@ object Explorer extends App {
       }
       println("process stopped")
 
+    case "info"::rest =>
+      getInfo
+
+    case "copyUTXOs"::rest =>
+      copyUTXOs
 
     case _=> println("""
       Available commands:
@@ -63,6 +77,32 @@ object Explorer extends App {
 
   }
 
+  def getInfo = {
+    val (count, amount) = sumUTXOs
+    println("Sum of the utxos saved in the lmdb: "+ amount)
+    println("Total utxos in the lmdb: " + count)
+    val (countDB, amountDB) = countUTXOs
+    println("Sum of the utxos in the sql db " +amountDB)
+    println("Total utxos in the sql db " + countDB)
+  }
+
+  def sumUTXOs = {
+    lazy val table = LmdbMap.open("utxos")
+    lazy val outputMap: UTXOs = new UTXOs (table)
+    
+    // (txhash,index) -> (address,value,blockIn)
+    val values = for ( (_,(_,value,_)) <- outputMap.view) yield value //makes it a lazy collection
+    val tuple = values.grouped(100000).foldLeft((0,0L)){
+      case ((count,sum),group) =>
+        println(count + " elements read at " + java.util.Calendar.getInstance().getTime())
+        val seq = group.toSeq
+        (count+seq.size,sum+seq.sum)
+    }
+    table.close
+    tuple
+  }
+
+  
   def resume = {
     val read = new ResumeBlockReader
     new ResumeClosure(read.processedBlocks)
@@ -71,16 +111,19 @@ object Explorer extends App {
   }
 
   def resumeStats(changedAddresses: collection.mutable.Map[Hash,Long]) = {
-    updateBalanceTables(changedAddresses)
-    insertStatistics
+    if (changedAddresses.size < 15000 )
+      updateBalanceTables(changedAddresses)
+    else
+      createBalanceTables
     insertRichestAddresses
     insertRichestClosures
+    insertStatistics
   }
 
   def populateStats = {
     createBalanceTables
-    insertStatistics
     insertRichestAddresses
     insertRichestClosures
+    insertStatistics
   }
 }

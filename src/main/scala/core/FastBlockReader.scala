@@ -127,7 +127,6 @@ abstract class FastBlockReader extends BlockReader {
     }
   }
 
-
   def saveBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long) = {
     val height = longestChain.getOrElse(b,0)
     processedBlocks :+= height
@@ -149,13 +148,11 @@ abstract class FastBlockReader extends BlockReader {
     println("DONE: " + totalOutIn + " movements, " + transactionCounter + " transactions saved in " + (System.currentTimeMillis - startTime)/1000 + "s")
   }
 
-
   def saveUnmatchedInputs: Unit =
   {
     println(outOfOrderInputMap.size + " unmatched Inputs")
     //for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
     //  insertInsertIntoList(Some(transactionHash), Some(outpointTransactionHash), None, Some(outpointIndex), None, None)
-
   }
 
   def saveDataToDB: Unit =

@@ -47,6 +47,7 @@ trait BlockReader extends BlockSource {
 
   def process: Unit = {
     for ((transaction, blockHeight) <- transactionSource) {
+//      println("DEBUG: saving tx at " + java.util.Calendar.getInstance().getTime())
       saveTransaction(transaction, blockHeight)
 
       // if (transactionCounter % 10000 == 0) {
