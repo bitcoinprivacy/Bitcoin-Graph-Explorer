@@ -23,7 +23,7 @@ object PopulateBlockReader extends FastBlockReader with core.BitcoinDRawFileBloc
   def saveUnmatchedOutputs: Unit =
   {
     var vectorUTXO:  Vector[(Array[Byte], Array[Byte], Int, Long, Int)] = Vector()
-    for (((transactionHash,index), (address, value, blockHeight)) <- outputMap){
+    for (((transactionHash,index), (address, value, blockHeight)) <- outputMap.iterator){
       vectorUTXO +:= (transactionHash.array.toArray, address.array.toArray, index, value,blockHeight)
       if (vectorUTXO.size == populateTransactionSize){
         utxo.insertAll(vectorUTXO:_*)
