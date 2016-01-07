@@ -10,7 +10,7 @@ import util._
 // A FastBlockReader is a BlockReader that uses an UTXO set map
 abstract class FastBlockReader extends BlockReader {
 
-  lazy val table: mutable.Map[Hash,Hash] = LmdbMap.create("utxos")
+  lazy val table = LmdbMap.create("utxos")
   // (txhash,index) -> (address,value,blockIn)
   lazy val outputMap: UTXOs = new UTXOs (table)
 
@@ -28,7 +28,6 @@ abstract class FastBlockReader extends BlockReader {
   def saveTransaction(trans: Transaction, blockHeight: Int) =
   {
     val transactionHash = Hash(trans.getHash.getBytes)
-    //println("saving transaction from block " + transactionHash)
     val addresses =
       for {
         input <- inputsInTransaction(trans)
@@ -127,8 +126,7 @@ abstract class FastBlockReader extends BlockReader {
     }
   }
 
-  def saveBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long) = {
-    val height = longestChain.getOrElse(b,0)
+  def saveBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long, height:Int) = {
     processedBlocks :+= height
     insertBlock(b, height, txs, btcs, tstamp)
     println("DEBUG: Saving block " + height + " consisting of " + txs + " txs at " + java.util.Calendar.getInstance().getTime() )
@@ -150,7 +148,7 @@ abstract class FastBlockReader extends BlockReader {
 
   def saveUnmatchedInputs: Unit =
   {
-    println(outOfOrderInputMap.size + " unmatched Inputs")
+    assert(outOfOrderInputMap.size == 0, "unmatched Inputs")
     //for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
     //  insertInsertIntoList(Some(transactionHash), Some(outpointTransactionHash), None, Some(outpointIndex), None, None)
   }
@@ -167,8 +165,15 @@ abstract class FastBlockReader extends BlockReader {
     def vectorMovementsConverter[A,B,C,D](v:Vector[(Hash,Hash,Option[Hash],A,B,C,D)]) = v map {
       case (a,b,c,d,e,f,g) => (Hash.hashToArray(a),Hash.hashToArray(b),ohc(c),d,e,f,g) }
     val convertedVectorMovements = vectorMovementsConverter(vectorMovements)
-    movements.insertAll(convertedVectorMovements:_*)
-   
+
+    try{
+      movements.insertAll(convertedVectorMovements:_*)
+    }
+    catch {
+      case e: java.sql.BatchUpdateException =>
+        throw e.getNextException
+    }
+
 
     vectorMovements = Vector()
     vectorBlocks = Vector()

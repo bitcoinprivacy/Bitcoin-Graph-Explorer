@@ -12,41 +12,35 @@ import scala.collection.convert.WrapAsScala._
 
 // In java that should be implements libs.BlockSource
 trait PeerSource extends BlockSource {
-  def params = MainNetParams.get
   
-  // private lazy val loader = {
-  //   val context = new Context(params)
-  //   new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)
-  // }
+  //lazy val lines = scala.io.Source.fromFile(blockHashListFile).getLines.drop(blockCount) take 100
 
-  lazy val blockStore = new MemoryBlockStore(params);
-  lazy val chain = new BlockChain(params, blockStore);
-  lazy val peerGroup = new PeerGroup(params, chain);
-
-  lazy val addr = new PeerAddress(InetAddress.getLocalHost(), params.getPort());
-  
-  lazy val lines = scala.io.Source.fromFile(blockHashListFile).getLines.drop(blockCount).take(100)
+  lazy val begin = blockCount
+  lazy val end = chain.getBestChainHeight() - 5
+  lazy val range = (begin until end) take 100
+  lazy val lines = for (no <- range)
+                   yield (chain.getHeightFuture(no),no)
 
   override def blockSource = {
-    peerGroup.start();
-    peerGroup.addAddress(addr);
-    peerGroup.waitForPeers(1).get();
+    start
+    
     val peer = peerGroup.getConnectedPeers().get(0);
+    println("reading blocks from " + begin + " until " + end)
 
-    for (line <- lines) yield {
-      val blockHash = Sha256Hash.wrap(line.toLowerCase);
+    
+
+    for ((line,no) <- lines.toIterator) yield {
+      val blockHash = line.get.getHeader.getHash
       val future = peer.getBlock(blockHash);
       System.out.println("Waiting for node to send us the requested block: " + blockHash + " at " + java.util.Calendar.getInstance().getTime());
-      val res = future.get();
+      val block = future.get();
       System.out.println("Block received at " + java.util.Calendar.getInstance().getTime())
-      res
+      (block,no)
     }
 
     
 
   }
 
-  def stop = {
-    peerGroup.stopAsync()
-  }
+  
 }

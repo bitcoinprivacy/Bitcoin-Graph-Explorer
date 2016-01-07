@@ -6,29 +6,22 @@ import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import util._
 import util.Hash._
-import collection.mutable.Map
+import collection.mutable.{HashMap, Map} 
 
 class ResumeBlockReader extends FastBlockReader with PeerSource
 {
   // txhash -> ((index -> (address,value)),blockIn)
   override lazy val table: LmdbMap = LmdbMap.open("utxos")
-  lazy val changedAddresses: Map[Hash, Long] = Map()
- // var deleteQuery = utxo.filter(_.transaction_hash === hashToArray(Hash.zero(0))) //should be empty
- // var deleteCounter = 0
+  lazy val changedAddresses: HashMap[Hash, Long] = HashMap() // todo: change this into an option which is none if the change would be too big
+  var deletedUTXOs: Vector[(Array[Byte], Int)] = Vector()
 
   override def removeUTXO(outpointTransactionHash: util.Hash, outpointIndex: Int): UTXOs = {
     val a:  Array[Byte] = outpointTransactionHash
-    //deleteQuery = deleteQuery ++
-    utxo.filter(p => (p.transaction_hash === a && p.index === outpointIndex)).delete
-    //deleteCounter += 1
-    // if (deleteCounter >= populateTransactionSize)
-    // {
-    //   println ("deleting")
-    //   deleteQuery.delete
-    //   deleteQuery = utxo.filter(_.transaction_hash === hashToArray(Hash.zero(0))) //should be empty
-    //   deleteCounter = 0
-    //   println ("done deleting")
-    // }
+    deletedUTXOs +:= (outpointTransactionHash.array.toArray, outpointIndex)
+    //utxo.filter(p => (p.transaction_hash === a && p.index === outpointIndex)).delete
+
+    if (deletedUTXOs.length >= 100)
+      deleteUTXOs
 
     val (address, value, _) = outputMap((outpointTransactionHash, outpointIndex))
     val newValue = changedAddresses.getOrElse(address, 0L)-value
@@ -37,30 +30,40 @@ class ResumeBlockReader extends FastBlockReader with PeerSource
     outputMap -= outpointTransactionHash -> outpointIndex
   }
 
+   
   override def addUTXO(blockHeight: Int, transactionHash: util.Hash, index: Int, value: Long, address: util.Hash): UTXOs = {
     val newValue = changedAddresses.getOrElse(address, 0L)+value
     changedAddresses += (address -> newValue)
     // copy to database.
     insertUTXO((transactionHash,address,index,value,blockHeight))
     outputMap += ((transactionHash,index) -> (address, value, blockHeight))
+
+  }
+
+  def deleteUTXOs = {
+    for ( (e,i) <- deletedUTXOs.headOption) {
+      utxo.filter( p => deletedUTXOs.drop(1).foldLeft(p.transaction_hash === e && p.index === i){
+                    case (found,(tx,id)) => found || (p.transaction_hash === tx && p.index === id)
+                  }).delete
+    }
+    deletedUTXOs = Vector()
   }
 
   override def pre = {
     super.pre
-    
-  //  deleteQuery = utxo.filter(_.transaction_hash === hashToArray(Hash.zero(0))) //should be empty
+    deletedUTXOs = Vector()
   }
 
   override def post = {
     println("finishing ...")
     stop
+    deleteUTXOs
     saveUTXOs
-  //  deleteQuery.delete
     super.post
     table.close
   }
 
-  lazy val newUtxos:Map[(Hash,Int),(Hash,Long,Int)]  = new UTXOs(Map[Hash,Hash]())
+  lazy val newUtxos = new UTXOs(HashMap[Hash,Hash]())
 
   def insertUTXO(s: (Hash, Hash, Int, Long, Int)) =
   {
@@ -73,15 +76,12 @@ class ResumeBlockReader extends FastBlockReader with PeerSource
   def saveUTXOs = {
     println("DEBUG: Inserting UTXOs into SQL database ...")
 
-    if (newUtxos.size > 0)
-    {
-      def vectorUTXOConverter[A,B,C](v:Map[(Hash,A),(Hash,B,C)]) = v map {
-        case ((a,b),(c,d,e)) => (hashToArray(a),hashToArray(c),b,d,e) }
+    def vectorUTXOConverter[A,B,C](v:Map[(Hash,A),(Hash,B,C)]) = v map {
+      case ((a,b),(c,d,e)) => (hashToArray(a),hashToArray(c),b,d,e) }
 
-      val convertedVectorUTXOs = vectorUTXOConverter(newUtxos).toSeq
+    val convertedVectorUTXOs = vectorUTXOConverter(newUtxos).toSeq
 
-      utxo.insertAll(convertedVectorUTXOs:_*)
-    }
+    utxo.insertAll(convertedVectorUTXOs:_*)
 
     newUtxos.clear
 

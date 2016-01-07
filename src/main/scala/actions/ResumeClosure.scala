@@ -14,7 +14,7 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
   override lazy val unionFindTable = new ClosureMap(table)
 
   override def insertInputsIntoTree(addressList: Iterable[Hash], tree: DisjointSets[Hash]): DisjointSets[Hash] =
-   {
+  {
     val (pairList, tree1) = addressList.foldLeft((List[(Hash,Option[Hash])](),tree)){
       case ((l,t),a) =>
         val (repOpt,treex) = t.find(a)
@@ -27,23 +27,21 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
     // update the postgres DB
 
     // must be at least 2 addresses
+    assert(addressList.size >= 2, "union of trivial closure")
     val (representantOpt,result) = tree2 find (addressList.head)
     val newRep = representantOpt.get
-
 
     transactionDBSession {
       for ((address, oldRepOpt) <- pairList)
         oldRepOpt match
         {
-          case None => insertAddress(address,newRep)   //insert into DB, TODO: maybe bulk insert
+          case None => insertAddress(address,newRep)   //insert into DB
           case Some(oldRep) if (oldRep != newRep) => // if representant new, update everything that had the old one
             val updateQuery = for(p <- addresses if p.representant === hashToArray(oldRep)) yield p.representant
             updateQuery.update(newRep) // TODO: compile query, refactor to BitcoinDB
           case _ => // nothing to do
-
-      }
+        }
     }
-
     result
   }
 

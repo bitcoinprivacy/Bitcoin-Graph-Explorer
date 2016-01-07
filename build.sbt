@@ -64,6 +64,7 @@ javaOptions in run += "-Xms1G"
 javaOptions in run += "-Dcom.sun.management.jmxremote.port=3333"
 javaOptions in run += "-Dcom.sun.management.jmxremote.authenticate=false"
 javaOptions in run += "-Dcom.sun.management.jmxremote.ssl=false"
+javaOptions in run += "-Djava.rmi.server.hostname=46.105.99.182"
 
 
 

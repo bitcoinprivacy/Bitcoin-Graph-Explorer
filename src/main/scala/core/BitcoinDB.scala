@@ -83,14 +83,17 @@ trait BitcoinDB {
     }
   }
 
+
   def initializeStatsTables: Unit = {
     transactionDBSession{
-      deleteIfExists(stats, richestAddresses, richestClosures)
+      deleteIfExists(stats, richestAddresses, richestClosures, balances, closureBalances)
       
       stats.ddl.create
       richestAddresses.ddl.create
       richestClosures.ddl.create
-      
+      balances.ddl.create
+      closureBalances.ddl.create
+
     }
   }
 
@@ -124,30 +127,6 @@ trait BitcoinDB {
 
       (values.size, values.sum)
     }
-  }
-
-  def copyUTXOs = {
-    lazy val table = LmdbMap.open("utxos")
-    lazy val outputMap: UTXOs = new UTXOs (table)
-    
-    // (txhash,index) -> (address,value,blockIn)
-
-    import Hash.hashToArray
-    val values = for (((txhash,index),(address,value,blockIn)) <- outputMap.view)  //makes it a lazy collection
-                 yield (hashToArray(txhash),hashToArray(address),index,value,blockIn)
-
-    transactionDBSession{
-      deleteIfExists(utxo)
-      utxo.ddl.create
-      values.grouped(100000).foldLeft(0){
-        case (count,group) =>
-          println(count + " elements read at " + java.util.Calendar.getInstance().getTime())
-          val seq = group.toSeq
-          utxo.insertAll(seq: _*)
-          count+seq.size
-      }
-    }
-    table.close
   }
 
   def updateBalanceTables(changedAddresses: collection.mutable.Map[Hash,Long]) = {
@@ -266,9 +245,9 @@ trait BitcoinDB {
       val query =   """
        insert
        into stats select
-       (select max(block_height) from blocks),
-       (select sum(balance)/100000000 from balances),
-       (select sum(txs) from blocks),
+       (select coalesce(max(block_height),0) from blocks),
+       (select coalesce(sum(balance)/100000000,0) from balances),
+       (select coalesce(sum(txs),0) from blocks),
        (select count(1) from addresses),
        (select count(distinct(representant)) from addresses),
        (select count(1) from balances),
@@ -285,6 +264,7 @@ trait BitcoinDB {
   }
 }
 
+  
 
   def getGini[A <: Table[_] with BalanceField](balanceTable: TableQuery[A]): (Long, Double) = {
     println("DEBUG: calculating Gini: " + balanceTable + java.util.Calendar.getInstance().getTime())
@@ -299,7 +279,7 @@ trait BitcoinDB {
     
     val summe = balances.sum
     val mainSum = balances.zipWithIndex.map(p => p._1*(p._2+1.0)/n).sum
-    val gini:Double = 2.0*mainSum/(summe) - (n+1.0)/n
+    val gini:Double = if (n==0) 0.0 else 2.0*mainSum/(summe) - (n+1.0)/n
     println("DONE: gini calculated in " + (System.currentTimeMillis - time)/1000 + "s")
     (n, gini)
   }

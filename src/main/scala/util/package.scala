@@ -23,13 +23,15 @@ package object util extends BitcoinDB
   lazy val arrayNull = Hash.zero(1).array.toArray
 
 
-  def getLongestBlockChainHashSet: Map[Hash,Int] =
+  val blockStoreFile = new java.io.File("/root/Bitcoin-Graph-Explorer/blockchain/spv.blockstore")
+
+/*  def getLongestBlockChainHashSet: Map[Hash,Int] =
   {
     val lines = scala.io.Source.fromFile(blockHashListFile).getLines
     val hashes = for (line <- lines) yield Hash(line)
     hashes.zipWithIndex.toMap
   }
-
+ */
 
 
   def toArrayBuf[A:IntOrLong](x:A)(implicit f:IntOrLong[A]): ArrayBuffer[Byte] = {
@@ -59,6 +61,9 @@ package object util extends BitcoinDB
       def & = (_ & _)
     }
   }
+
+  def countLines(fileName: String) =
+    scala.io.Source.fromFile(fileName).getLines.length
 
 
   // just experimenting here
