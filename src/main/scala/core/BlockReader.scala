@@ -86,8 +86,10 @@ trait BlockReader extends BlockSource {
     t.getOutputs.asScala
 
   def getTxValue(b: Block) =
-    (for {t: Transaction <- transactionsInBlock(b)
-     o: TransactionOutput <- outputsInTransaction(t)}
+    (for {
+       t: Transaction <- transactionsInBlock(b)
+       o: TransactionOutput <- outputsInTransaction(t)
+     }
     yield o.getValue.value).sum
 
 

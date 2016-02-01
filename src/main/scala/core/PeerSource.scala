@@ -16,29 +16,27 @@ trait PeerSource extends BlockSource {
   //lazy val lines = scala.io.Source.fromFile(blockHashListFile).getLines.drop(blockCount) take 100
 
   lazy val begin = blockCount
-  lazy val end = chain.getBestChainHeight() - 5
-  lazy val range = (begin until end) take 100
-  lazy val lines = for (no <- range)
-                   yield (chain.getHeightFuture(no),no)
-
+  lazy val lastBlock = chain.getChainHead
+  lazy val lastNo = lastBlock.getHeight
+  lazy val lines = (begin to lastNo).foldRight((lastBlock,Vector[(Int,Sha256Hash)]())){
+      case (no,(bl,vec)) => (bl.getPrev(blockStore),(no,bl.getHeader.getHash)+:vec)}._2
+  lazy val truncated = lines take Math.min(100,Math.max(lines.length-5,0)) 
+  
   override def blockSource = {
-    start
+
+    if (!peerGroup.isRunning) startBitcoinJ
     
     val peer = peerGroup.getConnectedPeers().get(0);
-    println("reading blocks from " + begin + " until " + end)
+    for ((end,_) <- truncated.lastOption)
+      println("reading blocks from " + begin + " to " + end)
 
-    
-
-    for ((line,no) <- lines.toIterator) yield {
-      val blockHash = line.get.getHeader.getHash
+    for ((no,blockHash) <- truncated.toIterator) yield {
       val future = peer.getBlock(blockHash);
       System.out.println("Waiting for node to send us the requested block: " + blockHash + " at " + java.util.Calendar.getInstance().getTime());
       val block = future.get();
       System.out.println("Block received at " + java.util.Calendar.getInstance().getTime())
       (block,no)
     }
-
-    
 
   }
 

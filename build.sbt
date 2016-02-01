@@ -4,7 +4,7 @@ name := "Bitcoin Graph Explorer"
 
 version := "2.0"
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.11.7"
 
 // additional libraries
 libraryDependencies ++= Seq(
@@ -13,9 +13,10 @@ libraryDependencies ++= Seq(
 //	"junit" % "junit" % "4.8" % "test->default", // For JUnit 4 testing
 //      "ch.qos.logback" % "logback-classic" % "0.9.26" % "compile->default", // Logging
     "org.slf4j" % "slf4j-simple" % "1.7.5",
-        "org.bitcoinj" % "bitcoinj-core" % "0.13.1",
+        "org.bitcoinj" % "bitcoinj-core" % "0.13.4",
 //	"org.neo4j" % "neo4j-scala" % "0.2.0-M2-SNAPSHOT",
-  //  "org.iq80.leveldb"%"leveldb"%"0.6",
+  //  "org.iq80.leveldb"%"leveldb"%"0.7",
+    "org.fusesource.leveldbjni"%"leveldbjni-all"%"1.8",
 "org.postgresql" % "postgresql" % "9.4-1200-jdbc41",
   //"org.xerial" % "sqlite-jdbc" % "3.7.15-M1",
   //"org.mariadb.jdbc" % "mariadb-java-client" % "1.1.8",
@@ -56,7 +57,7 @@ packageOptions in (Compile, packageBin) <+= (target, externalDependencyClasspath
   Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> relativePaths.reduceOption(_ + " " + _).getOrElse(""))
  }
 
-javaOptions in run += "-Xmx8G"
+javaOptions in run += "-Xmx16G"
 
 
 javaOptions in run += "-Xms1G"
@@ -64,7 +65,7 @@ javaOptions in run += "-Xms1G"
 javaOptions in run += "-Dcom.sun.management.jmxremote.port=3333"
 javaOptions in run += "-Dcom.sun.management.jmxremote.authenticate=false"
 javaOptions in run += "-Dcom.sun.management.jmxremote.ssl=false"
-javaOptions in run += "-Djava.rmi.server.hostname=46.105.99.182"
+javaOptions in run += "-Djava.rmi.server.hostname=orion2518.startdedicated.de"
 
 
 

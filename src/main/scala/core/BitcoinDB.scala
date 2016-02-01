@@ -100,7 +100,7 @@ trait BitcoinDB {
   def createBalanceTables = {
     var clock = System.currentTimeMillis
     transactionDBSession {
-      println("DEBUG: Updating balances")
+      println("DEBUG: Creating balances")
       deleteIfExists(balances, closureBalances)
       balances.ddl.create
       closureBalances.ddl.create
@@ -115,7 +115,7 @@ trait BitcoinDB {
       (Q.u + "create index addresses_balance_2 on closure_balances(representant)").execute
         (Q.u + "create index balance_2 on closure_balances(balance)").execute
 
-      println("DONE: Balances updated in %s s" format (System.currentTimeMillis - clock)/1000)
+      println("DONE: Balances created in %s s" format (System.currentTimeMillis - clock)/1000)
     }
   }
 

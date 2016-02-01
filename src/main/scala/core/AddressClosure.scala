@@ -24,10 +24,8 @@ abstract class AddressClosure(blockHeights: Vector[Int])
 
   def generateTree: DisjointSets[Hash] =
   {
-    val step = conf.getInt("closureReadSize")
-
     def addBlocks(startIndex: Int, tree: DisjointSets[Hash]): DisjointSets[Hash] = {
-      val blocks = blockHeights.slice(startIndex,startIndex+step)
+      val blocks = blockHeights.slice(startIndex,startIndex+closureReadSize)
       for (blockNo <- blocks.headOption)
         println("reading " + blocks.length + " blocks from " + blockNo + " at " + Calendar.getInstance().getTime())
       val txAndAddressList = transactionDBSession { txListQuery(blocks).run.toVector }
@@ -35,11 +33,11 @@ abstract class AddressClosure(blockHeights: Vector[Int])
       val hashList = addressesPerTxMap.values map (_ map (p=>Hash(p._2)))
       val nontrivials = hashList filter (_.length > 1)
 
-      println("folding and merging " + nontrivials.size + Calendar.getInstance().getTime())
+      println("folding and merging " + nontrivials.size + " at " + Calendar.getInstance().getTime())
       nontrivials.foldLeft (tree) ((t,l) => insertInputsIntoTree(l,t))
     }
 
-    val result = (0 until blockHeights.length by step).foldRight(new DisjointSets[Hash](unionFindTable))(addBlocks)
+    val result = (0 until blockHeights.length by closureReadSize).foldRight(new DisjointSets[Hash](unionFindTable))(addBlocks)
     println("finished generation")
     result
   }

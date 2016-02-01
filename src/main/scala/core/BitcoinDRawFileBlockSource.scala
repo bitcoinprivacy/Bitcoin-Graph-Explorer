@@ -1,11 +1,7 @@
 package core
 
 import org.bitcoinj.core._
-import org.bitcoinj.params.MainNetParams
-import org.bitcoinj.utils.BlockFileLoader
-import org.bitcoinj.store.MemoryBlockStore;
-import java.net.InetAddress
-
+import util._
 
 import scala.collection.convert.WrapAsScala._
 
@@ -13,20 +9,16 @@ import scala.collection.convert.WrapAsScala._
 trait BitcoinDRawFileBlockSource extends BlockSource
 {
   override def blockSource: Iterator[(Block,Int)] = {
-    start
-    
+
+    startBitcoinJ
     println("starting at " +  java.util.Calendar.getInstance().getTime())
-    val b = for {
+    for {
       block <- asScalaIterator(loader)
       storedBlock = blockStore.get(block.getHash)  
       if storedBlock != null
     }
     yield 
       (block,storedBlock.getHeight)
-
-    stop
-    
-    b
   }
   
 }

@@ -56,7 +56,6 @@ class ResumeBlockReader extends FastBlockReader with PeerSource
 
   override def post = {
     println("finishing ...")
-    stop
     deleteUTXOs
     saveUTXOs
     super.post

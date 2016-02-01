@@ -46,7 +46,7 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
 
   // TODO: review why it is not working to use tx directly instead of caching the elements
   val cache: Map[Hash,Hash] = Map.empty
-  val transactionSize = conf.getInt("lmbdTransactionSize")
+  val transactionSize = conf.getInt("mdb.transactionSize")
 
   override def empty: LmdbMap = new LmdbMap
 

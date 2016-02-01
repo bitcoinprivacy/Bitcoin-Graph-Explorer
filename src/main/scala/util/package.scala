@@ -4,10 +4,16 @@
 
 import com.typesafe.config.ConfigFactory
 import core._
+import java.net.InetAddress
+import org.bitcoinj.core._
+import org.bitcoinj.params.MainNetParams
+import org.bitcoinj.store._
+import org.bitcoinj.utils.BlockFileLoader
+import scala.collection.convert.WrapAsScala._
+import scala.collection.mutable.ArrayBuffer
 import scala.slick.driver.JdbcDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
-import util.LmdbMap
-import collection.mutable.ArrayBuffer
+import util._
 
 package object util extends BitcoinDB
 {
@@ -23,7 +29,30 @@ package object util extends BitcoinDB
   lazy val arrayNull = Hash.zero(1).array.toArray
 
 
-  val blockStoreFile = new java.io.File("/root/Bitcoin-Graph-Explorer/blockchain/spv.blockstore")
+  lazy val blockStoreFile = new java.io.File("/root/Bitcoin-Graph-Explorer/blockchain/spv.blockstore")
+
+  def params = MainNetParams.get
+
+  lazy val blockStore = new LevelDBBlockStore(new Context(params),blockStoreFile)
+  lazy val chain = new BlockChain(params, blockStore);
+  lazy val peerGroup = new PeerGroup(params, chain);
+  lazy val loader = {
+    new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)
+  }
+
+  lazy val addr = new PeerAddress(InetAddress.getLocalHost(), params.getPort());
+
+  def startBitcoinJ: Unit = {
+    
+    peerGroup.start();
+    peerGroup.addAddress(addr);
+    peerGroup.waitForPeers(1).get();
+    peerGroup.startBlockChainDownload(new DownloadProgressTracker)
+  }
+
+  // def stopBitcoinJ = {
+  //   peerGroup.stopAsync()
+  // }
 
 /*  def getLongestBlockChainHashSet: Map[Hash,Int] =
   {

@@ -15,18 +15,20 @@ object Explorer extends App {
   args.toList match{
     case "start"::rest =>
 
-      Seq("rm", blockHashListFile).!
+      //Seq("rm", blockHashListFile).!
         // File blockStoreFile could be deleted and new generated here
-      Seq("touch", blockHashListFile).!
+      //Seq("touch", blockHashListFile).!
       // Ensure that bitcoind is running
-      
-      populate
       Seq("bitcoind","-daemon").run
+
+      populate
+
       Seq("touch","/root/Bitcoin-Graph-Explorer/blockchain/lock").!
       iterateResume
 
     case "populate"::rest             =>
 
+      
       populate
 
     case "resume"::rest =>
