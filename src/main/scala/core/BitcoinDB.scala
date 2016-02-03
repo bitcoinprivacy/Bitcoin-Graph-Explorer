@@ -133,7 +133,7 @@ trait BitcoinDB {
     var clock = System.currentTimeMillis
     println("DEBUG: Updating balances ...")
     
-    updateStat(changedAddresses.map{_._2}.sum, "total_bitcoins_in_addresses")
+    currentStat.total_bitcoins_in_addresses+=changedAddresses.map{_._2}.sum.intValue
 
     transactionDBSession {
 
@@ -237,8 +237,8 @@ trait BitcoinDB {
 
   def insertStatistics = {
 
-    val (s,nonDustAddresses,addressGini) = getGini(balances)
-    val (_,nonDustClosures, closureGini) = getGini(closureBalances)
+    val (nonDustAddresses,addressGini) = getGini(balances)
+    val (nonDustClosures, closureGini) = getGini(closureBalances)
 
     println("DEBUG: Calculating stats...")
 
@@ -270,36 +270,37 @@ trait BitcoinDB {
 
     println("Updating stats")
     val time = System.currentTimeMillis
-    val (summe,nonDustAddresses, addressGini) = getGini(balances)
-    val (_,nonDustClosures, closureGini) = getGini(closureBalances)
-    /*
-     Xblock_height
-     Xtotal_bitcoins_in_addresses
-     Xtotal_transactions
-     Xtotal_addresses
-     Xtotal_closures
-     total_addresses_with_balance
-      total_closures_with_balance
-     Xtotal_addresses_no_dust
-     Xtotal_closures_no_dust
-     Xgini_address
-     Xgini_closure
-     Xtimestamp 
-     */
-    updateStat(nonDustAddresses, "total_addresses_no_dust")
-    updateStat(nonDustClosures, "total_closures_no_dust")
-    updateStat(closureGini, "gini_closure")
-    updateStat(addressGini, "gini_address")
-    updateStat(blockCount + 1, "block_height")
-    updateStat(System.currentTimeMillis, "tstamp")
-//    val sum: Int = blockDB.map(_.txs).filter(_ > 0).sum.run.getOrElse(0)
-  //  updateStat(sum, "total_transactions")
-    //updateStat(blockCount, "block_height")
-    println("Updated in " + (System.currentTimeMillis - time)/1000 + " seconds")
+    val (nonDustAddresses, addressGini) = getGini(balances)
+    val (nonDustClosures, closureGini) = getGini(closureBalances)
 
+    /* block_height 
+       total_bitcoins_in_addresses XXX
+       total_transactions YYY
+       total_addresses XXX
+       total_closures XXX
+       total_addresses_with_balance YYY
+       total_closures_with_balance YYY
+       total_addresses_no_dust YYY
+       total_closures_no_dust YYY
+       gini_address 
+       gini_closure 
+       tstamp      */
+
+    // Right now with update statistics we update the values with XXX in a faster way than reading all the database. We can improve it moving the rest (YYY) to a better position, or even using psql triggers
+    currentStat.total_addresses_with_balance+=balances.length.run
+    currentStat.total_closures_with_balance+=closureBalances.length.run
+    currentStat.total_addresses_no_dust+= nonDustAddresses.intValue
+    currentStat.total_closures_no_dust+= nonDustClosures.intValue
+    currentStat.gini_closure=closureGini
+    currentStat.gini_address=addressGini
+    currentStat.block_height=blockCount
+    currentStat.tstamp=System.currentTimeMillis/1000
+    currentStat.total_transactions = blockDB.map(_.txs).filter(_ > 0).sum.run.getOrElse(0)
+    saveStat
+    println("Updated in " + (System.currentTimeMillis - time)/1000 + " seconds")
   }
 
-  def getGini[A <: Table[_] with BalanceField](balanceTable: TableQuery[A]): (Double, Long, Double) = {
+  def getGini[A <: Table[_] with BalanceField](balanceTable: TableQuery[A]): (Long, Double) = {
     println("DEBUG: calculating Gini: " + balanceTable + java.util.Calendar.getInstance().getTime())
     val time = System.currentTimeMillis
 
@@ -315,7 +316,7 @@ trait BitcoinDB {
     val mainSum = balances.zipWithIndex.map(p => p._1*(p._2+1.0)/n).sum
     val gini:Double = if (n==0) 0.0 else 2.0*mainSum/(summe) - (n+1.0)/n
     println("DONE: gini calculated in " + (System.currentTimeMillis - time)/1000 + "s")
-    (summe, n, gini)
+    (n, gini)
   }
 
   def createAddressIndexes {
@@ -372,31 +373,17 @@ trait BitcoinDB {
 
   }
 
-  def createStat(timestamp: Long) = transactionDBSession{
-    // select * from stats where block_height is max
-    // insert into stats with the new timestamp
-    val lastStatQuery = stats.sortBy(_.block_height desc).firstOption
-    stats.filter(_.block_height === -1).delete.run
-    for ((block_height, total_bitcoins_in_addresses, total_transactions, total_addresses, total_closures, total_addresses_with_balance, total_closures_with_balance, total_addresses_no_dust, total_closures_no_dust, gini_closure, gini_address, tstamp) <- lastStatQuery)
-      stats.insert(
-        // copy modifing the tstamp, ginis at 0 cause are not accumulative
-        (-1, total_bitcoins_in_addresses, total_transactions, total_addresses, total_closures, total_addresses_with_balance, total_closures_with_balance, total_addresses_no_dust, total_closures_no_dust, .0, .0, timestamp)
-
-      )
+  lazy val currentStat = transactionDBSession{
+    CurrentStat.tupled(stats.sortBy(_.block_height desc).firstOption.get)
   }
 
-  def updateStat(value: AnyVal, field: String) = transactionDBSession{
-    // ugly query but it works on psql at least
-    value match {
-      case e: Int =>
-        Q.updateNA("update stats set " + field + " = " + field + " + ( " + value + " ) where block_height = - 1").execute
-      case e: Long =>
-        Q.updateNA("update stats set " + field + " = " + field + " + ( " + value + " ) where block_height = - 1").execute
-      case e: Double =>
-        Q.updateNA("update stats set " + field + " = " + field + " + ( " + value + " ) where block_height = - 1").execute
-    }
+  def saveStat = transactionDBSession{
+    stats.insert(CurrentStat.unapply(currentStat).get)
   }
 
+  case class CurrentStat (var block_height: Int, var total_bitcoins_in_addresses: Int, var total_transactions: Int, var total_addresses: Int, var total_closures: Int, var total_addresses_with_balance: Int,
+                          var total_closures_with_balance: Int, var total_addresses_no_dust: Int, var total_closures_no_dust: Int, var gini_closure: Double, var gini_address: Double, var tstamp: Long)
+  
   def lastCompletedHeight: Int = transactionDBSession{
     stats.map(_.block_height).max.run.getOrElse(0)
   }

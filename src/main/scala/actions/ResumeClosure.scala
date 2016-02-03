@@ -30,8 +30,14 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
     assert(addressList.size >= 2, "union of trivial closure")
     val (representantOpt,result) = tree2 find (addressList.head)
     val newRep = representantOpt.get
-    var i = 0
+
     transactionDBSession {
+
+      currentStat.total_closures+=pairList.filter( pair => pair match {
+        case (a, Some(oldRep)) if (oldRep != newRep) =>  true
+        case _ =>                          false
+      }).length
+
       for ((address, oldRepOpt) <- pairList)
         oldRepOpt match
         {
@@ -39,11 +45,11 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
           case Some(oldRep) if (oldRep != newRep) => // if representant new, update everything that had the old one
             val updateQuery = for(p <- addresses if p.representant === hashToArray(oldRep)) yield p.representant
             updateQuery.update(newRep) // TODO: compile query, refactor to BitcoinDB
-            i+=1
+
           case _ => // nothing to do
         }
     }
-    updateStat(i, "total_closures")
+
     result
   }
 
@@ -78,7 +84,7 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
       case e: java.sql.BatchUpdateException => throw e.getNextException
     }
 
-    updateStat(vectorAddresses.size, "total_addresses")
+    currentStat.total_addresses+=vectorAddresses.size
     vectorAddresses.clear
 
     println("DEBUG: Data inserted")

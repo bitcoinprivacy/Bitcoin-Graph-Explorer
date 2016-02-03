@@ -134,7 +134,6 @@ abstract class FastBlockReader extends BlockReader {
   }
 
   def pre  = {
-    createStat(System.currentTimeMillis)
     outOfOrderInputMap = immutable.HashMap.empty
     vectorMovements = Vector()
     vectorBlocks = Vector()
