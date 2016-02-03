@@ -60,8 +60,10 @@ trait BlockReader extends BlockSource {
 
   }
 
+
   def blockFilter(b: Block) = {
     val blockHash = Hash(b.getHash.getBytes)
+
     /*(longestChain contains blockHash) &&*/ !(savedBlockSet contains blockHash)
   }
 

@@ -23,8 +23,6 @@ trait PeerSource extends BlockSource {
   lazy val truncated = lines take Math.min(100,Math.max(lines.length-5,0)) 
   
   override def blockSource = {
-
-    if (!peerGroup.isRunning) startBitcoinJ
     
     val peer = peerGroup.getConnectedPeers().get(0);
     for ((end,_) <- truncated.lastOption)

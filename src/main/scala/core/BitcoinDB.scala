@@ -132,7 +132,9 @@ trait BitcoinDB {
   def updateBalanceTables(changedAddresses: collection.mutable.Map[Hash,Long]) = {
     var clock = System.currentTimeMillis
     println("DEBUG: Updating balances ...")
- 
+    
+    updateStat(changedAddresses.map{_._2}.sum, "total_bitcoins_in_addresses")
+
     transactionDBSession {
 
       val adsAndBalances = for ((address, change) <- changedAddresses)
@@ -235,14 +237,14 @@ trait BitcoinDB {
 
   def insertStatistics = {
 
-    val (nonDustAddresses,addressGini) = getGini(balances)
-    val (nonDustClosures, closureGini) = getGini(closureBalances)
+    val (s,nonDustAddresses,addressGini) = getGini(balances)
+    val (_,nonDustClosures, closureGini) = getGini(closureBalances)
 
     println("DEBUG: Calculating stats...")
 
-    val startTime = System.currentTimeMillis
-    transactionDBSession {
-      val query =   """
+      val startTime = System.currentTimeMillis
+      transactionDBSession {
+        val query =   """
        insert
        into stats select
        (select coalesce(max(block_height),0) from blocks),
@@ -257,31 +259,63 @@ trait BitcoinDB {
        """ + closureGini + """,
        """ + addressGini + """,
        """+ (System.currentTimeMillis/1000).toString +""";"""
-      
-      (Q.u + query).execute
-      println("DONE: Stats calculated in " + (System.currentTimeMillis - startTime)/1000 + "s");
+
+        (Q.u + query).execute
+        println("DONE: Stats calculated in " + (System.currentTimeMillis - startTime)/1000 + "s");
+
+    }
+  }
+
+  def updateStatistics = {
+
+    println("Updating stats")
+    val time = System.currentTimeMillis
+    val (summe,nonDustAddresses, addressGini) = getGini(balances)
+    val (_,nonDustClosures, closureGini) = getGini(closureBalances)
+    /*
+     Xblock_height
+     Xtotal_bitcoins_in_addresses
+     Xtotal_transactions
+     Xtotal_addresses
+     Xtotal_closures
+     total_addresses_with_balance
+      total_closures_with_balance
+     Xtotal_addresses_no_dust
+     Xtotal_closures_no_dust
+     Xgini_address
+     Xgini_closure
+     Xtimestamp 
+     */
+    updateStat(nonDustAddresses, "total_addresses_no_dust")
+    updateStat(nonDustClosures, "total_closures_no_dust")
+    updateStat(closureGini, "gini_closure")
+    updateStat(addressGini, "gini_address")
+    updateStat(blockCount + 1, "block_height")
+    updateStat(System.currentTimeMillis, "tstamp")
+//    val sum: Int = blockDB.map(_.txs).filter(_ > 0).sum.run.getOrElse(0)
+  //  updateStat(sum, "total_transactions")
+    //updateStat(blockCount, "block_height")
+    println("Updated in " + (System.currentTimeMillis - time)/1000 + " seconds")
 
   }
-}
 
-  
-
-  def getGini[A <: Table[_] with BalanceField](balanceTable: TableQuery[A]): (Long, Double) = {
+  def getGini[A <: Table[_] with BalanceField](balanceTable: TableQuery[A]): (Double, Long, Double) = {
     println("DEBUG: calculating Gini: " + balanceTable + java.util.Calendar.getInstance().getTime())
     val time = System.currentTimeMillis
 
     val balanceVector = transactionDBSession {
        balanceTable.map(_.balance).filter(_ > dustLimit).sorted.run.toVector
     }
+
     val balances = balanceVector.map(_.toDouble)
-    
+
     val n: Long = balances.length
-    
+
     val summe = balances.sum
     val mainSum = balances.zipWithIndex.map(p => p._1*(p._2+1.0)/n).sum
     val gini:Double = if (n==0) 0.0 else 2.0*mainSum/(summe) - (n+1.0)/n
     println("DONE: gini calculated in " + (System.currentTimeMillis - time)/1000 + "s")
-    (n, gini)
+    (summe, n, gini)
   }
 
   def createAddressIndexes {
@@ -338,6 +372,31 @@ trait BitcoinDB {
 
   }
 
+  def createStat(timestamp: Long) = transactionDBSession{
+    // select * from stats where block_height is max
+    // insert into stats with the new timestamp
+    val lastStatQuery = stats.sortBy(_.block_height desc).firstOption
+    stats.filter(_.block_height === -1).delete.run
+    for ((block_height, total_bitcoins_in_addresses, total_transactions, total_addresses, total_closures, total_addresses_with_balance, total_closures_with_balance, total_addresses_no_dust, total_closures_no_dust, gini_closure, gini_address, tstamp) <- lastStatQuery)
+      stats.insert(
+        // copy modifing the tstamp, ginis at 0 cause are not accumulative
+        (-1, total_bitcoins_in_addresses, total_transactions, total_addresses, total_closures, total_addresses_with_balance, total_closures_with_balance, total_addresses_no_dust, total_closures_no_dust, .0, .0, timestamp)
+
+      )
+  }
+
+  def updateStat(value: AnyVal, field: String) = transactionDBSession{
+    // ugly query but it works on psql at least
+    value match {
+      case e: Int =>
+        Q.updateNA("update stats set " + field + " = " + field + " + ( " + value + " ) where block_height = - 1").execute
+      case e: Long =>
+        Q.updateNA("update stats set " + field + " = " + field + " + ( " + value + " ) where block_height = - 1").execute
+      case e: Double =>
+        Q.updateNA("update stats set " + field + " = " + field + " + ( " + value + " ) where block_height = - 1").execute
+    }
+  }
+
   def lastCompletedHeight: Int = transactionDBSession{
     stats.map(_.block_height).max.run.getOrElse(0)
   }
@@ -352,7 +411,7 @@ trait BitcoinDB {
     val utxoTable = new UTXOs(table)
 
     val utxoQuery = utxo.filter(_.block_height === blockHeight)
-    
+
     for ((tx,idx) <- utxoQuery.map(p => (p.transaction_hash,p.index)).run)
       utxoTable -= Hash(tx) -> idx
     utxoQuery.delete

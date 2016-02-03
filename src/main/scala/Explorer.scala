@@ -103,8 +103,11 @@ object Explorer extends App {
 
   def iterateResume = {
     Seq("bitcoind","-daemon").run
-    val lch = lastCompletedHeight
-    val bc = blockCount
+    
+    if (!peerGroup.isRunning) startBitcoinJ
+
+    //val lch = lastCompletedHeight
+    //val bc = blockCount
 
     // if there are more stats than blocks we could delete it
     //for (i <- (lch +1 until bc).reverse){
@@ -122,8 +125,15 @@ object Explorer extends App {
       
     //  if (to > from)
     //  {
-      //  println("Reading blocks from " + from + " until " + to)
-        resume
+    //  println("Reading blocks from " + from + " until " + to)
+
+      
+      if (blockCount > chain.getBestChainHeight-5)
+      {
+        println("waiting for new blocks at " + java.util.Calendar.getInstance().getTime())
+        chain.getHeightFuture(blockCount+5).get //wait until the chain is at least 6 blocks longer than we have read
+      }
+      resume
      // }
      // else
      // {
@@ -132,17 +142,20 @@ object Explorer extends App {
      // }
     }
     println("process stopped")
-    Seq("bitcoin-cli","stop").run
+    //Seq("bitcoin-cli","stop").run
   }
 
   def resumeStats(changedAddresses: collection.mutable.Map[Hash,Long]) = {
-    if (changedAddresses.size < 15000 )
+    if (changedAddresses.size < 30000 ){
       updateBalanceTables(changedAddresses)
-    else
+      updateStatistics
+    }
+    else {
       createBalanceTables
+      insertStatistics
+    }
     insertRichestAddresses
     insertRichestClosures
-    insertStatistics
   }
 
   def populateStats = {
@@ -152,5 +165,5 @@ object Explorer extends App {
     insertStatistics
   }
 
- 
+
 }

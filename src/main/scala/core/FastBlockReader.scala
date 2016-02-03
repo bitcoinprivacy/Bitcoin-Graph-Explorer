@@ -28,6 +28,7 @@ abstract class FastBlockReader extends BlockReader {
   def saveTransaction(trans: Transaction, blockHeight: Int) =
   {
     val transactionHash = Hash(trans.getHash.getBytes)
+    
     val addresses =
       for {
         input <- inputsInTransaction(trans)
@@ -133,6 +134,7 @@ abstract class FastBlockReader extends BlockReader {
   }
 
   def pre  = {
+    createStat(System.currentTimeMillis)
     outOfOrderInputMap = immutable.HashMap.empty
     vectorMovements = Vector()
     vectorBlocks = Vector()
