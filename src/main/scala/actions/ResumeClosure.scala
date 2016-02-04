@@ -33,18 +33,17 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
 
     transactionDBSession {
 
-      currentStat.total_closures+=pairList.filter( pair => pair match {
-        case (a, Some(oldRep)) if (oldRep != newRep) =>  true
-        case _ =>                          false
-      }).length
-
       for ((address, oldRepOpt) <- pairList)
         oldRepOpt match
         {
-          case None => insertAddress(address,newRep)   //insert into DB
-          case Some(oldRep) if (oldRep != newRep) => // if representant new, update everything that had the old one
+          case None =>
+            insertAddress(address,newRep)
+            currentStat.total_closures+=1
+          case Some(oldRep) if (oldRep != newRep) =>
+            // if representant new, update everything that had the old one
             val updateQuery = for(p <- addresses if p.representant === hashToArray(oldRep)) yield p.representant
-            updateQuery.update(newRep) // TODO: compile query, refactor to BitcoinDB
+            updateQuery.update(newRep) // TODO: compile query
+            currentStat.total_addresses+=1
 
           case _ => // nothing to do
         }
@@ -73,6 +72,7 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
   }
 
   def saveAddresses = {
+
     println("DEBUG: Inserting Addresses into SQL database ...")
 
     val convertedVector =vectorAddresses map (p => (hashToArray(p._1), hashToArray(p._2)))
@@ -84,7 +84,6 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
       case e: java.sql.BatchUpdateException => throw e.getNextException
     }
 
-    currentStat.total_addresses+=vectorAddresses.size
     vectorAddresses.clear
 
     println("DEBUG: Data inserted")

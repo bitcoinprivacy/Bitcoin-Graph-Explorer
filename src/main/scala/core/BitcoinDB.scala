@@ -132,7 +132,6 @@ trait BitcoinDB {
   def updateBalanceTables(changedAddresses: collection.mutable.Map[Hash,Long]) = {
     var clock = System.currentTimeMillis
     println("DEBUG: Updating balances ...")
-    
     currentStat.total_bitcoins_in_addresses+=changedAddresses.map{_._2}.sum.intValue
 
     transactionDBSession {
@@ -286,7 +285,9 @@ trait BitcoinDB {
        gini_closure 
        tstamp      */
 
-    // Right now with update statistics we update the values with XXX in a faster way than reading all the database. We can improve it moving the rest (YYY) to a better position, or even using psql triggers
+    // Right now with update statistics we update the values with XXX in a faster way than reading all the database. We can improve it moving the rest (YYY) to a better position, or even using psql triggers.
+    // A first approach could be to modify the values direct in ResumeBlockReader, ResumeClosure (balances can be updated whenever a utxo is added or removed)
+    // Update should only add the ginis and call saveStat
     currentStat.total_addresses_with_balance+=balances.length.run
     currentStat.total_closures_with_balance+=closureBalances.length.run
     currentStat.total_addresses_no_dust+= nonDustAddresses.intValue
