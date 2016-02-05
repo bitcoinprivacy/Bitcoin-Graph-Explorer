@@ -288,17 +288,19 @@ trait BitcoinDB {
     // Right now with update statistics we update the values with XXX in a faster way than reading all the database. We can improve it moving the rest (YYY) to a better position, or even using psql triggers.
     // A first approach could be to modify the values direct in ResumeBlockReader, ResumeClosure (balances can be updated whenever a utxo is added or removed)
     // Update should only add the ginis and call saveStat
-    currentStat.total_addresses_with_balance+=balances.length.run
-    currentStat.total_closures_with_balance+=closureBalances.length.run
-    currentStat.total_addresses_no_dust+= nonDustAddresses.intValue
-    currentStat.total_closures_no_dust+= nonDustClosures.intValue
-    currentStat.gini_closure=closureGini
-    currentStat.gini_address=addressGini
-    currentStat.block_height=blockCount
-    currentStat.tstamp=System.currentTimeMillis/1000
-    currentStat.total_transactions = blockDB.map(_.txs).filter(_ > 0).sum.run.getOrElse(0)
-    saveStat
-    println("Updated in " + (System.currentTimeMillis - time)/1000 + " seconds")
+    transactionDBSession{
+      currentStat.total_addresses_with_balance+=balances.length.run
+      currentStat.total_closures_with_balance+=closureBalances.length.run
+      currentStat.total_addresses_no_dust+= nonDustAddresses.intValue
+      currentStat.total_closures_no_dust+= nonDustClosures.intValue
+      currentStat.gini_closure=closureGini
+      currentStat.gini_address=addressGini
+      currentStat.block_height=blockCount
+      currentStat.tstamp=System.currentTimeMillis/1000
+      currentStat.total_transactions = blockDB.map(_.txs).filter(_ > 0).sum.run.getOrElse(0)
+      saveStat
+      println("Updated in " + (System.currentTimeMillis - time)/1000 + " seconds")
+    }
   }
 
   def getGini[A <: Table[_] with BalanceField](balanceTable: TableQuery[A]): (Long, Double) = {
