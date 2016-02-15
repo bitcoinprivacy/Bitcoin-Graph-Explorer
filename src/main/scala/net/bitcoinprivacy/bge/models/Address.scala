@@ -12,7 +12,7 @@ import org.bitcoinj.core.AddressFormatException
 import core._
 
 case class Address(address: String, balance: Long)
-case class WalletSummary(size: Int, total_balance: Long)
+case class AddressesSummary(size: Int, total_balance: Long)
 
 object Address extends core.BitcoinDB
 {
@@ -26,7 +26,7 @@ object Address extends core.BitcoinDB
 
       val total = balances.filter(_.address inSetBind(hashList)).map(_.balance).sum.run.getOrElse(0L)
 
-      WalletSummary(hashList.size,total)
+      AddressesSummary(hashList.size,total)
     }
 
 
@@ -49,6 +49,14 @@ object Address extends core.BitcoinDB
       richListTable.sortBy(p => (p.block_height.desc,p.balance.desc)).
         drop(from).take(Math.min(1000, until-from)).map(p=> (p.hash,p.balance)).run.toList map
       (p => Address(hashToAddress(p._1), p._2))
+    }
+  }
+
+  def getAddressListSummary[A <: Table[_] with BalanceField with HashField with BlockHeightField](richListTable: TableQuery[A]): AddressesSummary = {
+    transactionDBSession{
+      val query = richListTable.sortBy(p => (p.block_height.desc,p.balance.desc)).
+        take(1000).map(_.balance)
+      AddressesSummary(query.length.run,query.sum.run.getOrElse(0L))
     }
   }
 
