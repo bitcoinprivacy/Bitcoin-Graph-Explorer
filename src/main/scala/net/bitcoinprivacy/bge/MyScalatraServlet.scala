@@ -57,7 +57,7 @@ class MyScalatraServlet extends BgeStack  with core.BitcoinDB with JacksonJsonSu
     UTXO.getUtxosByAd(ad,from,until)
   }
 
-  get("utxos/:ad/summary") {
+  get("/utxos/:ad/summary") {
     UTXO.getUtxosByAdSummary(ad)
   }
 
@@ -65,7 +65,7 @@ class MyScalatraServlet extends BgeStack  with core.BitcoinDB with JacksonJsonSu
     UTXO.getUtxosByTx(tx,from,until)
   }
 
-  get("tx_utxos/:tx/summary") {
+  get("/tx_utxos/:tx/summary") {
     UTXO.getUtxosByTxSummary(tx)
   }
 
@@ -127,6 +127,15 @@ class MyScalatraServlet extends BgeStack  with core.BitcoinDB with JacksonJsonSu
     Address.getAddressList(richestClosures,from,until)  
   }
 
+  get("/richlist/addresses/summary") {
+    Address.getAddressListSummary(richestAddresses)
+  }
+
+  get("/richlist/wallets/summary") {
+    Address.getAddressListSummary(richestClosures)
+  }
+
+  
   get("/distribution/:limit") {
     Distribution.get(limit)
   }
