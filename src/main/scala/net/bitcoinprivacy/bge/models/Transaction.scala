@@ -20,23 +20,16 @@ object Transaction extends core.BitcoinDB {
 
   def get(blockHeight: Int, from: Int, until: Int) = transactionDBSession{
 
-    val movementsList = movements.filter(_.height_in === blockHeight).groupBy(_.transaction_hash).map{ case (tx,rest) => (tx, rest.map(_.value).sum) }.run
+    val movementsList = movements.filter(_.height_in === blockHeight).groupBy(_.transaction_hash).map{ case (tx,rest) => (tx, rest.map(_.value).sum) }.run.toVector
 
-    val utxosList = utxo.filter(_.block_height === blockHeight).groupBy(_.transaction_hash).map{ case (tx,rest) => (tx, rest.map(_.value).sum) }.run
+    val utxosList = utxo.filter(_.block_height === blockHeight).groupBy(_.transaction_hash).map{ case (tx,rest) => (tx, rest.map(_.value).sum) }.run.toVector
 
-    val transactionsMap: HashMap[String, Long] = HashMap.empty
+    val totalList = (movementsList ++ utxosList).groupBy(_._1).
+      map {case (tx,list) => (  tx,list. map(_._2.getOrElse(0L)).sum)}.
+      toVector
 
-    for (pair <- utxosList) pair match {
+    totalList.map (p => Transaction(Hash(p._1).toString, p._2.toLong))
 
-      case (h: Array[Byte], v: Option[Long]) =>
-
-        val value: Long = transactionsMap.getOrElse(hash, 0L)// + v.getOrElse(0L)
-        val hash = Hash(h).toString
-        transactionsMap+(hash -> value)
-
-    }
-    transactionsMap+("lala" -> 1L)
-    transactionsMap.map( pair => Transaction(pair._1, pair._2))
   }
 
   def  getInfo(blockHeight: Int) = transactionDBSession {
