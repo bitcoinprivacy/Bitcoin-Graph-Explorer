@@ -1,6 +1,5 @@
 package net.bitcoinprivacy.bge.models
 
-
 import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import scala.slick.jdbc.{ StaticQuery => Q }
@@ -32,7 +31,7 @@ object Address extends core.BitcoinDB {
 
     richListTable.sortBy(p => (p.block_height.desc,p.balance.desc)).
       drop(from).take(Math.min(1000, until-from)).map(p=> (p.hash,p.balance)).run.toList map
-    (p => Address(hashToAddress(p._1), p._2))
+        (p => Address(hashToAddress(p._1), p._2))
 
   }
 
@@ -40,23 +39,19 @@ object Address extends core.BitcoinDB {
 
     val representantOption = addresses.filter(_.hash === hash).map(_.representant).firstOption
 
-    val hashesList = representantOption match {
+    val (count, sum)  = representantOption match {
 
-      case None => List(hash)
+      case None =>
 
-      case Some(a) => addresses.filter(_.representant === a).map(_.hash).run.toList
+        (1, balances.filter(_.address === hash).map(_.balance).firstOption.getOrElse(0L))
 
-    }
+      case Some(a) =>
 
-    val sum = representantOption match {
-
-      case None => balances.filter(_.address === hash).map(_.balance).firstOption.getOrElse(0L)
-
-      case Some(a) => closureBalances.filter(_.representant === a).map(_.balance).firstOption.getOrElse(0L)
+        (addresses.filter(_.representant === a).size.run, closureBalances.filter(_.representant === a).map(_.balance).firstOption.getOrElse(0L))
 
     }
 
-    AddressesSummary(hashesList.length, sum)
+    AddressesSummary(count, sum)
 
   }
 

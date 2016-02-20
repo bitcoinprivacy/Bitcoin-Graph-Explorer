@@ -22,17 +22,17 @@ class Blocks(tag:Tag) extends Table[(Array[Byte], Int, Int, Long, Long)](tag, "b
 //  def idx2 = index("idx_2", (block_height), unique = true)
 }
 
-class Stats(tag:Tag) extends Table[(Int, Long, Int, Int, Int, Int, Int, Int, Int, Double, Double, Long)](tag, "stats") {
+class Stats(tag:Tag) extends Table[(Int, Long, Long, Long, Long, Long, Long, Long, Long, Double, Double, Long)](tag, "stats") {
   def block_height = column[Int]("block_height")
   def total_bitcoins_in_addresses = column[Long]("total_bitcoins_in_addresses")
-  def total_transactions = column[Int]("total_transactions")
-  def total_addresses = column[Int]("total_addresses")
+  def total_transactions = column[Long]("total_transactions")
+  def total_addresses = column[Long]("total_addresses")
   //def total_closured_addresses = column[Int]("total_closured_addresses")
-  def total_closures = column[Int]("total_closures")
-  def total_addresses_with_balance = column[Int]("total_addresses_with_balance")
-  def total_closures_with_balance = column[Int]("total_closures_with_balance")
-  def total_addresses_no_dust = column[Int]("total_addresses_no_dust")
-  def total_closures_no_dust = column[Int]("total_closures_no_dust")
+  def total_closures = column[Long]("total_closures")
+  def total_addresses_with_balance = column[Long]("total_addresses_with_balance")
+  def total_closures_with_balance = column[Long]("total_closures_with_balance")
+  def total_addresses_no_dust = column[Long]("total_addresses_no_dust")
+  def total_closures_no_dust = column[Long]("total_closures_no_dust")
   def gini_closure = column[Double]("gini_closure")
   def gini_address = column[Double]("gini_address")
   def tstamp = column[Long]("tstamp")

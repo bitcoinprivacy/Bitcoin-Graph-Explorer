@@ -8,13 +8,16 @@ import scala.slick.jdbc.meta.MTable
 import util.Hash
 
 case class Block(hash: String, height: Int, tx: Int, value:Long, tstamp: Long)
-case class BlockSummary(count: Int, txCount: Int)
+case class BlockSummary(count: Long, txCount: Long)
 
 object Block extends core.BitcoinDB
 {
   def getBlocks(from: Int, until: Int) =
+
     transactionDBSession{
-      val blockslist = for (b<- blockDB.sortBy(_.block_height asc).drop(from).take(until-from)) 
+
+      val max = stats.map(_.block_height).max.run.getOrElse(0)
+      val blockslist = for (b<- blockDB.filter(_.block_height < max).sortBy(_.block_height asc).drop(from).take(until-from))
                        yield (b.hash, b.block_height, b.txs,b.btcs, b.tstamp)
 
       blockslist.run.toVector map (p => Block(Hash(p._1).toString, p._2,p._3,p._4,p._5))

@@ -154,12 +154,12 @@ trait BitcoinDB {
       val closures = new DisjointSets[Hash](unionFindTable)
 
       val repsAndChanges: collection.mutable.Map[Hash,Long] = collection.mutable.Map()
-      for ((address, balance) <- adsAndBalances -= Hash.zero(0))
+      for ((address, change) <- changedAddresses - Hash.zero(0))
       {
         val repOpt = closures.find(address)._1
 
-        for (rep <- repOpt){
-          val newBalance = repsAndChanges.getOrElse(rep, 0L) + balance
+        for (rep <- repOpt){ // only consider existing closures, because we omit trivial ones
+          val newBalance = repsAndChanges.getOrElse(rep, 0L) + change 
           repsAndChanges += (rep -> newBalance)
         }
       }
@@ -297,7 +297,7 @@ trait BitcoinDB {
       currentStat.gini_address=addressGini
       currentStat.block_height=blockCount
       currentStat.tstamp=System.currentTimeMillis/1000
-      currentStat.total_transactions = blockDB.map(_.txs).filter(_ > 0).sum.run.getOrElse(0)
+      currentStat.total_transactions = blockDB.map(_.txs).filter(_ > 0).sum.run.getOrElse(0).toLong
       saveStat
       println("Updated in " + (System.currentTimeMillis - time)/1000 + " seconds")
     }
@@ -384,8 +384,7 @@ trait BitcoinDB {
     stats.insert(CurrentStat.unapply(currentStat).get)
   }
 
-  case class CurrentStat (var block_height: Int, var total_bitcoins_in_addresses: Long, var total_transactions: Int, var total_addresses: Int, var total_closures: Int, var total_addresses_with_balance: Int,
-                          var total_closures_with_balance: Int, var total_addresses_no_dust: Int, var total_closures_no_dust: Int, var gini_closure: Double, var gini_address: Double, var tstamp: Long)
+  case class CurrentStat (var block_height: Int, var total_bitcoins_in_addresses: Long, var total_transactions: Long, var total_addresses: Long, var total_closures: Long, var total_addresses_with_balance: Long, var total_closures_with_balance: Long, var total_addresses_no_dust: Long, var total_closures_no_dust: Long, var gini_closure: Double, var gini_address: Double, var tstamp: Long)
   
   def lastCompletedHeight: Int = transactionDBSession{
     stats.map(_.block_height).max.run.getOrElse(0)
