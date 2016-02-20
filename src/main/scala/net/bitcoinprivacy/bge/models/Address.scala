@@ -86,6 +86,3 @@ object Address extends core.BitcoinDB {
   }
 
 }
-
-
-

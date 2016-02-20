@@ -22,9 +22,9 @@ class Blocks(tag:Tag) extends Table[(Array[Byte], Int, Int, Long, Long)](tag, "b
 //  def idx2 = index("idx_2", (block_height), unique = true)
 }
 
-class Stats(tag:Tag) extends Table[(Int, Int, Int, Int, Int, Int, Int, Int, Int, Double, Double, Long)](tag, "stats") {
+class Stats(tag:Tag) extends Table[(Int, Long, Int, Int, Int, Int, Int, Int, Int, Double, Double, Long)](tag, "stats") {
   def block_height = column[Int]("block_height")
-  def total_bitcoins_in_addresses = column[Int]("total_bitcoins_in_addresses")
+  def total_bitcoins_in_addresses = column[Long]("total_bitcoins_in_addresses")
   def total_transactions = column[Int]("total_transactions")
   def total_addresses = column[Int]("total_addresses")
   //def total_closured_addresses = column[Int]("total_closured_addresses")

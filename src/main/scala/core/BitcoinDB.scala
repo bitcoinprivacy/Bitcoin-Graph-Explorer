@@ -132,7 +132,7 @@ trait BitcoinDB {
   def updateBalanceTables(changedAddresses: collection.mutable.Map[Hash,Long]) = {
     var clock = System.currentTimeMillis
     println("DEBUG: Updating balances ...")
-    currentStat.total_bitcoins_in_addresses+=changedAddresses.map{_._2}.sum.intValue
+    currentStat.total_bitcoins_in_addresses+=changedAddresses.map{_._2}.sum
 
     transactionDBSession {
 
@@ -384,7 +384,7 @@ trait BitcoinDB {
     stats.insert(CurrentStat.unapply(currentStat).get)
   }
 
-  case class CurrentStat (var block_height: Int, var total_bitcoins_in_addresses: Int, var total_transactions: Int, var total_addresses: Int, var total_closures: Int, var total_addresses_with_balance: Int,
+  case class CurrentStat (var block_height: Int, var total_bitcoins_in_addresses: Long, var total_transactions: Int, var total_addresses: Int, var total_closures: Int, var total_addresses_with_balance: Int,
                           var total_closures_with_balance: Int, var total_addresses_no_dust: Int, var total_closures_no_dust: Int, var gini_closure: Double, var gini_address: Double, var tstamp: Long)
   
   def lastCompletedHeight: Int = transactionDBSession{

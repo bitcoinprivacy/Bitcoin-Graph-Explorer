@@ -7,7 +7,7 @@ import scala.slick.jdbc.{ StaticQuery => Q }
 import scala.slick.jdbc.meta.MTable
 import util.Hash
 
-case class Stats(block_height:Int, total_bitcoins_in_addresses:Int, total_transactions:Int, total_addresses:Int, total_closures:Int, total_addresses_with_balance:Int, total_closures_with_balance:Int, total_addresses_no_dust:Int, total_closures_no_dust:Int, gini_closure:Double,gini_address:Double, tstamp:Long)
+case class Stats(block_height:Int, total_bitcoins_in_addresses:Long, total_transactions:Int, total_addresses:Int, total_closures:Int, total_addresses_with_balance:Int, total_closures_with_balance:Int, total_addresses_no_dust:Int, total_closures_no_dust:Int, gini_closure:Double,gini_address:Double, tstamp:Long)
 
 
 object Stats extends core.BitcoinDB

@@ -116,7 +116,7 @@ class MyScalatraServlet extends BgeStack  with core.BitcoinDB with JacksonJsonSu
   }
 
   get("/txs/:block_height/summary"){
-    Summary(Block.getBlocks(block_height, (block_height: Int) + 1).headOption.map(_.tx).getOrElse(0))
+    Transaction.getInfo(block_height)
   }
 
   get("/richlist/addresses/:from/:until") {
@@ -124,7 +124,7 @@ class MyScalatraServlet extends BgeStack  with core.BitcoinDB with JacksonJsonSu
   }
 
   get("/richlist/wallets/:from/:until") {
-    Address.getAddressList(richestClosures,from,until)  
+    Address.getAddressList(richestClosures,from,until)
   }
 
   get("/richlist/addresses/summary") {

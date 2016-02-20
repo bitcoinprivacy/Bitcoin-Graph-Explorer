@@ -31,21 +31,32 @@ object UTXO extends core.BitcoinDB{
                            yield (b.address, b.value)
 
     outputsFromUTXOS.run.toVector map (p => UTXO(tx, p._2, Address.hashToAddress(p._1)))
+
   }
 
   def getUtxosByAdSummary(address: Array[Byte]) = transactionDBSession {
 
-    val query = utxo.filter(_.address===address).map(_.value)
+    val query = utxo.filter(_.address===address)
 
-    UTXOsSummary(query.size.run, query.sum.run.getOrElse(0L), 1, 2)
+    UTXOsSummary(
+      query.size.run,
+      query.map(_.value).sum.run.getOrElse(0L),
+      query.map(_.block_height).min.run.getOrElse(0),
+      query.map(_.block_height).max.run.getOrElse(0) 
+    )
 
   }
 
   def getUtxosByTxSummary(transactionHash: Array[Byte]) = transactionDBSession {
 
-    val query = utxo.filter(_.transaction_hash===transactionHash).map(_.value)
+    val query = utxo.filter(_.transaction_hash===transactionHash)
 
-    UTXOsSummary(query.size.run, query.sum.run.getOrElse(0L), 3, 4)
+    UTXOsSummary(
+      query.size.run,
+      query.map(_.value).sum.run.getOrElse(0L),
+      query.map(_.block_height).min.run.getOrElse(0),
+      query.map(_.block_height).max.run.getOrElse(0)
+    )
 
   }
 

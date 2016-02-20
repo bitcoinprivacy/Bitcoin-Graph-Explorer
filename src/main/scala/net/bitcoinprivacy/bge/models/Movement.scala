@@ -43,15 +43,36 @@ object Movement extends core.BitcoinDB
   }
 
   def getMovementsSummary(address: Array[Byte]) = transactionDBSession {
-    MovementsSummary(movements.filter(_.address===address).size.run, 1, 2, 3)
+    val query = movements.filter(_.address===address)
+    MovementsSummary(
+      query.map(_.value).sum.run.getOrElse(0L),
+      query.size.run,
+      query.map(_.height_out).max.run.getOrElse(0),
+      query.map(_.height_out).min.run.getOrElse(0)
+      
+    )
   }
 
   def getOutputsSummary(transactionHash: Array[Byte]) = transactionDBSession {
-    MovementsSummary(movements.filter(_.transaction_hash===transactionHash).size.run, 1, 2, 3)
+    val query = movements.filter(_.transaction_hash===transactionHash)
+    MovementsSummary(
+      query.map(_.value).sum.run.getOrElse(0L),
+      query.size.run,
+      query.map(_.height_out).max.run.getOrElse(0),
+      query.map(_.height_out).min.run.getOrElse(0)
+    )
   }
 
   def getInputsSummary(transactionHash: Array[Byte]) = transactionDBSession {
-    MovementsSummary(movements.filter(_.spent_in_transaction_hash===transactionHash).size.run, 1, 2, 3)
+    val query = movements.filter(_.spent_in_transaction_hash===transactionHash)
+    MovementsSummary(
+      query.map(_.value).sum.run.getOrElse(0L),
+      query.size.run,
+      query.map(_.height_out).max.run.getOrElse(0),
+      query.map(_.height_out).min.run.getOrElse(0)
+      
+    )
+    
   }
 
 }
