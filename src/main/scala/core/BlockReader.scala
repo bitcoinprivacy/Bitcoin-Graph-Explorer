@@ -67,18 +67,17 @@ trait BlockReader extends BlockSource {
     /*(longestChain contains blockHash) &&*/ !(savedBlockSet contains blockHash)
   }
 
-  def withoutDuplicates(b: Block, t: Transaction): Boolean =
-    !(Hash(b.getHash.getBytes) == Hash("00000000000a4d0a398161ffc163c503763b1f4360639393e0e4c8e300e0caec") &&
-      Hash(t.getHash.getBytes) == Hash("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599")) &&
-      !(Hash(b.getHash.getBytes) == Hash("00000000000a4d0a3B83B59A507C6B843DE3DB4E365B141621FB2381A2641B16C4E10C110E1C2EFBD98161ffc163c503763b1f4360639393e0e4c8e300e0caec") && // TODO: this looks wrong
-        Hash(t.getHash.getBytes) == Hash("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599"))
+  // def withoutDuplicates(b: Block, t: Transaction): Boolean =
+  //   !(Hash(b.getHash.getBytes) == Hash("00000000000a4d0a398161ffc163c503763b1f4360639393e0e4c8e300e0caec") &&
+  //     Hash(t.getHash.getBytes) == Hash("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599")) && the other transaction
+ //  this isn't necessary anymore, because we simply update the LMDB with the same tx. So technically, we are missing those two duplicate tx in our utxo DB
 
   lazy val filteredBlockSource =
     blockSource withFilter (p=>blockFilter(p._1))
 
 
   def transactionsInBlock(b: Block) =
-    b.getTransactions.asScala filter (t => withoutDuplicates(b, t))
+    b.getTransactions.asScala // filter (t => withoutDuplicates(b, t)) ( see above )
 
   def inputsInTransaction(t: Transaction) =
     if (!t.isCoinBase) t.getInputs.asScala

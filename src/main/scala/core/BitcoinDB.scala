@@ -8,6 +8,7 @@ import scala.slick.jdbc.meta.MTable
 
 import com.typesafe.config.ConfigFactory
 import util._
+import collection.mutable.Map
 
 trait BitcoinDB {
   def blockDB = TableQuery[Blocks]
@@ -129,25 +130,19 @@ trait BitcoinDB {
     }
   }
 
-  def updateBalanceTables(changedAddresses: collection.mutable.Map[Hash,Long]) = {
+  def updateBalanceTables(changedAddresses: Map[Hash,Long], changedReps: Map[Hash,Set[Hash]]) = {
     var clock = System.currentTimeMillis
     println("DEBUG: Updating balances ...")
     currentStat.total_bitcoins_in_addresses+=changedAddresses.map{_._2}.sum
 
-    transactionDBSession {
+    transactionDBSession ({
 
       val adsAndBalances = for ((address, change) <- changedAddresses)
                            yield (address,
                                   balances.filter(_.address === Hash.hashToArray(address)).
                                     map (_.balance).firstOption.getOrElse(0L) + change)
-      for {
-        (address, balance) <- adsAndBalances
-        addressArray = Hash.hashToArray(address)
-      }
-      if (balance != 0L)
-        balances.insertOrUpdate(addressArray, balance)
-      else
-        balances.filter(_.address === addressArray).delete
+
+      updateAdsBalancesTable(adsAndBalances, balances)
 
       val table = LmdbMap.open("closures")
       val unionFindTable = new ClosureMap(table)
@@ -164,18 +159,19 @@ trait BitcoinDB {
         }
       }
 
-      val repsAndBalances = for ((rep, change) <- repsAndChanges)
-                           yield (rep,
-                                  closureBalances.filter(_.representant === Hash.hashToArray(rep)).
-                                    map (_.balance).firstOption.getOrElse(0L) + change)
-      for { // TODO: make code DRYer by unifiying this in a common function with the same functionality above for balances
-        (address, balance) <- repsAndBalances
-        addressArray = Hash.hashToArray(address)
-      }
-      if (balance != 0L)
-        closureBalances.insertOrUpdate(addressArray, balance)
-      else
-        closureBalances.filter(_.representant === addressArray).delete
+      val repsAndBalances: Map[Hash,Long] =
+        for {(rep, change) <- repsAndChanges
+             oldReps = changedReps.getOrElse(rep,Set(rep)).map(Hash.hashToArray(_))
+        }
+        yield (rep,
+               closureBalances.filter(_.address inSet oldReps).
+                 map (_.balance).sum.run.getOrElse(0L) + change)
+
+      updateAdsBalancesTable(repsAndBalances, closureBalances)
+
+      // delete all oldReps that have been unified into new ones
+      val toDelete = changedReps.values.fold(Set())((a,b) => a ++ b).map(Hash.hashToArray(_))
+      closureBalances.filter(_.address inSet toDelete).delete
 
       table.close
 
@@ -183,7 +179,19 @@ trait BitcoinDB {
                 format
                 (adsAndBalances.size, (System.currentTimeMillis - clock)/1000, (System.currentTimeMillis - clock)*1000/(adsAndBalances.size+1)))
     
+    })
+  }
+
+  private def updateAdsBalancesTable[A <: Table[(Array[Byte], Long)] with AddressField with BalanceField]
+    (adsAndBalances: Map[Hash,Long], balances: TableQuery[A]): Unit = {
+    for {
+      (address, balance) <- adsAndBalances
+      addressArray = Hash.hashToArray(address)
     }
+    if (balance != 0L)
+      balances.insertOrUpdate(addressArray, balance)
+    else
+      balances.filter(_.address === addressArray).delete
   }
 
   def insertRichestClosures = {

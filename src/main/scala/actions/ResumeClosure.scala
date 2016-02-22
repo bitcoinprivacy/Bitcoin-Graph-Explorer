@@ -13,6 +13,8 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
   lazy val table = LmdbMap.open("closures")
   override lazy val unionFindTable = new ClosureMap(table)
 
+  lazy val changedReps = collection.mutable.Map[Hash,Set[Hash]]()
+
   override def insertInputsIntoTree(addressList: Iterable[Hash], tree: DisjointSets[Hash]): DisjointSets[Hash] =
   {
     val (pairList, tree1) = addressList.foldLeft((List[(Hash,Option[Hash])](),tree)){
@@ -38,13 +40,12 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
         {
           case None =>
             insertAddress(address,newRep)
-            currentStat.total_closures+=1
+        
           case Some(oldRep) if (oldRep != newRep) =>
             // if representant new, update everything that had the old one
             val updateQuery = for(p <- addresses if p.representant === hashToArray(oldRep)) yield p.representant
             updateQuery.update(newRep) // TODO: compile query
-            currentStat.total_addresses+=1
-
+            recordChangedRep(newRep, oldRep)
           case _ => // nothing to do
         }
     }
@@ -52,7 +53,18 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
     result
   }
 
- 
+  def recordChangedRep(newRep: Hash, oldRep: Hash) = {
+    // a changed to b, then b changed to c
+    // 1 we insert (b, a) in the map
+    // 2 we receive (c, b) cause b is already new, replace it with (c, a)
+    val oldReps = changedReps.getOrElse(newRep,Set())
+    if (changedReps.contains(oldRep)) {
+      changedReps += (newRep -> changedReps(oldRep))
+      changedReps -= oldRep
+    }
+    else changedReps += (newRep -> (oldReps + oldRep) )
+  }
+
   override def saveTree(tree: DisjointSets[Hash]): Int =  // don't replace the postgres DB
   {
     val no = tree.elements.size - startTableSize // return the number of new elements in the union-find structure

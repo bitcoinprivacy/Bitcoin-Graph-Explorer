@@ -47,7 +47,7 @@ object Address extends core.BitcoinDB {
 
       case Some(a) =>
 
-        (addresses.filter(_.representant === a).size.run, closureBalances.filter(_.representant === a).map(_.balance).firstOption.getOrElse(0L))
+        (addresses.filter(_.representant === a).size.run, closureBalances.filter(_.address === a).map(_.balance).firstOption.getOrElse(0L))
 
     }
 

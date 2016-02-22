@@ -141,15 +141,15 @@ abstract class FastBlockReader extends BlockReader {
   }
 
   def post = {
-    saveUnmatchedInputs
     saveDataToDB
+    saveUnmatchedInputs
 
     println("DONE: " + totalOutIn + " movements, " + transactionCounter + " transactions saved in " + (System.currentTimeMillis - startTime)/1000 + "s")
   }
 
   def saveUnmatchedInputs: Unit =
   {
-    assert(outOfOrderInputMap.size == 0, "unmatched Inputs")
+    assert(outOfOrderInputMap.size == 0, "unmatched Inputs: " + outOfOrderInputMap.toList)
     //for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
     //  insertInsertIntoList(Some(transactionHash), Some(outpointTransactionHash), None, Some(outpointIndex), None, None)
   }

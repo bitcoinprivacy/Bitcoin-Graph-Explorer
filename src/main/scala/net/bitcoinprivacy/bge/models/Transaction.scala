@@ -24,11 +24,9 @@ object Transaction extends core.BitcoinDB {
 
     val utxosList = utxo.filter(_.block_height === blockHeight).groupBy(_.transaction_hash).map{ case (tx,rest) => (tx, rest.map(_.value).sum) }.run.toVector
 
-    val totalList = (movementsList ++ utxosList).groupBy(_._1).
-      map {case (tx,list) => (  tx,list. map(_._2.getOrElse(0L)).sum)}.
+    (movementsList ++ utxosList).groupBy(_._1).
+      map {case (tx,list) => Transaction(Hash(tx).toString, list.map(_._2.getOrElse(0L)).sum)}.
       toVector
-
-    totalList.map (p => Transaction(Hash(p._1).toString, p._2.toLong))
 
   }
 

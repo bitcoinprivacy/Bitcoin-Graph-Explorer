@@ -96,9 +96,9 @@ object Explorer extends App {
 
   def resume = {
     val read = new ResumeBlockReader
-    new ResumeClosure(read.processedBlocks)
+    val closure = new ResumeClosure(read.processedBlocks)
     println("DEBUG: making new stats")
-    resumeStats(read.changedAddresses)
+    resumeStats(read.changedAddresses, closure.changedReps)
   }
 
   def iterateResume = {
@@ -145,9 +145,10 @@ object Explorer extends App {
     //Seq("bitcoin-cli","stop").run
   }
 
-  def resumeStats(changedAddresses: collection.mutable.Map[Hash,Long]) = {
+  import collection.mutable.Map
+  def resumeStats(changedAddresses: Map[Hash,Long], changedReps: Map[Hash,Set[Hash]]) = {
     if (changedAddresses.size < 30000 ){
-      updateBalanceTables(changedAddresses)
+      updateBalanceTables(changedAddresses, changedReps)
       updateStatistics
     }
     else {

@@ -14,8 +14,9 @@ trait BitcoinDRawFileBlockSource extends BlockSource
     println("starting at " +  java.util.Calendar.getInstance().getTime())
     for {
       block <- asScalaIterator(loader)
-      storedBlock = blockStore.get(block.getHash)  
-      if storedBlock != null
+      hash = block.getHash
+      storedBlock = blockStore.get(hash)  
+      if storedBlock != null && !chain.isOrphan(hash) && storedBlock.getHeight < chain.getBestChainHeight-5
     }
     yield 
       (block,storedBlock.getHeight)

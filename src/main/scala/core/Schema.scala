@@ -70,18 +70,18 @@ trait BlockHeightField  { this: Table[_] =>
   def block_height = column[Int]("block_height")
 }
 
-
-class Balances(tag:Tag) extends Table[(Array[Byte], Long)](tag, "balances") with BalanceField {
-  def address= column[Array[Byte]]("address", O.PrimaryKey)
-
-  def * = (address,balance)
+trait AddressField  { this: Table[_] =>
+  def address = column[Array[Byte]]("address", O.PrimaryKey)
 }
 
-class ClosureBalances(tag:Tag) extends Table[(Array[Byte], Long)](tag, "closure_balances") with BalanceField {
-  def representant= column[Array[Byte]]("representant", O.PrimaryKey)
-
-  def * = (representant,balance)
+class Balances(tag:Tag) extends Table[(Array[Byte], Long)](tag, "balances") with AddressField with BalanceField {
+  def * = (address, balance)
 }
+
+class ClosureBalances(tag:Tag) extends Table[(Array[Byte], Long)](tag, "closure_balances") with AddressField with BalanceField {
+  def * = (address, balance)
+}
+
 
 class Movements(tag:Tag) extends Table[(Array[Byte], Array[Byte], Array[Byte], Int, Long, Int, Int)](tag, "movements") {
   def transaction_hash = column[Array[Byte]]("transaction_hash")
