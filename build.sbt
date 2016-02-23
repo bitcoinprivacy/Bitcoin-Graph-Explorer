@@ -81,4 +81,4 @@ javaOptions in run += "-Djava.rmi.server.hostname=orion2518.startdedicated.de"
 
 //javaOptions in run += "-XX:+PrintGCDetails"
 
-fork in run := true
+fork := true

@@ -17,6 +17,14 @@ trait BlockSource {
   
   def blockSource: Iterator[(Block,Int)] // block,height
 
+  def getCurrentLongestChainFromBlockCount = {
+
+    val lastBlock = chain.getChainHead
+    val lastNo = lastBlock.getHeight
+      (blockCount to lastNo).foldRight((Vector[(Sha256Hash,Int)](),lastBlock)){
+        case (no,(vec,bl)) => ((bl.getHeader.getHash,no)+:vec,bl.getPrev(blockStore))}._1
+  }
+
 
   // @annotation.tailrec final def waitIfNewBlocks(last: Int): Unit = {
 
