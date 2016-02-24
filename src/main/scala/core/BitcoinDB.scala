@@ -273,7 +273,7 @@ trait BitcoinDB {
     }
   }
 
-  def updateStatistics = {
+  def updateStatistics(changedReps: Map[Hash,Set[Hash]], addedAds: Int, addedReps: Int) = {
 
     println("Updating stats")
     val time = System.currentTimeMillis
@@ -297,16 +297,20 @@ trait BitcoinDB {
     // A first approach could be to modify the values direct in ResumeBlockReader, ResumeClosure (balances can be updated whenever a utxo is added or removed)
     // Update should only add the ginis and call saveStat
     transactionDBSession{
-      currentStat.total_addresses_with_balance+=balances.length.run
-      currentStat.total_closures_with_balance+=closureBalances.length.run
-      currentStat.total_addresses_no_dust+= nonDustAddresses.intValue
-      currentStat.total_closures_no_dust+= nonDustClosures.intValue
-      currentStat.gini_closure=closureGini
-      currentStat.gini_address=addressGini
-      currentStat.block_height=blockCount
-      currentStat.tstamp=System.currentTimeMillis/1000
-      currentStat.total_transactions = blockDB.map(_.txs).filter(_ > 0).sum.run.getOrElse(0).toLong
-      saveStat
+      val stat = currentStat
+      stat.total_addresses_with_balance+=balances.length.run
+      stat.total_closures_with_balance+=closureBalances.length.run
+      stat.total_addresses_no_dust+= nonDustAddresses.intValue
+      stat.total_closures_no_dust+= nonDustClosures.intValue
+      stat.gini_closure=closureGini
+      stat.gini_address=addressGini
+      stat.block_height=blockCount
+      stat.tstamp=System.currentTimeMillis/1000
+      stat.total_transactions = blockDB.map(_.txs).filter(_ > 0).sum.run.getOrElse(0).toLong
+
+      stat.total_addresses += addedAds
+      stat.total_closures += addedReps - changedReps.values.map(_.size).sum
+      saveStat(stat)
       println("Updated in " + (System.currentTimeMillis - time)/1000 + " seconds")
     }
   }
@@ -384,15 +388,15 @@ trait BitcoinDB {
 
   }
 
-  lazy val currentStat = transactionDBSession{
-    CurrentStat.tupled(stats.sortBy(_.block_height desc).firstOption.get)
+  def currentStat = transactionDBSession{
+    Stat.tupled(stats.sortBy(_.block_height desc).firstOption.get)
   }
 
-  def saveStat = transactionDBSession{
-    stats.insert(CurrentStat.unapply(currentStat).get)
+  def saveStat(stat: Stat) = transactionDBSession{
+    stats.insert(Stat.unapply(stat).get)
   }
 
-  case class CurrentStat (var block_height: Int, var total_bitcoins_in_addresses: Long, var total_transactions: Long, var total_addresses: Long, var total_closures: Long, var total_addresses_with_balance: Long, var total_closures_with_balance: Long, var total_addresses_no_dust: Long, var total_closures_no_dust: Long, var gini_closure: Double, var gini_address: Double, var tstamp: Long)
+  case class Stat (var block_height: Int, var total_bitcoins_in_addresses: Long, var total_transactions: Long, var total_addresses: Long, var total_closures: Long, var total_addresses_with_balance: Long, var total_closures_with_balance: Long, var total_addresses_no_dust: Long, var total_closures_no_dust: Long, var gini_closure: Double, var gini_address: Double, var tstamp: Long)
   
   def lastCompletedHeight: Int = transactionDBSession{
     stats.map(_.block_height).max.run.getOrElse(0)

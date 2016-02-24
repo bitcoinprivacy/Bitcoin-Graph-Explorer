@@ -24,5 +24,5 @@ trait PeerSource extends BlockSource {
     }
 
   }
-  
+
 }

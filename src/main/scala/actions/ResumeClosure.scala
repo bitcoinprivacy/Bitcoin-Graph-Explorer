@@ -7,13 +7,16 @@ import scala.slick.jdbc._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import util._
 import util.Hash._
+import collection.mutable.Map
 
 class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeights: Vector[Int]) {
 
   lazy val table = LmdbMap.open("closures")
   override lazy val unionFindTable = new ClosureMap(table)
 
-  lazy val changedReps = collection.mutable.Map[Hash,Set[Hash]]()
+  lazy val changedReps = Map[Hash,Set[Hash]]()
+  var addedAds = 0
+  var addedReps = 0
 
   override def insertInputsIntoTree(addressList: Iterable[Hash], tree: DisjointSets[Hash]): DisjointSets[Hash] =
   {
@@ -33,6 +36,8 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
     val (representantOpt,result) = tree2 find (addressList.head)
     val newRep = representantOpt.get
 
+    var addRepFlag = 1
+
     transactionDBSession {
 
       for ((address, oldRepOpt) <- pairList)
@@ -46,9 +51,10 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
             val updateQuery = for(p <- addresses if p.representant === hashToArray(oldRep)) yield p.representant
             updateQuery.update(newRep) // TODO: compile query
             recordChangedRep(newRep, oldRep)
-          case _ => // nothing to do
+          case _ => addRepFlag = 0 // one of the elements had this rep before => don't count a new one
         }
     }
+    addedReps += addRepFlag
 
     result
   }
@@ -73,13 +79,13 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
     no
   }
 
-  lazy val vectorAddresses: collection.mutable.Map[Hash, Hash] = collection.mutable.Map()
+  lazy val addressBuffer: Map[Hash, Hash] = Map()
 
   def insertAddress(s: (Hash, Hash)) =
   {
-    vectorAddresses += s
+    addressBuffer += s
 
-    if (vectorAddresses.size >= populateTransactionSize)
+    if (addressBuffer.size >= populateTransactionSize)
       saveAddresses
   }
 
@@ -87,7 +93,7 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
 
     println("DEBUG: Inserting Addresses into SQL database ...")
 
-    val convertedVector =vectorAddresses map (p => (hashToArray(p._1), hashToArray(p._2)))
+    val convertedVector = addressBuffer map (p => (hashToArray(p._1), hashToArray(p._2)))
 
     try{
       transactionDBSession(addresses.insertAll(convertedVector.toSeq:_*))
@@ -96,7 +102,9 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
       case e: java.sql.BatchUpdateException => throw e.getNextException
     }
 
-    vectorAddresses.clear
+    addedAds += addressBuffer.size
+
+    addressBuffer.clear
 
     println("DEBUG: Data inserted")
 

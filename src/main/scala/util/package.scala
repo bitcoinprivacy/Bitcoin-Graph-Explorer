@@ -36,15 +36,15 @@ package object util extends BitcoinDB
   def params = MainNetParams.get
 
   lazy val blockStore = new LevelDBBlockStore(new Context(params),blockStoreFile)
-  lazy val chain = new BlockChain(params, blockStore);
-  lazy val peerGroup = new PeerGroup(params, chain);
+  lazy val chain = new BlockChain(params, blockStore)
+  lazy val peerGroup = new PeerGroup(params, chain)
   lazy val loader = {
     new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)
   }
   lazy val addr = new PeerAddress(InetAddress.getLocalHost(), params.getPort());
    
-   def startBitcoinJ: Unit = {
-    
+  def startBitcoinJ: Unit = {
+    println("DEBUG: starting peergroup")
     peerGroup.start();
     peerGroup.addAddress(addr);
     peerGroup.waitForPeers(1).get();

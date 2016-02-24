@@ -99,7 +99,7 @@ object Explorer extends App {
     val read = new ResumeBlockReader
     val closure = new ResumeClosure(read.processedBlocks)
     println("DEBUG: making new stats")
-    resumeStats(read.changedAddresses, closure.changedReps)
+    resumeStats(read.changedAddresses, closure.changedReps, closure.addedAds, closure.addedReps)
   }
 
   def iterateResume = {
@@ -146,13 +146,13 @@ object Explorer extends App {
     //Seq("bitcoin-cli","stop").run
   }
 
-  def resumeStats(changedAddresses: Map[Hash,Long], changedReps: Map[Hash,Set[Hash]]) =
+  def resumeStats(changedAddresses: Map[Hash,Long], changedReps: Map[Hash,Set[Hash]], addedAds: Int, addedReps: Int) =
     if (changedAddresses.size < 30000 )
     {
       updateBalanceTables(changedAddresses, changedReps)
       insertRichestAddresses
       insertRichestClosures
-      updateStatistics
+      updateStatistics(changedReps,addedAds, addedReps)
     }
     else populateStats
         
