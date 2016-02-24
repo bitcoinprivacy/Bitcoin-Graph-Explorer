@@ -24,7 +24,9 @@ libraryDependencies ++= Seq(
    // "org.scala-lang" % "scala-actors" % "2.10.3",
     "com.typesafe.slick" %% "slick" % "2.1.0",
   "com.typesafe" % "config" % "1.2.1",
-      //"com.typesafe.play" %% "play" % "2.2.0"
+      //"com.typesafe.play" %% "play" % "2.2.0",
+      "org.scala-lang.modules" %% "scala-xml" % "1.0.3",
+      "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.3",
       "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
       "org.scalatest" %% "scalatest" % "2.1.5" % "test",
   "com.github.scala-incubator.io" %% "scala-io-file" % "0.4.3-1",
