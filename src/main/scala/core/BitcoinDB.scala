@@ -113,7 +113,7 @@ trait BitcoinDB {
 
       Q.updateNA("insert into closure_balances select a.representant, sum(b.balance) as balance from balances b, addresses a where b.address = a.hash group by a.representant;").execute
       //Q.updateNA("insert into closure_balances select a.address, a.balance from balances a left outer join  addresses b on a.address = b.hash where b.representant is null").execute
-      (Q.u + "create index addresses_balance_2 on closure_balances(representant)").execute
+      (Q.u + "create index addresses_balance_2 on closure_balances(address)").execute
         (Q.u + "create index balance_2 on closure_balances(balance)").execute
 
       println("DONE: Balances created in %s s" format (System.currentTimeMillis - clock)/1000)
@@ -182,7 +182,7 @@ trait BitcoinDB {
     })
   }
 
-  private def updateAdsBalancesTable[A <: Table[(Array[Byte], Long)] with AddressField with BalanceField]
+  private def updateAdsBalancesTable[A <: Table[(Array[Byte], Long)] with AddressField]
     (adsAndBalances: Map[Hash,Long], balances: TableQuery[A]): Unit = {
     for {
       (address, balance) <- adsAndBalances

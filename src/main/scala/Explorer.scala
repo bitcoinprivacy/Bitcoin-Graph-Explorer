@@ -3,6 +3,7 @@ import actions._
 import util._
 import core._
 import sys.process._
+import collection.mutable.Map
 
 /**
  * Created with IntelliJ IDEA.
@@ -145,19 +146,17 @@ object Explorer extends App {
     //Seq("bitcoin-cli","stop").run
   }
 
-  import collection.mutable.Map
-  def resumeStats(changedAddresses: Map[Hash,Long], changedReps: Map[Hash,Set[Hash]]) = {
-    if (changedAddresses.size < 30000 ){
+  def resumeStats(changedAddresses: Map[Hash,Long], changedReps: Map[Hash,Set[Hash]]) =
+    if (changedAddresses.size < 30000 )
+    {
       updateBalanceTables(changedAddresses, changedReps)
+      insertRichestAddresses
+      insertRichestClosures
       updateStatistics
     }
-    else {
-      createBalanceTables
-      insertStatistics
-    }
-    insertRichestAddresses
-    insertRichestClosures
-  }
+    else populateStats
+        
+ 
 
   def populateStats = {
     createBalanceTables
