@@ -298,10 +298,10 @@ trait BitcoinDB {
     // Update should only add the ginis and call saveStat
     transactionDBSession{
       val stat = currentStat
-      stat.total_addresses_with_balance+=balances.length.run
-      stat.total_closures_with_balance+=closureBalances.length.run
-      stat.total_addresses_no_dust+= nonDustAddresses.intValue
-      stat.total_closures_no_dust+= nonDustClosures.intValue
+      stat.total_addresses_with_balance=balances.length.run
+      stat.total_closures_with_balance=closureBalances.length.run
+      stat.total_addresses_no_dust = nonDustAddresses.intValue
+      stat.total_closures_no_dust = nonDustClosures.intValue
       stat.gini_closure=closureGini
       stat.gini_address=addressGini
       stat.block_height=blockCount

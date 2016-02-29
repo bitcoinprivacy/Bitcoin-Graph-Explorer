@@ -134,7 +134,18 @@ object Explorer extends App {
         println("waiting for new blocks at " + java.util.Calendar.getInstance().getTime())
         chain.getHeightFuture(blockCount+5).get //wait until the chain is at least 6 blocks longer than we have read
       }
+
+      val (count,amount) = sumUTXOs
+      val (countDB, amountDB) = countUTXOs
+      assert( count == countDB, "count differs " + count + "!="+countDB)
+      assert(amount == amountDB, "amount differs " + amount + " != " + amountDB)
+      // we need to implement here the total bitcoins formel.
+      // assert(amount == 5000000000L*blockCount, "It should be " + (50*blockCount)+ " but we have " + (amount/100000000L - 50*blockCount) + " more bitcoins")
+
+
       resume
+               
+
      // }
      // else
      // {

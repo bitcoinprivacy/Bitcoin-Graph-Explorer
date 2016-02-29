@@ -17,7 +17,7 @@ object Stats extends core.BitcoinDB
       val o = stats.sortBy(_.block_height.desc).firstOption
 
       for (p <- o)
-      yield Stats(p._1,p._2,p._3,p._4,p._5,p._6,p._7,p._8,p._9,p._10,p._11,p._12)
+      yield Stats(p._1-1,p._2,p._3,p._4,p._5,p._6,p._7,p._8,p._9,p._10,p._11,p._12)
     }
 
   def getAllStats =

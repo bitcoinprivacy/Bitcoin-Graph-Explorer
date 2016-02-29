@@ -51,7 +51,7 @@ class UTXOs(table: =>  Map[Hash,Hash]) extends Map[(Hash,Int),(Hash,Long,Int)]
 
   def iterator = table.iterator map {case (h1,h2) => (toTuple(h1),toTriple(h2))}
 
-  override def empty = new UTXOs(Map())
+  override def empty = new UTXOs(table.empty)
 
   override def size = table.size
   

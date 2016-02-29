@@ -1,11 +1,13 @@
 package core
 
+//import Explorer._
 import org.bitcoinj.core._
 import scala.collection._
 import scala.collection.JavaConversions._
 import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import util._
+
 
 // A FastBlockReader is a BlockReader that uses an UTXO set map
 abstract class FastBlockReader extends BlockReader {
@@ -85,31 +87,6 @@ abstract class FastBlockReader extends BlockReader {
 
         insertMovement(inputTxHash, transactionHash, addressOption, index, value, blockHeight, blockOut)
 
-        // if (unmatchedX.contains(spent_in)
-        //   add(address), dec
-        //    case None => Some(address)
-        //    case Some(e) => union(e, address)
-        //  if int=0 delete
-
-
-
-        // for {
-        //   address <- addressOption
-        //   (addOpt, count) <- unmatchedClosure.get(inputTxHash)
-        // }
-        // {
-        //   closures add address
-
-        //   for (add <- addOpt)
-        //     closures.union(add, address)
-
-        //   if (count == 1)
-        //     unmatchedClosure -= inputTxHash
-        //   else
-        //     unmatchedClosure.update(inputTxHash, (Some(address), count-1))
-
-        // }
-
         outOfOrderInputMap -= (transactionHash -> index)
       }
       else {
@@ -131,6 +108,8 @@ abstract class FastBlockReader extends BlockReader {
     processedBlocks :+= height
     insertBlock(b, height, txs, btcs, tstamp)
     println("DEBUG: Saving block " + height + " consisting of " + txs + " txs at " + java.util.Calendar.getInstance().getTime() )
+
+
   }
 
   def pre  = {

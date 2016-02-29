@@ -62,7 +62,7 @@ class ResumeBlockReader extends FastBlockReader with PeerSource
     table.close
   }
 
-  lazy val newUtxos = new UTXOs(HashMap[Hash,Hash]())
+  lazy val newUtxos = Map[(Hash,Int),(Hash,Long,Int)]()
 
   def insertUTXO(s: (Hash, Hash, Int, Long, Int)) =
   {
