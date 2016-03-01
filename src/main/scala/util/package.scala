@@ -29,8 +29,6 @@ package object util extends BitcoinDB
   lazy val blockHashListFile= conf.getString("blockHashListFile")
   lazy val dustLimit = conf.getLong("dustLimit")
 
-  lazy val arrayNull = Hash.zero(1).array.toArray
-
   lazy val blockStoreFile = new java.io.File("/root/Bitcoin-Graph-Explorer/blockchain/spv.blockstore")
 
   def params = MainNetParams.get
@@ -50,27 +48,6 @@ package object util extends BitcoinDB
     peerGroup.waitForPeers(1).get();
     peerGroup.startBlockChainDownload(new DownloadProgressTracker)
   }
-
-   // def stopBitcoinJ = {
-  //   peerGroup.stopAsync()
- // }
-   
-
-
-  
-
-
-
-
-
-/*  def getLongestBlockChainHashSet: Map[Hash,Int] =
-  {
-    val lines = scala.io.Source.fromFile(blockHashListFile).getLines
-    val hashes = for (line <- lines) yield Hash(line)
-    hashes.zipWithIndex.toMap
-  }
- */
-
 
   def toArrayBuf[A:IntOrLong](x:A)(implicit f:IntOrLong[A]): ArrayBuffer[Byte] = {
     val buf = new ArrayBuffer[Byte](f.length)
@@ -99,32 +76,5 @@ package object util extends BitcoinDB
       def & = (_ & _)
     }
   }
-
-  def countLines(fileName: String) =
-    scala.io.Source.fromFile(fileName).getLines.length
-
-
-  // just experimenting here
-  //(spent_in_transaction_hash,transaction_hash,address,index,value, height_in, height_out)
- def readUTXOs: UTXOs = {
-    transactionDBSession {
-      val query = for ( a <- utxo.take(1000000)) yield ((a.transaction_hash, a.index),(a.address, a.value, a.block_height))
-      var x = 0
-
-      val converted = for {
-        ((t,i),(a,v,b)) <- query.iterator
-      }
-      yield {
-        println(x)
-        x+=1
-        (Hash(t),i) -> (Hash(a),v,b)
-      }
-
-      converted.foldLeft (new UTXOs(LmdbMap.empty): UTXOs){println("ssaving");_+=_}
-
-
-
-    }
-
-  }
 }
+
