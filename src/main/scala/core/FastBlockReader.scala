@@ -7,12 +7,13 @@ import scala.collection.JavaConversions._
 import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import util._
-
+import scala.collection.mutable.Map
 
 // A FastBlockReader is a BlockReader that uses an UTXO set map
 abstract class FastBlockReader extends BlockReader {
 
   lazy val table = LmdbMap.create("utxos")
+//  lazy val table: Map[Hash, Hash] = Map.empty
   // (txhash,index) -> (address,value,blockIn)
   lazy val outputMap: UTXOs = new UTXOs (table)
 
@@ -20,8 +21,6 @@ abstract class FastBlockReader extends BlockReader {
   var outOfOrderInputMap: immutable.HashMap[(Hash,Int),(Hash,Int)]  = immutable.HashMap()
   var vectorMovements: Vector[(Hash, Hash, Option[Hash], Int, Long, Int, Int)] = Vector()
   var vectorBlocks: Vector[(Hash, Int, Int, Long, Long)]  = Vector()
-//  lazy val  unmatchedClosure: mutable.HashMap[Hash,(Option[Hash],Int)] = mutable.HashMap() // spent_in_tx -> (Representant, count)
-//  lazy val closures = new DisjointSets(new ClosureMap(LmdbMap.create("closures")))
 
   var totalOutIn: Int = 0
 
@@ -38,38 +37,6 @@ abstract class FastBlockReader extends BlockReader {
         if (addressOption != Some(Hash.zero(0)))
       }
       yield addressOption
-
-    // TODO: put this direct closure stuff in an extra trait for testing purposes
-    // ifnumberOfAddresses more than 1
-    //   if all NONE
-    //     unmatchedX += spent_in_tx -> (None, numberOfAddresses)
-    //   else
-    //     unmatchedX += spent_in_tx -> (first_Some, numberOfNones)
-    //      for (x <- Somes) add(x)
-    //       union (Somes)
-
-    // val numberOfAddresses = addresses.size
-    // if (numberOfAddresses > 1)
-    // {
-    //   val numberOfNones = addresses.count(_ == None)
-    //   val firstAddress = addresses.find(_ != None)
-    //   firstAddress match {
-    //     case None =>
-    //       unmatchedClosure += (transactionHash -> (None, numberOfAddresses))
-    //     case (Some(someAddress)) =>
-    //       unmatchedClosure += (transactionHash -> (someAddress, numberOfNones))
-    //       // add and union all elements
-    //       closures.union{
-    //         for {
-    //           someAddress <- addresses.filter(_ != None)
-    //           address <- someAddress
-    //         } yield {
-    //           closures.add(address)
-    //           address
-    //         }
-    //       }
-    //   }
-    // }
 
     var index = 0
 

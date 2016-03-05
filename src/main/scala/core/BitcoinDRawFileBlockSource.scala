@@ -16,7 +16,7 @@ trait BitcoinDRawFileBlockSource extends BlockSource
     val blockMap = almostCurrentChain toMap
 
     for {
-      block <- asScalaIterator(loader)
+      block <- asScalaIterator(loader) 
       hash = block.getHash
       if blockMap.contains(hash)      
     }

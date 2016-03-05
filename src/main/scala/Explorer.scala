@@ -62,6 +62,17 @@ object Explorer extends App {
     println("Total utxos in the sql db " + countDB)
   }
 
+  def totalExpectedSatoshi(blockCount: Int): Long = {
+    val epoch = blockCount/210000
+    val blocksSinceEpoch = blockCount % 210000
+    def blockReward(epoch: Int) = Math.floor(50L*100000000L/Math.pow(2,epoch)).toLong
+    val fullEpochs = for (i <- (0 until epoch))
+                     yield 210000L * blockReward(i)
+    val correct = fullEpochs.sum + blocksSinceEpoch * blockReward(epoch)
+    correct - blockReward(0) * (if (blockCount > 91880) 2 else if (blockCount > 191842) 1 else 0)
+    // correct for the two duplicate coinbase tx (see BIP 30) that we just store once (they are unspendable anyway)
+  }
+
   def sumUTXOs = {
     lazy val table = LmdbMap.open("utxos")
     lazy val outputMap: UTXOs = new UTXOs (table)
@@ -91,7 +102,7 @@ object Explorer extends App {
     new PopulateClosure(PopulateBlockReader.processedBlocks)
     createAddressIndexes    
     populateStats
-
+//    testValues
 
   }
 
@@ -128,21 +139,13 @@ object Explorer extends App {
     //  {
     //  println("Reading blocks from " + from + " until " + to)
 
-      
       if (blockCount > chain.getBestChainHeight-5)
       {
         println("waiting for new blocks at " + java.util.Calendar.getInstance().getTime())
         chain.getHeightFuture(blockCount+5).get //wait until the chain is at least 6 blocks longer than we have read
       }
 
-      val (count,amount) = sumUTXOs
-      val (countDB, amountDB) = countUTXOs
-      assert( count == countDB, "count differs " + count + "!="+countDB)
-      assert(amount == amountDB, "amount differs " + amount + " != " + amountDB)
-      // we need to implement here the total bitcoins formel.
-      // assert(amount == 5000000000L*blockCount, "It should be " + (50*blockCount)+ " but we have " + (amount/100000000L - 50*blockCount) + " more bitcoins")
-
-
+      //testValues
       resume
                
 
@@ -157,8 +160,22 @@ object Explorer extends App {
     //Seq("bitcoin-cli","stop").run
   }
 
-  def resumeStats(changedAddresses: Map[Hash,Long], changedReps: Map[Hash,Set[Hash]], addedAds: Int, addedReps: Int) =
-    if (changedAddresses.size < 30000 )
+  def testValues = {
+    
+    val (count,amount) = sumUTXOs
+    val (countDB, amountDB) = countUTXOs
+    val expected = totalExpectedSatoshi(blockCount)
+    assert( count == countDB, "count differs " + count + "!="+countDB)
+    assert(amount == amountDB, "amount differs " + amount + " != " + amountDB)
+    assert(amount <= expected, "It should be " + expected + " satoshis but we have " + ((amount-expected)/100000000.0) + " too many bitcoins")
+    println("Values seem to be correct.")
+  }
+
+  def resumeStats(changedAddresses: Map[Hash,Long], changedReps: Map[Hash,Set[Hash]], addedAds: Int, addedReps: Int)  = {
+    
+    println("DEBUG: "+ changedAddresses.size + " addresses changed balance")
+
+    if (changedAddresses.size < 38749 )
     {
       updateBalanceTables(changedAddresses, changedReps)
       insertRichestAddresses
@@ -167,7 +184,7 @@ object Explorer extends App {
     }
     else populateStats
         
- 
+  }
 
   def populateStats = {
     createBalanceTables

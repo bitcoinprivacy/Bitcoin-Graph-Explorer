@@ -161,10 +161,10 @@ trait BitcoinDB {
 
       val repsAndBalances: Map[Hash,Long] =
         for {(rep, change) <- repsAndChanges
-             oldReps = changedReps.getOrElse(rep,Set(rep)).map(Hash.hashToArray(_))
+             oldReps = (changedReps.getOrElse(rep,Set())+rep).map(Hash.hashToArray(_))
         }
         yield (rep,
-               closureBalances.filter(_.address inSet oldReps).
+               closureBalances.filter(_.address inSetBind oldReps).
                  map (_.balance).sum.run.getOrElse(0L) + change)
 
       updateAdsBalancesTable(repsAndBalances, closureBalances)
