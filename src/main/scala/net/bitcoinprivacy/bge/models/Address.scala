@@ -29,11 +29,14 @@ object Address extends core.BitcoinDB {
           if a.representant === rep
         }  yield (a.hash)
 
-        val walletVector = query.
+        val wallet = query.
           drop(from).take(until-from).run
 
-        val bQuery = balances.filter(_.address inSet walletVector).map(p=> (p.address,p.balance))
-        bQuery.run.map{p => Address(hashToAddress(p._1), p._2 )}
+        val bQuery = balances.filter(_.address inSetBind wallet).map(p=> (p.address,p.balance))
+        val balanced = bQuery.run map (p => (hashToAddress(p._1), p._2))
+        val unbalanced = ((wallet map hashToAddress).toSet -- (balanced map (_._1))) map ((_,0L))
+        (balanced ++ unbalanced).toVector.sortBy(-_._2).
+          map{p => (Address.apply _).tupled(p)}
     }
   }
 
@@ -45,7 +48,6 @@ object Address extends core.BitcoinDB {
       case None =>
         AddressesSummary(1, balances.filter(_.address === hash).map(_.balance).firstOption.getOrElse(0L))
       case Some(rep) =>
-
         val query = for {
           a <- addresses
           if a.representant === rep
