@@ -36,28 +36,28 @@ object UTXO extends core.BitcoinDB{
 
   def getUtxosByAdSummary(address: Array[Byte]) = transactionDBSession {
 
-    val query = utxo.filter(_.address===address)
+    val query = utxo.filter(_.address===address).map(p=> (p.value,p.block_height))
 
+    val result = query.groupBy(_ => true)
+      .map { case (_, as) => (as.map(_._1).size,as.map(_._1).sum,as.map(_._2).min, as.map(_._2).max) }.firstOption.getOrElse(0,None, None, None)
+      
     UTXOsSummary(
-      query.size.run,
-      query.map(_.value).sum.run.getOrElse(0L),
-      query.map(_.block_height).min.run.getOrElse(0),
-      query.map(_.block_height).max.run.getOrElse(0) 
+      result._1,result._2.getOrElse(0L),result._3.getOrElse(0),result._4.getOrElse(0)
     )
 
   }
 
   def getUtxosByTxSummary(transactionHash: Array[Byte]) = transactionDBSession {
 
-    val query = utxo.filter(_.transaction_hash===transactionHash)
+    val query = utxo.filter(_.transaction_hash===transactionHash).map( p => (p.value, p.block_height))
+
+    val result = query.groupBy(_ => true)
+      .map { case (_, as) =>
+        (as.map(_._1).size,as.map(_._1).sum,as.map(_._2).min, as.map(_._2).max) }.firstOption.getOrElse(0,None, None, None)
 
     UTXOsSummary(
-      query.size.run,
-      query.map(_.value).sum.run.getOrElse(0L),
-      query.map(_.block_height).min.run.getOrElse(0),
-      query.map(_.block_height).max.run.getOrElse(0)
+      result._1,result._2.getOrElse(0L),result._3.getOrElse(0),result._4.getOrElse(0)
     )
 
   }
-
 }

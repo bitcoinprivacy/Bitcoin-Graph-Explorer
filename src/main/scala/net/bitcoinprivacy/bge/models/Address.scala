@@ -17,57 +17,45 @@ object Address extends core.BitcoinDB {
 
   def getWallet(hash: Array[Byte], from: Int, until: Int) = transactionDBSession {
 
-    val start = System.currentTimeMillis
+    val repOpt = addresses.filter(_.hash === hash).map(_.representant).firstOption
 
-    val walletQuery = for {
-      (b,a) <- balances join addresses on (_.address === _.hash)
-      if a.representant === hash
-    }  yield (b.address, b.balance)
-
-    val walletVector = walletQuery.sortBy(_._2 desc).drop(from).take(until-from).run.toVector
-
-    val wallet =
-      if (walletVector.size == 0)
+    repOpt match {
+      case None =>
         List(Address(hashToAddress(hash), balances.filter(_.address === hash).map(_.balance).firstOption.getOrElse(0L)))
-      else
-        walletVector.map{p => Address(hashToAddress(p._1), p._2 )}
+      case Some(rep) =>
 
-    println("Wallet " + (System.currentTimeMillis - start))
+        val query = for {
+          a <- addresses
+          if a.representant === rep
+        }  yield (a.hash)
 
-    wallet
+        val walletVector = query.
+          drop(from).take(until-from).run
 
+        val bQuery = balances.filter(_.address inSet walletVector).map(p=> (p.address,p.balance))
+        bQuery.run.map{p => Address(hashToAddress(p._1), p._2 )}
+    }
   }
 
   def getWalletSummary(hash: Array[Byte]) = transactionDBSession {
+    
+    val repOpt = addresses.filter(_.hash === hash).map(_.representant).firstOption
 
-    val start = System.currentTimeMillis
-
-    val walletQuery = for {
-      (b,a)  <- balances join addresses on (_.address === _.hash)
-      
-      if a.representant === hash
-    }  yield (b.balance)
-
-    /*val sum = walletQuery.sum.run.getOrElse(0L)
-    val info =
-     if (sum == 0L)
-       AddressesSummary(1, balances.filter(_.address === hash).map(_.balance).firstOption.getOrElse(0L))
-     else
-       AddressesSummary(walletQuery.size.run, sum)
-     */
-    val walletVector = walletQuery.run.toVector
-
-    val info = walletVector.size match {
-      case 0 =>
+    repOpt match {
+      case None =>
         AddressesSummary(1, balances.filter(_.address === hash).map(_.balance).firstOption.getOrElse(0L))
-      case count: Int =>
-        AddressesSummary(count, walletVector.sum)
+      case Some(rep) =>
+
+        val query = for {
+          a <- addresses
+          if a.representant === rep
+        }  yield (a.hash)
+
+        val result = (query.size.run, closureBalances.filter(_.address === rep).map(_.balance).firstOption.getOrElse(0L))
+
+        AddressesSummary(result._1, result._2)
+      
     }
-
-    println("Info " + (System.currentTimeMillis - start))
-
-    info
-
   }
 
   def getAddressList[A <: Table[_] with BalanceField with HashField with BlockHeightField](richListTable: TableQuery[A], from: Int, until: Int): List[Address] = transactionDBSession {
@@ -85,7 +73,12 @@ object Address extends core.BitcoinDB {
     val query = richListTable.sortBy(p => (p.block_height.desc,p.balance.desc))
       .take(1000).map(_.balance)
 
-    AddressesSummary(query.length.run,query.sum.run.getOrElse(0L))
+    val result = query.groupBy(_ => true)
+      .map { case (_, as) => (as.map(identity).size,as.map(identity).sum) }.firstOption.getOrElse(0,None)
+    
+    AddressesSummary(
+      result._1,result._2.getOrElse(0L)
+    )
 
   }
 

@@ -11,8 +11,7 @@ case class Movement(tx: String, value:Long, spentInTx: String, address: String)
 
 case class MovementsSummary(sum: Long, count: Long, maxHeight: Int, minHeight: Int)
 
-object Movement extends core.BitcoinDB
-{
+object Movement extends core.BitcoinDB {
   def getMovements(address: Array[Byte], from: Int, until: Int) = transactionDBSession {
 
     val add = Address.hashToAddress(address)
@@ -43,39 +42,39 @@ object Movement extends core.BitcoinDB
   }
 
   def getMovementsSummary(address: Array[Byte]) = transactionDBSession {
-    val query = movements.filter(_.address===address)
-    MovementsSummary(
-      query.map(_.value).sum.run.getOrElse(0L),
-      query.size.run,
-      query.map(_.height_out).max.run.getOrElse(0),
-      query.map(_.height_out).min.run.getOrElse(0)
+    val query = movements.filter(_.address===address).map( p => (p.value, p.height_out))
+    val result = query.groupBy(_ => true)
+      .map { case (_, as) => (as.map(_._1).size,as.map(_._1).sum,as.map(_._2).min, as.map(_._2).max) }.firstOption.getOrElse(0,None, None, None)
+    
+  
       
-    )
-  }
-
-  def getOutputsSummary(transactionHash: Array[Byte]) = transactionDBSession {
-    val query = movements.filter(_.transaction_hash===transactionHash)
     MovementsSummary(
-      query.map(_.value).sum.run.getOrElse(0L),
-      query.size.run,
-      query.map(_.height_out).max.run.getOrElse(0),
-      query.map(_.height_out).min.run.getOrElse(0)
-    )
-  }
-
-  def getInputsSummary(transactionHash: Array[Byte]) = transactionDBSession {
-    val query = movements.filter(_.spent_in_transaction_hash===transactionHash)
-    MovementsSummary(
-      query.map(_.value).sum.run.getOrElse(0L),
-      query.size.run,
-      query.map(_.height_out).max.run.getOrElse(0),
-      query.map(_.height_out).min.run.getOrElse(0)
-      
+      result._2.getOrElse(0L), result._1 ,result._3.getOrElse(0),result._4.getOrElse(0)
     )
     
   }
 
+  def getOutputsSummary(transactionHash: Array[Byte]) = transactionDBSession {
+    val query = movements.filter(_.transaction_hash===transactionHash).map( p => (p.value, p.height_out))
+
+    val result = query.groupBy(_ => true)
+      .map { case (_, as) =>
+        (as.map(_._1).size,as.map(_._1).sum,as.map(_._2).min, as.map(_._2).max) }.firstOption.getOrElse(0,None, None, None)
+
+    MovementsSummary(
+      result._2.getOrElse(0L), result._1 ,result._3.getOrElse(0),result._4.getOrElse(0)
+    )
+  }
+
+  def getInputsSummary(transactionHash: Array[Byte]) = transactionDBSession {
+    val query = movements.filter(_.spent_in_transaction_hash===transactionHash).map( p => (p.value, p.height_out))
+
+    val result = query.groupBy(_ => true)
+      .map { case (_, as) =>
+        (as.map(_._1).size,as.map(_._1).sum,as.map(_._2).min, as.map(_._2).max) }.firstOption.getOrElse(0,None, None, None)
+
+    MovementsSummary(
+      result._2.getOrElse(0L), result._1 ,result._3.getOrElse(0),result._4.getOrElse(0)
+    )    
+  }
 }
-
-
-
