@@ -1,11 +1,7 @@
 package net.bitcoinprivacy.bge.models
 
-
 import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
-import scala.slick.jdbc.{ StaticQuery => Q }
-import scala.slick.jdbc.meta.MTable
-import util.Hash
 
 case class Stats(block_height:Int, total_bitcoins_in_addresses:Long, total_transactions:Long, total_addresses:Long, total_closures:Long, total_addresses_with_balance:Long, total_closures_with_balance:Long, total_addresses_no_dust:Long, total_closures_no_dust:Long, gini_closure:Double,gini_address:Double, tstamp:Long)
 

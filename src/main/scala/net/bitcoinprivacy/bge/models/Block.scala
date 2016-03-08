@@ -1,10 +1,7 @@
 package net.bitcoinprivacy.bge.models
 
-
 import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
-import scala.slick.jdbc.{ StaticQuery => Q }
-import scala.slick.jdbc.meta.MTable
 import util.Hash
 
 case class Block(hash: String, height: Int, tx: Int, value:Long, tstamp: Long)
@@ -20,7 +17,7 @@ object Block extends core.BitcoinDB
       val blockslist = for (b<- blockDB.filter(_.block_height < max).sortBy(_.block_height asc).drop(from).take(until-from))
                        yield (b.hash, b.block_height, b.txs,b.btcs, b.tstamp)
 
-      blockslist.run.toVector map (p => Block(Hash(p._1).toString, p._2,p._3,p._4,p._5))
+      blockslist.run map (p => Block(Hash(p._1).toString, p._2,p._3,p._4,p._5))
 
     }
 

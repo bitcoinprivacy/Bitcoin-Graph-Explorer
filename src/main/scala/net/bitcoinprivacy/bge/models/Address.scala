@@ -1,14 +1,10 @@
 package net.bitcoinprivacy.bge.models
 
+import core._
+import org.bitcoinj.core.{Address => Add}
+import org.bitcoinj.params.MainNetParams
 import scala.slick.driver.PostgresDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
-import scala.slick.jdbc.{ StaticQuery => Q }
-import scala.slick.jdbc.meta.MTable
-import util.Hash
-import org.bitcoinj.params.MainNetParams
-import org.bitcoinj.core.{Address => Add}
-import org.bitcoinj.core.AddressFormatException
-import core._
 
 case class Address(address: String, balance: Long)
 case class AddressesSummary(count: Int, sum: Long)
