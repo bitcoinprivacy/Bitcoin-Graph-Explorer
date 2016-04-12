@@ -57,6 +57,16 @@ packageOptions in (Compile, packageBin) <+= (target, externalDependencyClasspath
   Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> relativePaths.reduceOption(_ + " " + _).getOrElse(""))
  }
 
+scalacOptions ++= Seq(
+  "-encoding",
+  "UTF-8",
+  "-deprecation",
+  "-unchecked",
+  "-feature",
+  "-language:postfixOps",
+  "-language:implicitConversions"
+)
+
 javaOptions in run += "-Xmx16G"
 javaOptions in run += "-Xms1G"
 javaOptions in run += "-Dcom.sun.management.jmxremote.port=3333"

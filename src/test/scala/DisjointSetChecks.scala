@@ -6,7 +6,7 @@ import Prop.{forAll, BooleanOperators}
 
 
 object DSSpecification extends Properties("DisjointSets") {
-
+//TODO: check this with LmdbMaps as well
 
   def isDisjoint(s: Set[Set[Int]]) =
     s.map(_.size).sum == (s.fold(Set.empty)(_ ++ _)).size
