@@ -8,3 +8,4 @@ neodb/
 .ensime
 .ensime_cache/
 src/main/resources/application.conf
+.history

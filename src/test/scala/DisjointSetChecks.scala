@@ -1,5 +1,5 @@
 import scala.collection.immutable.Set
-import util.DisjointSets
+import util._
 import org.scalacheck._
 import Arbitrary._
 import Prop.{forAll, BooleanOperators}

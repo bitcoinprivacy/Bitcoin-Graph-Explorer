@@ -1,10 +1,10 @@
-organization := "sagesex"
+organization := "net.bitcoinprivacy"
 
-name := "Bitcoin Graph Explorer"
+name := "bge"
 
-version := "2.0"
+version := "3.0"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
 // additional libraries
 libraryDependencies ++= Seq(
@@ -34,7 +34,7 @@ libraryDependencies ++= Seq(
 //  "net.openhft" % "koloboke-api-jdk6-7" % "0.6.7",
 // "net.openhft" % "koloboke-impl-jdk6-7" % "0.6.7"
 //  "com.github.vlsi.compactmap" % "compactmap" % "1.2.1"
-
+//    "javax.servlet" % "javax.servlet-api" % "3.0.1" % "provided"
 )
 
 resolvers += "Local Maven Repository" at "file:///"+Path.userHome.absolutePath+"/.m2/repository"
@@ -58,16 +58,13 @@ packageOptions in (Compile, packageBin) <+= (target, externalDependencyClasspath
  }
 
 javaOptions in run += "-Xmx16G"
-
-
 javaOptions in run += "-Xms1G"
-
 javaOptions in run += "-Dcom.sun.management.jmxremote.port=3333"
 javaOptions in run += "-Dcom.sun.management.jmxremote.authenticate=false"
 javaOptions in run += "-Dcom.sun.management.jmxremote.ssl=false"
 javaOptions in run += "-Djava.rmi.server.hostname=orion2518.startdedicated.de"
 
-
+//lazy val api = (project in file(".")).enablePlugins(JettyPlugin)
 
 //javaOptions in run += "-XX:+UseParallelGC"
 

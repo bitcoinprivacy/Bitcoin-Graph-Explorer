@@ -3,7 +3,6 @@
  */
 
 import com.typesafe.config.ConfigFactory
-import core._
 import scala.slick.driver.JdbcDriver.simple._
 import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import java.net.InetAddress
@@ -18,7 +17,7 @@ import java.net.InetAddress
 
   
 
-package object util extends BitcoinDB
+package object util 
 {
   lazy val conf = ConfigFactory.load()
   
