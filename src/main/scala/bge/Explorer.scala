@@ -20,11 +20,11 @@ object Explorer extends App with db.BitcoinDB {
         // File blockStoreFile could be deleted and new generated here
       //Seq("touch", blockHashListFile).!
       // Ensure that bitcoind is running
-      Seq("bitcoind","-daemon").run
+//      Seq("bitcoind","-daemon").run
 
       populate
 
-      Seq("touch","/root/Bitcoin-Graph-Explorer/blockchain/lock").!
+      Seq("touch",lockFile).!
       iterateResume
 
     case "populate"::rest             =>
@@ -114,7 +114,7 @@ object Explorer extends App with db.BitcoinDB {
   }
 
   def iterateResume = {
-    Seq("bitcoind","-daemon").run
+  //  Seq("bitcoind","-daemon").run
     
     if (!peerGroup.isRunning) startBitcoinJ
 
@@ -130,7 +130,7 @@ object Explorer extends App with db.BitcoinDB {
     //  println(lch + " - " + bc)
     //  populateStats
     //}
-    while (new java.io.File("/root/Bitcoin-Graph-Explorer/blockchain/lock").exists)
+    while (new java.io.File(lockFile).exists)
     {
 //      val from = blockCount
   //    val to = countLines(blockHashListFile)

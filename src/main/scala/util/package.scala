@@ -28,7 +28,8 @@ package object util
   lazy val blockHashListFile= conf.getString("blockHashListFile")
   lazy val dustLimit = conf.getLong("dustLimit")
 
-  lazy val blockStoreFile = new java.io.File("/root/Bitcoin-Graph-Explorer/blockchain/spv.blockstore")
+  lazy val blockStoreFile = new java.io.File(conf.getString("levelDBFile"))
+  lazy val lockFile = conf.getString("lockFile")
 
   def params = MainNetParams.get
 
