@@ -5,15 +5,14 @@ import org.bitcoinj.core._
 import scala.collection._
 import scala.collection.JavaConversions._
 import scala.slick.driver.PostgresDriver.simple._
-import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import util._
-import scala.collection.mutable.Map
+
 
 // A FastBlockReader is a BlockReader that uses an UTXO set map
 abstract class FastBlockReader extends BlockReader {
 
-  lazy val table = LmdbMap.create("utxos")
-//  lazy val table: Map[Hash, Hash] = Map.empty
+//  lazy val table = LmdbMap.create("utxos")
+  lazy val table: mutable.Map[Hash, Hash] = mutable.Map.empty
   // (txhash,index) -> (address,value,blockIn)
   lazy val outputMap: UTXOs = new UTXOs (table)
 
@@ -106,7 +105,7 @@ abstract class FastBlockReader extends BlockReader {
     println("DEBUG: Saving blocks/movements (" + amount + ")  into database ...")
 
     val convertedVectorBlocks = vectorBlocks map { case (a,b,c,d,e) => (a.array.toArray,b,c,d,e) }
-    blockDB.insertAll(convertedVectorBlocks:_*)
+    DB.withSession(blockDB.insertAll(convertedVectorBlocks:_*)(_))
 
     def ohc(e:Option[Hash]):Array[Byte] = e.getOrElse(Hash.zero(0)).array.toArray
     def vectorMovementsConverter[A,B,C,D](v:Vector[(Hash,Hash,Option[Hash],A,B,C,D)]) = v map {
@@ -114,7 +113,7 @@ abstract class FastBlockReader extends BlockReader {
     val convertedVectorMovements = vectorMovementsConverter(vectorMovements)
 
     try{
-      movements.insertAll(convertedVectorMovements:_*)
+      DB.withSession(movements.insertAll(convertedVectorMovements:_*)(_))
     }
     catch {
       case e: java.sql.BatchUpdateException =>

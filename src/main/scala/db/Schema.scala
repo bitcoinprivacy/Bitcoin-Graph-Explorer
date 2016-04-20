@@ -8,7 +8,7 @@ package db
  * To change this template use File | Settings | File Templates.
  */
 
-import scala.slick.driver.PostgresDriver.simple._
+import slick.driver.PostgresDriver.simple._
 
 class Blocks(tag:Tag) extends Table[(Array[Byte], Int, Int, Long, Long)](tag, "blocks") {
   def hash= column[Array[Byte]]("hash")

@@ -1,7 +1,5 @@
-import java.io.File
 import actions._
 import util._
-import core._
 import sys.process._
 import collection.mutable.Map
 
@@ -16,11 +14,10 @@ object Explorer extends App with db.BitcoinDB {
   args.toList match{
     case "start"::rest =>
 
-      //Seq("rm", blockHashListFile).!
-        // File blockStoreFile could be deleted and new generated here
-      //Seq("touch", blockHashListFile).!
       // Ensure that bitcoind is running
-//      Seq("bitcoind","-daemon").run
+      //      Seq("bitcoind","-daemon").run
+      // now commented out because bitcoind isn't available on mac by default
+      // just start bitcoind -daemon manually
 
       populate
 

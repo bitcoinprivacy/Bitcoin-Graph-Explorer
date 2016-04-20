@@ -1,20 +1,12 @@
 package core
 
-import org.bitcoinj.core.{Block, NetworkParameters}
-import org.bitcoinj.params.MainNetParams
-import org.bitcoinj.utils.BlockFileLoader
 import org.bitcoinj.core._
-import org.bitcoinj.store._
-import java.net.InetAddress
 import util._
-import scala.collection.convert.WrapAsScala._
-import sys.process._
-
 
 /**
  * Created by yzark on 25.08.14.
  */
-trait BlockSource extends db.BitcoinDB{
+trait BlockSource extends db.BitcoinDB {
   
   def blockSource: Iterator[(Block,Int)] // block,height
 

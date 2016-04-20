@@ -1,12 +1,10 @@
-// this has all the database stuff. to be extended as concrete DB implementations
+// this has all the database stuff.
 package db
 
-import scala.slick.driver.PostgresDriver.simple._
-import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
-import scala.slick.jdbc.{ StaticQuery => Q }
-import scala.slick.jdbc.meta.MTable
+import slick.driver.PostgresDriver.simple._
+import slick.jdbc.{ StaticQuery => Q }
+import slick.jdbc.meta.MTable
 
-import com.typesafe.config.ConfigFactory
 import util._
 import collection.mutable.Map
 
@@ -32,24 +30,19 @@ trait BitcoinDB {
   def deleteIfExists(tables: TableQuery[_ <: Table[_]]*)(implicit session: Session) =
     tables foreach { table => if (!MTable.getTables(table.baseTableRow.tableName).list.isEmpty) table.ddl.drop }
 
-  def transactionDBSession[X](f: => X): X =
-    {
-      Database.forURL(URL, user = USERNAME, password = PASSWORD, driver = DRIVER) withDynSession { f }
-    }
-
+  lazy val DB = Database.forURL(URL, user = USERNAME, password = PASSWORD, driver = DRIVER)
+  
   def countInputs: Int =
-    transactionDBSession
-  {
+    DB withSession { implicit session => 
     movements.length.run
   }
 
-  def blockCount: Int = transactionDBSession
-  {
+  def blockCount: Int = DB withSession { implicit session =>
     blockDB.length.run
   }
 
   def existsOutput(transactionHash: Hash, index: Int): Boolean =
-    {
+    DB withSession { implicit session =>
       Q.queryNA[Int]("""
         select count(*) from movements where
         transaction_hash = """ + transactionHash + """ and
@@ -58,7 +51,7 @@ trait BitcoinDB {
 
   def txListQuery(blocks: Seq[Int]) = {
     val emptyArray = Hash.zero(0).array.toArray
-    transactionDBSession {
+    DB withSession { implicit session =>
       for (q <- movements.filter(_.height_out inSet blocks).filter(_.address =!= emptyArray))
       yield (q.spent_in_transaction_hash, q.address)
       // in order to read quickly from db, we need to read in the order of insertion
@@ -69,7 +62,7 @@ trait BitcoinDB {
 
   def initializeReaderTables: Unit =
   {
-    transactionDBSession{
+    DB withSession { implicit session =>
       deleteIfExists(movements, blockDB, utxo)
       movements.ddl.create
       blockDB.ddl.create
@@ -78,7 +71,7 @@ trait BitcoinDB {
   }
 
   def initializeClosureTables: Unit = {
-    transactionDBSession{
+    DB withSession { implicit session =>
       deleteIfExists(addresses)
       addresses.ddl.create
     }
@@ -86,7 +79,7 @@ trait BitcoinDB {
 
 
   def initializeStatsTables: Unit = {
-    transactionDBSession{
+    DB withSession { implicit session =>
       deleteIfExists(stats, richestAddresses, richestClosures, balances, closureBalances)
       
       stats.ddl.create
@@ -100,7 +93,7 @@ trait BitcoinDB {
 
   def createBalanceTables = {
     var clock = System.currentTimeMillis
-    transactionDBSession {
+    DB withSession { implicit session =>
       println("DEBUG: Creating balances")
       deleteIfExists(balances, closureBalances)
       balances.ddl.create
@@ -121,7 +114,7 @@ trait BitcoinDB {
   }
 
   def countUTXOs = {
-    transactionDBSession {
+    DB withSession { implicit session =>
       val values = (for (u <- utxo)
       yield
         u.value).run.toVector
@@ -135,8 +128,8 @@ trait BitcoinDB {
     println("DEBUG: Updating balances ...")
     currentStat.total_bitcoins_in_addresses+=changedAddresses.map{_._2}.sum
 
-    transactionDBSession ({
-
+    DB withSession { implicit session =>
+ 
       val adsAndBalances = for ((address, change) <- changedAddresses)
                            yield (address,
                                   balances.filter(_.address === Hash.hashToArray(address)).
@@ -179,7 +172,7 @@ trait BitcoinDB {
                 format
                 (adsAndBalances.size, (System.currentTimeMillis - clock)/1000, (System.currentTimeMillis - clock)*1000/(adsAndBalances.size+1)))
     
-    })
+    }
   }
 
   private def updateAdsBalancesTable[A <: Table[(Array[Byte], Long)] with AddressField]
@@ -189,15 +182,16 @@ trait BitcoinDB {
       addressArray = Hash.hashToArray(address)
     }
     if (balance != 0L)
-      balances.insertOrUpdate(addressArray, balance)
+      DB withSession (balances.insertOrUpdate(addressArray, balance)(_))
     else
-      balances.filter(_.address === addressArray).delete
+      DB withSession { implicit session =>
+        balances.filter(_.address === addressArray).delete}
   }
 
   def insertRichestClosures = {
     println("DEBUG: Calculating richest closure list...")
     var startTime = System.currentTimeMillis
-    transactionDBSession {
+    DB withSession { implicit session =>
       val bh = blockCount-1
       val topClosures = closureBalances.sortBy(_.balance.desc).take(1000).run.toVector
       val topAddresses = richestAddresses.sortBy(_.block_height.desc).take(1000).run.toVector
@@ -223,7 +217,7 @@ trait BitcoinDB {
     println("DEBUG: Calculating richest address list...")
     var startTime = System.currentTimeMillis
 
-    transactionDBSession {
+    DB withSession { implicit session =>
       Q.updateNA( """
        insert
         into richest_addresses
@@ -250,7 +244,7 @@ trait BitcoinDB {
     println("DEBUG: Calculating stats...")
 
       val startTime = System.currentTimeMillis
-      transactionDBSession {
+      DB withSession { implicit session =>
         val query =   """
        insert
        into stats select
@@ -296,7 +290,7 @@ trait BitcoinDB {
     // Right now with update statistics we update the values with XXX in a faster way than reading all the database. We can improve it moving the rest (YYY) to a better position, or even using psql triggers.
     // A first approach could be to modify the values direct in ResumeBlockReader, ResumeClosure (balances can be updated whenever a utxo is added or removed)
     // Update should only add the ginis and call saveStat
-    transactionDBSession{
+    DB withSession { implicit session =>
       val stat = currentStat
       stat.total_addresses_with_balance=balances.length.run
       stat.total_closures_with_balance=closureBalances.length.run
@@ -304,7 +298,7 @@ trait BitcoinDB {
       stat.total_closures_no_dust = nonDustClosures.intValue
       stat.gini_closure=closureGini
       stat.gini_address=addressGini
-      stat.block_height=blockCount
+      stat.block_height=blockCount-1
       stat.tstamp=System.currentTimeMillis/1000
       stat.total_transactions = blockDB.map(_.txs).filter(_ > 0).sum.run.getOrElse(0).toLong
 
@@ -319,7 +313,7 @@ trait BitcoinDB {
     println("DEBUG: calculating Gini: " + balanceTable + java.util.Calendar.getInstance().getTime())
     val time = System.currentTimeMillis
 
-    val balanceVector = transactionDBSession {
+    val balanceVector = DB withSession { implicit session =>
        balanceTable.map(_.balance).filter(_ > dustLimit).sorted.run.toVector
     }
 
@@ -334,12 +328,12 @@ trait BitcoinDB {
     (n, gini)
   }
 
-  def createAddressIndexes {
+  def createAddressIndexes = {
 
     println("DEBUG: Creating indexes ...")
     val time = System.currentTimeMillis
 
-    transactionDBSession {
+    DB withSession { implicit session =>
       for (query <- List(
              "create index representant on addresses (representant)",
              "create unique index hash on addresses (hash)"
@@ -361,7 +355,7 @@ trait BitcoinDB {
     println("DEBUG: Creating indexes ...")
     val time = System.currentTimeMillis
 
-    transactionDBSession {
+    DB withSession { implicit session =>
 
       // MOVEMENTS
 
@@ -388,21 +382,21 @@ trait BitcoinDB {
 
   }
 
-  def currentStat = transactionDBSession{
+  def currentStat = DB withSession { implicit session =>
     Stat.tupled(stats.sortBy(_.block_height desc).firstOption.get)
   }
 
-  def saveStat(stat: Stat) = transactionDBSession{
+  def saveStat(stat: Stat) = DB withSession { implicit session =>
     stats.insert(Stat.unapply(stat).get)
   }
 
   case class Stat (var block_height: Int, var total_bitcoins_in_addresses: Long, var total_transactions: Long, var total_addresses: Long, var total_closures: Long, var total_addresses_with_balance: Long, var total_closures_with_balance: Long, var total_addresses_no_dust: Long, var total_closures_no_dust: Long, var gini_closure: Double, var gini_address: Double, var tstamp: Long)
   
-  def lastCompletedHeight: Int = transactionDBSession{
+  def lastCompletedHeight: Int = DB withSession { implicit session =>
     stats.map(_.block_height).max.run.getOrElse(0)
   }
 
-  def rollBack = transactionDBSession {
+  def rollBack = DB withSession { implicit session =>
 
     val blockHeight = blockCount - 1
     stats.filter(_.block_height === blockHeight).delete

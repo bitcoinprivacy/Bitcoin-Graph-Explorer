@@ -1,8 +1,6 @@
 
 package core
 
-import org.bitcoinj.core._
-import scala.collection.convert.WrapAsScala._
 import util._
 
 trait PeerSource extends BlockSource {

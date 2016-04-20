@@ -3,19 +3,13 @@
  */
 
 import com.typesafe.config.ConfigFactory
-import scala.slick.driver.JdbcDriver.simple._
-import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import java.net.InetAddress
-  import org.bitcoinj.core._
-  import org.bitcoinj.params.MainNetParams
-  import org.bitcoinj.store._
-  import org.bitcoinj.utils.BlockFileLoader
-  import scala.collection.convert.WrapAsScala._
-  import scala.collection.mutable.ArrayBuffer
-
-  import util._
-
-  
+import org.bitcoinj.core._
+import org.bitcoinj.params.MainNetParams
+import org.bitcoinj.store._
+import org.bitcoinj.utils.BlockFileLoader
+import scala.collection.mutable.ArrayBuffer
+import org.iq80.leveldb.impl.Iq80DBFactory.factory
 
 package object util 
 {
@@ -33,7 +27,7 @@ package object util
 
   def params = MainNetParams.get
 
-  lazy val blockStore = new LevelDBBlockStore(new Context(params),blockStoreFile)
+  lazy val blockStore = new LevelDBBlockStore(new Context(params), blockStoreFile, factory)
   lazy val chain = new BlockChain(params, blockStore)
   lazy val peerGroup = new PeerGroup(params, chain)
   lazy val loader = {

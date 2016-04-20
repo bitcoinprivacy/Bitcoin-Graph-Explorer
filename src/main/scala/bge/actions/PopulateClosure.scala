@@ -3,8 +3,6 @@ package actions
 import core._
 
 import scala.slick.driver.JdbcDriver.simple._
-import scala.slick.jdbc._
-import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import util._
 import Hash._
 
@@ -61,7 +59,7 @@ class PopulateClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHei
   def saveElementsToDatabase(queries: Vector[(Array[Byte], Array[Byte])], counter: Int): Unit =
   {
     val start = System.currentTimeMillis
-    transactionDBSession {
+    DB withSession { implicit session =>
       try{ addresses.insertAll(queries: _*) } catch {
         case e: java.sql.BatchUpdateException => throw(e.getNextException)
       }

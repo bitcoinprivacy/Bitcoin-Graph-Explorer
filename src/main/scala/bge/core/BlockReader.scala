@@ -5,15 +5,15 @@ import org.bitcoinj.core.Utils._
 import org.bitcoinj.core._
 
 import util._
+import db._
 
 import scala.collection.JavaConverters._
 import scala.slick.driver.JdbcDriver.simple._
-import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 
 // extends BlockSource means that it depends on a BlockSource
 trait BlockReader extends BlockSource {
 
-  def saveTransaction(transaction: Transaction, blockHeight: Int)
+  def saveTransaction(transaction: Transaction, blockHeight: Int): Unit
 
   def saveBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long, height: Int): Unit
 
@@ -27,7 +27,7 @@ trait BlockReader extends BlockSource {
   var transactionCounter = 0
   var startTime = System.currentTimeMillis
 
-  if (useDatabase) transactionDBSession{
+  if (useDatabase) DB withSession { implicit session =>
     pre
 
     val savedBlocks = for (b <- blockDB)

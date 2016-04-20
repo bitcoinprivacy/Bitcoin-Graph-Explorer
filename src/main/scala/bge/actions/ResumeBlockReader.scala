@@ -1,9 +1,7 @@
 package actions
 
 import core._
-import scala.collection.JavaConversions._
 import scala.slick.driver.PostgresDriver.simple._
-import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import util._
 import util.Hash._
 import collection.mutable.{HashMap, Map} 
@@ -42,9 +40,10 @@ class ResumeBlockReader extends FastBlockReader with PeerSource
 
   def deleteUTXOs = {
     for ( (e,i) <- deletedUTXOs.headOption) {
-      utxo.filter( p => deletedUTXOs.drop(1).foldLeft(p.transaction_hash === e && p.index === i){
-                    case (found,(tx,id)) => found || (p.transaction_hash === tx && p.index === id)
-                  }).delete
+      DB.withSession (
+        utxo.filter( p => deletedUTXOs.drop(1).foldLeft(p.transaction_hash === e && p.index === i){
+                      case (found,(tx,id)) => found || (p.transaction_hash === tx && p.index === id)
+                    }).delete(_))
     }
     deletedUTXOs = Vector()
   }
@@ -80,7 +79,7 @@ class ResumeBlockReader extends FastBlockReader with PeerSource
 
     val convertedVectorUTXOs = vectorUTXOConverter(newUtxos).toSeq
 
-    utxo.insertAll(convertedVectorUTXOs:_*)
+    DB.withSession(utxo.insertAll(convertedVectorUTXOs:_*)(_))
 
     newUtxos.clear
 

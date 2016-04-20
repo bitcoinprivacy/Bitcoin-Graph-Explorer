@@ -2,10 +2,7 @@ package actions
 
 import core._
 import db._
-import java.util.Calendar
 import scala.slick.driver.PostgresDriver.simple._
-import scala.slick.jdbc._
-import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
 import util._
 import util.Hash._
 import collection.mutable.Map
@@ -39,7 +36,7 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
 
     var addRepFlag = 1
 
-    transactionDBSession {
+    DB withSession { implicit session =>
 
       for ((address, oldRepOpt) <- pairList)
         oldRepOpt match
@@ -97,7 +94,7 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
     val convertedVector = addressBuffer map (p => (hashToArray(p._1), hashToArray(p._2)))
 
     try{
-      transactionDBSession(addresses.insertAll(convertedVector.toSeq:_*))
+      DB withSession (addresses.insertAll(convertedVector.toSeq:_*)(_))
     }
     catch {
       case e: java.sql.BatchUpdateException => throw e.getNextException
