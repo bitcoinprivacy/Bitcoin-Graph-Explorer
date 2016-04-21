@@ -9,7 +9,7 @@ import util._
 
 
 // A FastBlockReader is a BlockReader that uses an UTXO set map
-abstract class FastBlockReader extends BlockReader {
+trait FastBlockReader extends BlockReader {
 
 //  lazy val table = LmdbMap.create("utxos")
   lazy val table: mutable.Map[Hash, Hash] = mutable.Map.empty

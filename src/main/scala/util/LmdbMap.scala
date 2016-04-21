@@ -39,10 +39,10 @@ object LmdbMap
 class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
     extends collection.mutable.Map[Hash,Hash] with collection.mutable.MapLike[Hash,Hash, LmdbMap]{
 
-  var env = new Env()
+  val env = new Env()
   env.open(conf.getString("mdb.path") + "/" + name, NOSYNC)
   env.setMapSize(1024 * 1024 * 1024 * 1024L) // 1TB
-  var db = env.openDatabase("test")
+  val db = env.openDatabase("test")
 
   // TODO: review why it is not working to use tx directly instead of caching the elements
   val cache: Map[Hash,Hash] = Map.empty

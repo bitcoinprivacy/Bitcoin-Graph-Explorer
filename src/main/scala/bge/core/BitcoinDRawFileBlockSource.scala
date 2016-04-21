@@ -12,11 +12,11 @@ trait BitcoinDRawFileBlockSource extends BlockSource
 
     startBitcoinJ
     println("starting at " +  java.util.Calendar.getInstance().getTime())
-    val almostCurrentChain = getCurrentLongestChainFromBlockCount dropRight 5 take 100000
+    val almostCurrentChain = getCurrentLongestChainFromBlockCount dropRight 5 
     val blockMap = almostCurrentChain toMap
 
     for {
-      block <- asScalaIterator(loader).take(100000)
+      block <- asScalaIterator(loader)
       hash = block.getHash
       if blockMap.contains(hash)      
     }

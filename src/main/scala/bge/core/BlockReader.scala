@@ -1,11 +1,9 @@
 package core
 
-// for blocks db and longestChain
 import org.bitcoinj.core.Utils._
 import org.bitcoinj.core._
 
 import util._
-import db._
 
 import scala.collection.JavaConverters._
 import scala.slick.driver.JdbcDriver.simple._
@@ -64,8 +62,7 @@ trait BlockReader extends BlockSource {
 
   def blockFilter(b: Block) = {
     val blockHash = Hash(b.getHash.getBytes)
-
-    /*(longestChain contains blockHash) &&*/ !(savedBlockSet contains blockHash)
+    !(savedBlockSet contains blockHash)
   }
 
   // def withoutDuplicates(b: Block, t: Transaction): Boolean =

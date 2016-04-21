@@ -18,8 +18,8 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.2.1",
   "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
   "org.scalatest" %% "scalatest" % "2.1.5" % "test",
-  "org.deephacks.lmdbjni" % "lmdbjni" % "0.4.2",
-  "org.deephacks.lmdbjni" % "lmdbjni-linux64" % "0.4.2"
+  "org.deephacks.lmdbjni" % "lmdbjni" % "0.4.5",
+  "org.deephacks.lmdbjni" % "lmdbjni-linux64" % "0.4.5"
   // change here for different architectures
 )
 
@@ -58,12 +58,10 @@ scalacOptions ++= Seq(
 
 javaOptions in run += "-Xmx16G"
 javaOptions in run += "-Xms1G"
-javaOptions in run += "-Dcom.sun.management.jmxremote.port=3333"
-javaOptions in run += "-Dcom.sun.management.jmxremote.authenticate=false"
-javaOptions in run += "-Dcom.sun.management.jmxremote.ssl=false"
-javaOptions in run += "-Djava.rmi.server.hostname=orion2518.startdedicated.de"
-
-//lazy val api = (project in file(".")).enablePlugins(JettyPlugin)
+// javaOptions in run += "-Dcom.sun.management.jmxremote.port=3333"
+// javaOptions in run += "-Dcom.sun.management.jmxremote.authenticate=false"
+// javaOptions in run += "-Dcom.sun.management.jmxremote.ssl=false"
+// javaOptions in run += "-Djava.rmi.server.hostname=bitcoinprivacy.net"
 
 //javaOptions in run += "-XX:+UseParallelGC"
 
