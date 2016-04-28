@@ -7,8 +7,8 @@ trait PeerSource extends BlockSource {
   
   lazy val truncated = getCurrentLongestChainFromBlockCount dropRight 5 take 100 // take 100 so the changes don't get too big for memory
   
-  override def blockSource = {
-    
+  override def blockSource =
+  {
     val peer = peerGroup.getConnectedPeers().get(0);
     for ((_,end) <- truncated.lastOption)
       println("reading blocks from " + blockCount + " to " + end)

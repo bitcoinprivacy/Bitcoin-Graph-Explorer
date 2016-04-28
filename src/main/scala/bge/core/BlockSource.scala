@@ -15,7 +15,14 @@ trait BlockSource extends db.BitcoinDB {
     val lastBlock = chain.getChainHead
     val lastNo = lastBlock.getHeight
 
-    (blockCount to lastNo).foldRight((Vector[(Sha256Hash,Int)](),lastBlock)){
+    val blockList = (blockCount to lastNo).foldRight((Vector[(Sha256Hash,Int)](),lastBlock)){
       case (no,(vec,bl)) => ((bl.getHeader.getHash,no)+:vec,bl.getPrev(blockStore))}._1
+
+    val hashes = blockList map (_._2)
+    
+    assert(hashes.length == hashes.distinct.length, "duplicate block hashes in blockChain (maybe we use bitcoinJ wrongly)")
+
+    blockList
+    
   }
 }

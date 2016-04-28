@@ -7,14 +7,13 @@ import util._
 import util.Hash._
 import collection.mutable.Map
 
-class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeights: Vector[Int]) with BitcoinDB {
+class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeights: Vector[Int]) with BitcoinDB{
 
   lazy val table = LmdbMap.open("closures")
   override lazy val unionFindTable = new ClosureMap(table)
 
   lazy val changedReps = Map[Hash,Set[Hash]]()
-  var addedAds = 0
-  var addedReps = 0
+  
 
   override def insertInputsIntoTree(addressList: Iterable[Hash], tree: DisjointSets[Hash]): DisjointSets[Hash] =
   {

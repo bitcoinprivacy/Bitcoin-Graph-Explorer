@@ -16,11 +16,16 @@ import java.util.Calendar
 abstract class AddressClosure(blockHeights: Vector[Int]) extends db.BitcoinDB
 {
   lazy val unionFindTable: Map[Hash,(Int,Hash)] = Map.empty
+  var addedAds = 0
+  var addedReps = 0
 
   def saveTree(tree: DisjointSets[Hash]): Int
 
   def generateTree: DisjointSets[Hash] =
   {
+    // TODO: Same problem as with BlockReader, there we used a function "pre" to initialize the values. 
+    addedAds = 0;
+    addedReps = 0;
     def addBlocks(startIndex: Int, tree: DisjointSets[Hash]): DisjointSets[Hash] = {
       val blocks = blockHeights.slice(startIndex,startIndex+closureReadSize)
       for (blockNo <- blocks.headOption)
