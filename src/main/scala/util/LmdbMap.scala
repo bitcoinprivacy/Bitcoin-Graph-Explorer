@@ -104,7 +104,7 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
 
   override def size: Int ={
     commit
-    db.stat.getEntries.toInt
+    db.stat.ms_entries.toInt
   }
 
   def getFromDB(key: Hash): Option[Hash] = {

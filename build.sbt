@@ -9,7 +9,7 @@ scalaVersion := "2.11.8"
 // additional libraries
 libraryDependencies ++= Seq(
   "org.slf4j" % "slf4j-simple" % "1.7.5",
-  "org.bitcoinj" % "bitcoinj-core" % "0.13.4",
+  "org.bitcoinj" % "bitcoinj-core" % "0.13.6",
   "org.xerial.snappy"%"snappy-java"%"1.1.2.4",
   "org.iq80.leveldb"%"leveldb"%"0.7",
   //"org.fusesource.leveldbjni"%"leveldbjni-all"%"1.8",
@@ -18,8 +18,8 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.2.1",
   "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
   "org.scalatest" %% "scalatest" % "2.1.5" % "test",
-  "org.deephacks.lmdbjni" % "lmdbjni" % "0.4.5",
-  "org.deephacks.lmdbjni" % "lmdbjni-linux64" % "0.4.5"
+  "org.deephacks.lmdbjni" % "lmdbjni" % "0.4.6",
+  "org.deephacks.lmdbjni" % "lmdbjni-linux64" % "0.4.6"
   // change here for different architectures
 )
 

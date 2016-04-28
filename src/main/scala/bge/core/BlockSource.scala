@@ -14,7 +14,8 @@ trait BlockSource extends db.BitcoinDB {
 
     val lastBlock = chain.getChainHead
     val lastNo = lastBlock.getHeight
-      (blockCount to lastNo).foldRight((Vector[(Sha256Hash,Int)](),lastBlock)){
-        case (no,(vec,bl)) => ((bl.getHeader.getHash,no)+:vec,bl.getPrev(blockStore))}._1
+
+    (blockCount to lastNo).foldRight((Vector[(Sha256Hash,Int)](),lastBlock)){
+      case (no,(vec,bl)) => ((bl.getHeader.getHash,no)+:vec,bl.getPrev(blockStore))}._1
   }
 }

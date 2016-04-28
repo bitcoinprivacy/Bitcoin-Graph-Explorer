@@ -8,7 +8,7 @@ case class Stats(block_height:Int, total_bitcoins_in_addresses:Long, total_trans
 
 object Stats extends db.BitcoinDB
 { 
-  def getStats =
+  def getStats 
     transactionDBSession{
       val o = stats.sortBy(_.block_height.desc).firstOption
 
