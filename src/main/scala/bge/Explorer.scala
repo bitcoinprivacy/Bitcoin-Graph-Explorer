@@ -15,7 +15,7 @@ object Explorer extends App with db.BitcoinDB {
     case "start"::rest =>
 
       // Ensure that bitcoind is running
-      //      Seq("bitcoind","-daemon").run
+      // Seq("bitcoind","-daemon").run
       // now commented out because bitcoind isn't available on mac by default
       // just start bitcoind -daemon manually
 
@@ -111,7 +111,7 @@ object Explorer extends App with db.BitcoinDB {
   }
 
   def iterateResume = {
-  //  Seq("bitcoind","-daemon").run
+    // Seq("bitcoind","-daemon").run
     
     if (!peerGroup.isRunning) startBitcoinJ
 

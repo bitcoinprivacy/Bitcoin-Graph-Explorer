@@ -9,10 +9,10 @@ scalaVersion := "2.11.8"
 // additional libraries
 libraryDependencies ++= Seq(
   "org.slf4j" % "slf4j-simple" % "1.7.5",
-  "org.bitcoinj" % "bitcoinj-core" % "0.13.6",
+  "org.bitcoinj" % "bitcoinj-core" % "0.14",
   "org.xerial.snappy"%"snappy-java"%"1.1.2.4",
   "org.iq80.leveldb"%"leveldb"%"0.7",
-  //"org.fusesource.leveldbjni"%"leveldbjni-all"%"1.8",
+  "org.fusesource.leveldbjni"%"leveldbjni-all"%"1.8",
   "org.postgresql" % "postgresql" % "9.4-1200-jdbc41",
   "com.typesafe.slick" %% "slick" % "2.1.0",
   "com.typesafe" % "config" % "1.2.1",

@@ -27,7 +27,7 @@ package object util
 
   def params = MainNetParams.get
 
-  lazy val blockStore = new LevelDBBlockStore(new Context(params), blockStoreFile, factory)
+  lazy val blockStore = new LevelDBBlockStore(new Context(params), blockStoreFile) //, factory)
   lazy val chain = new BlockChain(params, blockStore)
   lazy val peerGroup = new PeerGroup(params, chain)
   lazy val loader = {
@@ -39,8 +39,8 @@ package object util
     println("DEBUG: starting peergroup")
     peerGroup.start();
     peerGroup.addAddress(addr);
-    peerGroup.waitForPeers(1).get();
-    peerGroup.startBlockChainDownload(new DownloadProgressTracker)
+//    peerGroup.waitForPeers(1).get();
+    peerGroup.downloadBlockChain
   }
 
   def toArrayBuf[A:IntOrLong](x:A)(implicit f:IntOrLong[A]): ArrayBuffer[Byte] = {
