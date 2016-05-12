@@ -9,7 +9,6 @@ import org.bitcoinj.params.MainNetParams
 import org.bitcoinj.store._
 import org.bitcoinj.utils.BlockFileLoader
 import scala.collection.mutable.ArrayBuffer
-import org.iq80.leveldb.impl.Iq80DBFactory.factory
 
 package object util 
 {
