@@ -20,6 +20,7 @@ package object util
   lazy val balanceTransactionSize = conf.getInt("balanceTransactionSize")
   lazy val blockHashListFile= conf.getString("blockHashListFile")
   lazy val dustLimit = conf.getLong("dustLimit")
+  lazy val dataDir = conf.getString( "dataDir")
 
   lazy val blockStoreFile = new java.io.File(conf.getString("levelDBFile"))
   lazy val lockFile = conf.getString("lockFile")

@@ -87,6 +87,12 @@ object Explorer extends App with db.BitcoinDB {
   }
 
   def populate = {
+
+    val dataDirectory = new java.io.File(dataDir)
+
+    if (!dataDirectory.isDirectory)
+      dataDirectory.mkdir
+
     initializeReaderTables
     initializeClosureTables
     initializeStatsTables
