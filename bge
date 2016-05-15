@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+java -jar bge-assembly-3.0.jar  $1

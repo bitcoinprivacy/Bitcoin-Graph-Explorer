@@ -11,11 +11,14 @@
     mkdir -p ${sbtIvyHome}
     sbt ${sbtOpts} assembly
     '';
-
+    installPhase = ''
+    mkdir -p $out
+     cp  ./target/scala-2.11/bge-assembly-3.0.jar bge $out
+               '';
     src = fetchgit {
     url = "git://github.com/bitcoinprivacy/Bitcoin-Graph-Explorer.git";
     rev = "HEAD";
-    md5 = "e00fcb58959f40e1b19ee0e9e5030f23";
+    md5 = "29170d11bbd3dd3c4f319960304b9565";
     } ;
     JAVA_HOME = "${jdk}";
     shellHook = ''
