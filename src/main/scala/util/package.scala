@@ -36,9 +36,9 @@ package object util
    
   def startBitcoinJ: Unit = {
     println("DEBUG: starting peergroup")
-    peerGroup.start();
-    peerGroup.addAddress(addr);
-//    peerGroup.waitForPeers(1).get();
+    peerGroup.start
+    peerGroup.addAddress(addr)
+    peerGroup.waitForPeers(1).get();
     peerGroup.downloadBlockChain
   }
 

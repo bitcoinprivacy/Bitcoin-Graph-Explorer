@@ -9,7 +9,7 @@ scalaVersion := "2.11.8"
 // additional libraries
 libraryDependencies ++= Seq(
   "org.slf4j" % "slf4j-simple" % "1.7.5",
-  "org.bitcoinj" % "bitcoinj-core" % "0.14",
+  "org.bitcoinj" % "bitcoinj-core" % "0.13.6",
   "org.xerial.snappy"%"snappy-java"%"1.1.2.4",
   "org.iq80.leveldb"%"leveldb"%"0.7",
   "org.fusesource.leveldbjni"%"leveldbjni-all"%"1.8",
@@ -37,11 +37,33 @@ resolvers += "openhft" at "https://oss.sonatype.org/content/groups/public"
 
 resolvers += "sonatype" at "https://oss.sonatype.org/content/repositories/releases/"
 
-// packageOptions in (Compile, packageBin) <+= (target, externalDependencyClasspath in Runtime) map
-//  { (targetDirectory: File, classpath: Classpath) =>
-//   val relativePaths = classpath map { attrFile: Attributed[File] => targetDirectory.toPath().relativize(attrFile.data.toPath()).toString() };
-//   Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> relativePaths.reduceOption(_ + " " + _).getOrElse(""))
-//  }
+// replicated the original sbt merge strategy to pick the first file per default
+
+assemblyMergeStrategy in assembly := { 
+case x if Assembly.isConfigFile(x) =>
+    MergeStrategy.concat
+  case PathList(ps @ _*) if Assembly.isReadme(ps.last) || Assembly.isLicenseFile(ps.last) =>
+    MergeStrategy.rename
+  case PathList("META-INF", xs @ _*) =>
+    (xs map {_.toLowerCase}) match {
+      case ("manifest.mf" :: Nil) | ("index.list" :: Nil) | ("dependencies" :: Nil) =>
+        MergeStrategy.discard
+      case ps @ (x :: xs) if ps.last.endsWith(".sf") || ps.last.endsWith(".dsa") =>
+        MergeStrategy.discard
+      case "plexus" :: xs =>
+        MergeStrategy.discard
+      case "services" :: xs =>
+        MergeStrategy.filterDistinctLines
+      case ("spring.schemas" :: Nil) | ("spring.handlers" :: Nil) =>
+        MergeStrategy.filterDistinctLines
+      case _ => MergeStrategy.deduplicate
+
+    }
+  case _ => MergeStrategy.first
+  }
+
+
+
 
 scalacOptions ++= Seq(
   "-encoding",
