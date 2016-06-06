@@ -1,7 +1,7 @@
 package net.bitcoinprivacy.bge.models
 
 import scala.slick.driver.PostgresDriver.simple._
-import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
+
 import util.Hash
 
 case class Movement(tx: String, value:Long, spentInTx: String, address: String)
@@ -23,7 +23,7 @@ object Movement extends db.BitcoinDB {
   def getInputsSummary(transactionHash: Array[Byte]) = getSummary(_.spent_in_transaction_hash===transactionHash)
 
   private def get[T <: Column[_]](f: db.Movements => T, from: Int, until: Int)(implicit wt: scala.slick.lifted.CanBeQueryCondition[T]) =
-    transactionDBSession {
+    DB withSession { implicit session =>
 
       val inputs = for (b<-movements filter f drop from take (until-from))
                    yield (b.transaction_hash, b.value, b.spent_in_transaction_hash, b.address)
@@ -33,7 +33,7 @@ object Movement extends db.BitcoinDB {
     }
 
   private def getSummary[T <: Column[_]](f: db.Movements => T)(implicit wt: scala.slick.lifted.CanBeQueryCondition[T]) =
-    transactionDBSession {
+    DB withSession { implicit session =>
       val query = movements.filter(f).map( p => (p.value, p.height_out))
 
       val result = query.groupBy(_ => true) // this is a workaround for a slick compiler inefficiency

@@ -4,14 +4,14 @@ import db._
 import org.bitcoinj.core.{Address => Add}
 import org.bitcoinj.params.MainNetParams
 import scala.slick.driver.PostgresDriver.simple._
-import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
+
 
 case class Address(address: String, balance: Long)
 case class AddressesSummary(count: Int, sum: Long)
 
 object Address extends db.BitcoinDB {
 
-  def getWallet(hash: Array[Byte], from: Int, until: Int) = transactionDBSession {
+  def getWallet(hash: Array[Byte], from: Int, until: Int) = DB withSession { implicit session =>
 
     val repOpt = addresses.filter(_.hash === hash).map(_.representant).firstOption
 
@@ -36,7 +36,7 @@ object Address extends db.BitcoinDB {
     }
   }
 
-  def getWalletSummary(hash: Array[Byte]) = transactionDBSession {
+  def getWalletSummary(hash: Array[Byte]) = DB withSession { implicit session =>
     
     val repOpt = addresses.filter(_.hash === hash).map(_.representant).firstOption
 
@@ -56,7 +56,7 @@ object Address extends db.BitcoinDB {
     }
   }
 
-  def getAddressList[A <: Table[_] with BalanceField with HashField with BlockHeightField](richListTable: TableQuery[A], blockHeight: Int, from: Int, until: Int): List[Address] = transactionDBSession {
+  def getAddressList[A <: Table[_] with BalanceField with HashField with BlockHeightField](richListTable: TableQuery[A], blockHeight: Int, from: Int, until: Int): List[Address] = DB withSession { implicit session =>
 
     richListTable.filter(_.block_height === blockHeight).sortBy(_.balance.desc).
       drop(from).take(Math.min(1000, until-from)).map(p=> (p.hash,p.balance)).run.toList map
@@ -66,7 +66,7 @@ object Address extends db.BitcoinDB {
 
   
 
-  def getAddressListSummary[A <: Table[_] with BalanceField with HashField with BlockHeightField](richListTable: TableQuery[A], blockHeight: Int): AddressesSummary = transactionDBSession {
+  def getAddressListSummary[A <: Table[_] with BalanceField with HashField with BlockHeightField](richListTable: TableQuery[A], blockHeight: Int): AddressesSummary = DB withSession { implicit session =>
 
     val query = richListTable.filter(_.block_height === blockHeight).sortBy(_.balance.desc)
       .take(1000).map(_.balance)

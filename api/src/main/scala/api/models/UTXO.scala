@@ -1,7 +1,7 @@
 package net.bitcoinprivacy.bge.models
 
 import scala.slick.driver.PostgresDriver.simple._
-import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
+
 import util.Hash
 
 case class UTXO(tx: String, value:Long, address: String)
@@ -9,7 +9,7 @@ case class UTXOsSummary(count : Int, sum: Long, minHeight: Int, maxHeight: Int)
 
 object UTXO extends db.BitcoinDB{
 
-  def getUtxosByAd(address: Array[Byte], from: Int, until: Int) = transactionDBSession {
+  def getUtxosByAd(address: Array[Byte], from: Int, until: Int) = DB withSession { implicit session =>
 
     val ad = Address.hashToAddress(address)
 
@@ -20,7 +20,7 @@ object UTXO extends db.BitcoinDB{
 
   }
 
-  def getUtxosByTx(transactionHash: Array[Byte], from: Int, until: Int) = transactionDBSession {
+  def getUtxosByTx(transactionHash: Array[Byte], from: Int, until: Int) = DB withSession { implicit session =>
 
     val tx = Hash(transactionHash).toString
 
@@ -35,7 +35,7 @@ object UTXO extends db.BitcoinDB{
   def getUtxosByTxSummary(transactionHash: Array[Byte]) = getSummary(_.transaction_hash===transactionHash)
 
   private def getSummary[T <: Column[_]](f: db.UTXO => T)(implicit wt: scala.slick.lifted.CanBeQueryCondition[T]) =
-    transactionDBSession {
+    DB withSession { implicit session =>
 
       val query = utxo filter f map ( p => (p.value, p.block_height))
 

@@ -14,15 +14,15 @@
        '';
 
     installPhase = ''
-     mkdir -p $out
-     cp  ./target/scala-2.11/bge-assembly-3.0.jar $out
-     cp bge $out
+      mkdir -p $out
+      cp  ./target/scala-2.11/bgeapi-assembly-1.0.jar $out
+      cp bgeapi $out
     '';
 
     src = fetchgit {
     url = "git://github.com/bitcoinprivacy/Bitcoin-Graph-Explorer.git";
     rev = "HEAD";
-    md5 = "421312e7393d6f197e78da205cdca30d";
+    md5 = "c1698fb17073d131efea449a9a89448e";
     } ;
     JAVA_HOME = "${jdk}";
     shellHook = ''

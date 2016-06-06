@@ -1,14 +1,14 @@
 package net.bitcoinprivacy.bge.models
 
 import scala.slick.driver.PostgresDriver.simple._
-import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
+
 
 case class Distribution(addresses: Int, satoshis: Long)
 
 object Distribution extends db.BitcoinDB
 {
   def get(limit: Long) =   
-    transactionDBSession{
+    DB withSession { implicit session =>
       val a = balances.filter(_.balance > limit).map(_.balance)
 
       val result = a.groupBy(_ => true) // this is a workaround for a slick compiler inefficiency

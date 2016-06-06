@@ -1,7 +1,7 @@
 package net.bitcoinprivacy.bge.models
 
 import scala.slick.driver.PostgresDriver.simple._
-import scala.slick.jdbc.JdbcBackend.Database.dynamicSession
+
 import util.Hash
 
 case class Block(hash: String, height: Int, tx: Int, value:Long, tstamp: Long)
@@ -11,7 +11,7 @@ object Block extends db.BitcoinDB
 {
   def getBlocks(from: Int, until: Int) =
 
-    transactionDBSession{
+    DB withSession { implicit session =>
 
       val max = stats.map(_.block_height).max.run.getOrElse(0)
       val blockslist = for (b<- blockDB.filter(_.block_height < max).sortBy(_.block_height asc).drop(from).take(until-from))
@@ -22,7 +22,7 @@ object Block extends db.BitcoinDB
     }
 
   def getSummary = {
-    transactionDBSession{
+    DB withSession { implicit session =>
       val summ = stats.sortBy(_.block_height.desc).map{o=>(o.block_height, o.total_transactions)}.first
       BlockSummary(summ._1, summ._2)
       

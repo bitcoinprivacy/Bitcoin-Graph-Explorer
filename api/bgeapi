@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+java -Dapi.port=8080 -Dapi.mode=”production” -jar "$(dirname "$0")/bgeapi-assembly-.0.jar"  $1
+
