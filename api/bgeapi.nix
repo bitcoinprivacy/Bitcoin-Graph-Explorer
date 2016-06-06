@@ -7,10 +7,11 @@
       sbtIvyHome = "/var/tmp/`whoami`/.ivy";
       sbtOpts = "-XX:PermSize=190m -Dsbt.boot.directory=${sbtBootDir} -Dsbt.ivy.home=${sbtIvyHome}";
       in ''
+        cd api
         mkdir -p ${sbtBootDir}
         mkdir -p ${sbtIvyHome}
-        sbt ${sbtOpts} assembly publish-local
-                  '';
+        sbt ${sbtOpts} assembly
+       '';
 
     installPhase = ''
      mkdir -p $out
