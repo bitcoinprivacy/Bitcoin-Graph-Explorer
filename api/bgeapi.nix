@@ -22,7 +22,7 @@
     src = fetchgit {
     url = "git://github.com/bitcoinprivacy/Bitcoin-Graph-Explorer.git";
     rev = "HEAD";
-    md5 = "c1698fb17073d131efea449a9a89448e";
+    md5 = "05aa837a4581a7c1e1e5d680c0687356";
     } ;
     JAVA_HOME = "${jdk}";
     shellHook = ''
