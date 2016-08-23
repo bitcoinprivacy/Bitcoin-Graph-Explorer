@@ -402,7 +402,8 @@ trait BitcoinDB {
 
   def rollBack = DB withSession { implicit session =>
 
-    val blockHeight = blockCount - 1
+    val blockHeight = blockCount
+    //butxo.map(_.block_height).max
     stats.filter(_.block_height === blockHeight).delete
     richestAddresses.filter(_.block_height === blockHeight).delete
     richestClosures.filter(_.block_height === blockHeight).delete
@@ -425,5 +426,7 @@ trait BitcoinDB {
     blockDB.filter(_.block_height === blockHeight).delete
 
     table.close
+
+
   }
 }

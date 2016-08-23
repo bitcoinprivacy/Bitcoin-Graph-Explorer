@@ -70,12 +70,10 @@ trait FastBlockReader extends BlockReader {
     }
   }
 
-  def saveBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long, height:Int) = {
+  def finishBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long, height:Int) = {
     processedBlocks :+= height
     insertBlock(b, height, txs, btcs, tstamp)
-    println("DEBUG: Saving block " + height + " consisting of " + txs + " txs at " + java.util.Calendar.getInstance().getTime() )
-
-
+    println("DEBUG: Saved block " + height + " consisting of " + txs + " txs at " + java.util.Calendar.getInstance().getTime() )
   }
 
   def pre  = {

@@ -125,14 +125,13 @@ object Explorer extends App with db.BitcoinDB {
     val bc = blockCount
 
     // if there are more stats than blocks we could delete it
-    for (i <- (lch +1 until bc).reverse){
-      println("rolling back block " + i + " at " + java.util.Calendar.getInstance().getTime())
-      rollBack
-    }
     if (lch < bc-1){
-      println(lch + " - " + (bc-1))
-      populateStats
+      println("rolling back block " + bc + " at " + java.util.Calendar.getInstance().getTime())
+      rollBack
+      testValues
+      populateStats 
     }
+
     while (new java.io.File(lockFile).exists)
     {
 //      val from = blockCount

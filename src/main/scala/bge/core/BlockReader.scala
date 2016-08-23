@@ -13,7 +13,7 @@ trait BlockReader extends BlockSource {
 
   def saveTransaction(transaction: Transaction, blockHeight: Int): Unit
 
-  def saveBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long, height: Int): Unit
+  def finishBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long, height: Int): Unit
 
   def pre: Unit
   def useDatabase: Boolean
@@ -44,21 +44,14 @@ trait BlockReader extends BlockSource {
   }
 
   def process: Unit = {
-    for ((transaction, blockHeight) <- transactionSource) {
-//      println("DEBUG: saving tx at " + java.util.Calendar.getInstance().getTime())
-      
-      saveTransaction(transaction, blockHeight)
-
-      // if (transactionCounter % 10000 == 0) {
-      //   val t = System.currentTimeMillis - startTime
-      //   //println("DEBUG: Processed %s transactions in %s s using %s µs/tx" format(transactionCounter , t/1000, 1000 * t / (transactionCounter+1)))
-      // }
-
-      transactionCounter += 1
+    for ((block, height) <- filteredBlockSource)
+    {
+      for (transaction <- transactionsInBlock(block))
+        saveTransaction(transaction, height)
+      val blockHash = Hash(block.getHash.getBytes)
+      finishBlock(blockHash, block.getTransactions.size,getTxValue(block),block.getTimeSeconds,height)
     }
-
   }
-
 
   def blockFilter(b: Block) = {
     val blockHash = Hash(b.getHash.getBytes)
@@ -91,17 +84,7 @@ trait BlockReader extends BlockSource {
      }
     yield o.getValue.value).sum
 
-
-  
-  lazy val transactionSource: Iterator[(Transaction,Int)] = 
-    filteredBlockSource flatMap { case (b,n) =>
-      val blockHash = Hash(b.getHash.getBytes)
-      saveBlock(blockHash, b.getTransactions.size,getTxValue(b),b.getTimeSeconds,n) // TODO: this is ugly!
-      transactionsInBlock(b) map ((_, n))
-    } 
- 
-
-  def getAddressFromOutput(output: TransactionOutput): Option[Array[Byte]] =
+    def getAddressFromOutput(output: TransactionOutput): Option[Array[Byte]] =
     bitcoinjParseScript(output).
     orElse(customParseScript(output)).
     orElse(noAddressParsePossible(output))
@@ -234,5 +217,4 @@ trait BlockReader extends BlockSource {
       case None => None
       case Some(address) => Some((Array(address.getVersion.toByte) ++ address.getHash160).toArray)
     }
-}
-
+  }
