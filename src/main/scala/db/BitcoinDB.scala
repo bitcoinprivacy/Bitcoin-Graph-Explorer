@@ -52,9 +52,11 @@ trait BitcoinDB {
   def txListQuery(blocks: Seq[Int]) = {
     val emptyArray = Hash.zero(0).array.toArray
     DB withSession { implicit session =>
-      for (q <- movements.filter(_.height_out inSet blocks).filter(_.address =!= emptyArray))
+      val q  = for (q <- movements.filter(_.height_out inSet blocks).filter(_.address =!= emptyArray))
       yield (q.spent_in_transaction_hash, q.address)
       // in order to read quickly from db, we need to read in the order of insertion
+      
+      q.run.toVector
     }
   }
   //  val txList = Compiled(txListQuery _) doesn't work with inSet
@@ -363,8 +365,10 @@ trait BitcoinDB {
       for (query <- List(
              "create index address on movements (address);",
              """create unique index tx_idx  on movements (transaction_hash, "index");""",
-             "create index  spent_in_transaction_hash2 on movements (spent_in_transaction_hash, address);",
-             "create index height_in on movements (height_in);",
+          //  "create index  spent_in_transaction_hash2 on movements (spent_in_transaction_hash, address);",
+          // not needed for closure
+             "create index spent_in on movements(spent_in_transaction_hash)", // for api/Movements
+             "create index height_in on movements (height_in);", // for closure
              "create index height_out_in on movements (height_out, height_in);",
              "create index address_utxo on utxo (address)",
              "create index height_utxo on utxo (block_height)",
@@ -415,7 +419,8 @@ trait BitcoinDB {
     val utxoRows = movementQuery.filter(_.height_in =!= blockHeight).map(p => (p.transaction_hash,p.address, p.index, p.value, p.height_in)).run
     for ((tx,ad,idx,v,h) <- utxoRows)
       utxoTable += ((Hash(tx) -> idx) -> (Hash(ad),v,h))
-    utxo.insertAll(utxoRows:_*)   
+    utxo.insertAll(utxoRows:_*)
+    movementQuery.delete
 
     blockDB.filter(_.block_height === blockHeight).delete
 

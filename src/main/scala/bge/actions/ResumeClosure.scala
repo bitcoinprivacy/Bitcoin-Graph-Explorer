@@ -35,6 +35,19 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
 
     var addRepFlag = 1
 
+    def recordChangedRep(newRep: Hash, oldRep: Hash) = {
+      // a changed to b, then b changed to c
+      // 1 we insert (b, a) in the map
+      // 2 we receive (c, b) cause b is already new, replace it with (c, a)
+      val oldReps = changedReps.getOrElse(newRep,Set())
+      if (changedReps.contains(oldRep)) {
+        changedReps += (newRep -> changedReps(oldRep))
+        changedReps -= oldRep
+      }
+      else changedReps += (newRep -> (oldReps + oldRep) )
+    }
+    
+
     DB withSession { implicit session =>
 
       for ((address, oldRepOpt) <- pairList)
@@ -54,20 +67,11 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
     addedReps += addRepFlag
 
     result
+
+    
   }
 
-  def recordChangedRep(newRep: Hash, oldRep: Hash) = {
-    // a changed to b, then b changed to c
-    // 1 we insert (b, a) in the map
-    // 2 we receive (c, b) cause b is already new, replace it with (c, a)
-    val oldReps = changedReps.getOrElse(newRep,Set())
-    if (changedReps.contains(oldRep)) {
-      changedReps += (newRep -> changedReps(oldRep))
-      changedReps -= oldRep
-    }
-    else changedReps += (newRep -> (oldReps + oldRep) )
-  }
-
+  
   override def saveTree(tree: DisjointSets[Hash]): Int =  // don't replace the postgres DB
   {
     val no = tree.elements.size - startTableSize // return the number of new elements in the union-find structure

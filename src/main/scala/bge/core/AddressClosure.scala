@@ -30,7 +30,7 @@ abstract class AddressClosure(blockHeights: Vector[Int]) extends db.BitcoinDB
       val blocks = blockHeights.slice(startIndex,startIndex+closureReadSize)
       for (blockNo <- blocks.headOption)
         println("reading " + blocks.length + " blocks from " + blockNo + " at " + Calendar.getInstance().getTime())
-      val txAndAddressList = DB withSession { implicit session => txListQuery(blocks).run.toVector }
+      val txAndAddressList = txListQuery(blocks)
       val addressesPerTxMap = txAndAddressList.groupBy(p=>Hash(p._1))
       val hashList = addressesPerTxMap.values map (_ map (p=>Hash(p._2)))
       val nontrivials = hashList filter (_.length > 1)

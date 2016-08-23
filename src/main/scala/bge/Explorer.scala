@@ -121,18 +121,18 @@ object Explorer extends App with db.BitcoinDB {
     
     if (!peerGroup.isRunning) startBitcoinJ
 
-    //val lch = lastCompletedHeight
-    //val bc = blockCount
+    val lch = lastCompletedHeight
+    val bc = blockCount
 
     // if there are more stats than blocks we could delete it
-    //for (i <- (lch +1 until bc).reverse){
-    //  println("rolling back block " + i + " at " + java.util.Calendar.getInstance().getTime())
-    //  rollBack
-    // }
-    //if (lch < bc-1){
-    //  println(lch + " - " + bc)
-    //  populateStats
-    //}
+    for (i <- (lch +1 until bc).reverse){
+      println("rolling back block " + i + " at " + java.util.Calendar.getInstance().getTime())
+      rollBack
+    }
+    if (lch < bc-1){
+      println(lch + " - " + (bc-1))
+      populateStats
+    }
     while (new java.io.File(lockFile).exists)
     {
 //      val from = blockCount
