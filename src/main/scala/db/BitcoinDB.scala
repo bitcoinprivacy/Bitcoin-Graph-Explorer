@@ -49,6 +49,8 @@ trait BitcoinDB {
         `index` = """ + index).list.head > 0
     }
 
+  def getLastBlock = DB withSession { implicit session => blockDB.sortBy(_.block_height.desc).map( a => (a.hash, a.block_height)).take(1).run.head}
+
   def txListQuery(blocks: Seq[Int]) = {
     val emptyArray = Hash.zero(0).array.toArray
     DB withSession { implicit session =>
@@ -400,10 +402,12 @@ trait BitcoinDB {
     stats.map(_.block_height).max.run.getOrElse(0)
   }
 
-  def rollBack = DB withSession { implicit session =>
+  def getUtxosMaxHeight = DB withSession { implicit session => utxo.map(_.block_height).max.run.getOrElse(0) }
 
-    val blockHeight = blockCount
-    //butxo.map(_.block_height).max
+  def rollBack(blockHeight: Int) = DB withSession { implicit session =>
+
+    println("rolling back block " + blockHeight + " at " + java.util.Calendar.getInstance().getTime())
+    
     stats.filter(_.block_height === blockHeight).delete
     richestAddresses.filter(_.block_height === blockHeight).delete
     richestClosures.filter(_.block_height === blockHeight).delete

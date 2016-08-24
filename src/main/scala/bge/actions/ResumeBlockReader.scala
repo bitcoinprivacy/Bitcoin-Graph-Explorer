@@ -28,8 +28,8 @@ class ResumeBlockReader extends FastBlockReader with PeerSource {
   }
 
   override def finishBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long, height: Int) = {
-    saveDataToDB
     saveUTXOs
+    saveDataToDB
     deleteUTXOs
     table.commit
     saveUnmatchedInputs
