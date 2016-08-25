@@ -113,26 +113,6 @@ object Explorer extends App with db.BitcoinDB {
     val closure = new ResumeClosure(read.processedBlocks)
     println("DEBUG: making new stats")
     resumeStats(read.changedAddresses, closure.changedReps, closure.addedAds, closure.addedReps)
-
-    val lastBlock = chain.getChainHead
-    val lastNo = lastBlock.getHeight
-
-    val blockWithHeightBlockCount = (blockCount to lastNo).foldRight(lastBlock){
-      case (no,bl) =>
-        bl.getPrev(blockStore)
-    }
-
-    def rollBackFromBlock(block: org.bitcoinj.core.StoredBlock): Unit =
-    {
-      val (hash, height) = getLastBlock
-      if (block.getHeader.getHash != hash){
-        rollBack(height)
-        rollBackFromBlock(block.getPrev((blockStore)))
-      }
-    }
-
-    rollBackFromBlock(blockWithHeightBlockCount)
-
   }
 
   def iterateResume = {
@@ -153,20 +133,10 @@ object Explorer extends App with db.BitcoinDB {
       if (blockCount > chain.getBestChainHeight)
       {
         println("waiting for new blocks at " + java.util.Calendar.getInstance().getTime())
-        chain.getHeightFuture(blockCount).get //wait until the chain is at least 6 blocks longer than we have read
+        chain.getHeightFuture(blockCount).get //wait until the chain overtakes our DB
       }
-
-      //testValues
       resume
-               
-
-     // }
-     // else
-     // {
-     //   println("waiting for new blocks")
-     //   waitIfNewBlocks(to)
-     // }
-    }
+     }
     println("process stopped")
     //Seq("bitcoin-cli","stop").run
   }

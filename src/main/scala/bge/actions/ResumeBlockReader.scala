@@ -61,6 +61,25 @@ class ResumeBlockReader extends FastBlockReader with PeerSource {
 
   override def pre = {
     super.pre
+
+    val lastBlock = chain.getChainHead
+    val lastNo = lastBlock.getHeight
+
+    val blockWithHeightBlockCount = (blockCount to lastNo).foldRight(lastBlock){
+      case (no,bl) =>
+        bl.getPrev(blockStore)
+    }
+
+    @scala.annotation.tailrec def rollBackFromBlock(block: org.bitcoinj.core.StoredBlock): Unit =
+    {
+      val (hash, height) = getLastBlock
+      if (Hash(block.getHeader.getHash.getBytes) != Hash(hash)){
+        rollBack(height)
+        rollBackFromBlock(block.getPrev((blockStore)))
+      }
+    }
+
+    rollBackFromBlock(blockWithHeightBlockCount)
     deletedUTXOs = Vector()
   }
 
