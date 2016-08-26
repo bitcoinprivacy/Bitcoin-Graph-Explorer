@@ -11,7 +11,6 @@ import util._
 import scala.slick.driver.PostgresDriver.simple._
 import scala.collection.mutable.Map
 import java.lang.System
-import java.util.Calendar
 
 abstract class AddressClosure(blockHeights: Vector[Int]) extends db.BitcoinDB
 {
@@ -29,18 +28,18 @@ abstract class AddressClosure(blockHeights: Vector[Int]) extends db.BitcoinDB
     def addBlocks(startIndex: Int, tree: DisjointSets[Hash]): DisjointSets[Hash] = {
       val blocks = blockHeights.slice(startIndex,startIndex+closureReadSize)
       for (blockNo <- blocks.headOption)
-        println("reading " + blocks.length + " blocks from " + blockNo + " at " + Calendar.getInstance().getTime())
+      log.info("reading " + blocks.length + " blocks from " + blockNo)
       val txAndAddressList = txListQuery(blocks)
       val addressesPerTxMap = txAndAddressList.groupBy(p=>Hash(p._1))
       val hashList = addressesPerTxMap.values map (_ map (p=>Hash(p._2)))
       val nontrivials = hashList filter (_.length > 1)
 
-      println("folding and merging " + nontrivials.size + " at " + Calendar.getInstance().getTime())
+      log.info("folding and merging " + nontrivials.size)
       nontrivials.foldLeft (tree) ((t,l) => insertInputsIntoTree(l,t))
     }
 
     val result = (0 until blockHeights.length by closureReadSize).foldRight(new DisjointSets[Hash](unionFindTable))(addBlocks)
-    println("finished generation")
+    log.info("finished generation")
     result
   }
 
@@ -50,14 +49,14 @@ abstract class AddressClosure(blockHeights: Vector[Int]) extends db.BitcoinDB
     addedTree.union(addresses)
   }
 
-  println("applying closure ")
+  log.info("applying closure ")
   val timeStart = System.currentTimeMillis
   val startTableSize = unionFindTable.size
   val countSave = saveTree(generateTree)
 
   val totalTime = System.currentTimeMillis - timeStart
 
-  println("DONE: Total of %s addresses added to closures in %s s, %s µs per address" format
+  log.info("Total of %s addresses added to closures in %s s, %s µs per address" format
     (countSave, totalTime / 1000, 1000 * totalTime / (countSave + 1)))
 }
 

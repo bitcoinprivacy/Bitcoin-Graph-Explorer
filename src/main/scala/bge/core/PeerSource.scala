@@ -11,13 +11,13 @@ trait PeerSource extends BlockSource {
   {
     val peer = peerGroup.getConnectedPeers().get(0);
     for ((_,end) <- truncated.lastOption)
-      println("reading blocks from " + blockCount + " to " + end)
+      log.info("reading blocks from " + blockCount + " to " + end)
 
     for ((blockHash,no) <- truncated.toIterator) yield {
       val future = peer.getBlock(blockHash)
-      System.out.println("Waiting for node to send us the requested block: " + blockHash + " at " + java.util.Calendar.getInstance().getTime())
+      log.info("Waiting for node to send us the requested block: " + blockHash)
       val block = future.get()
-      System.out.println("Block received at " + java.util.Calendar.getInstance().getTime())
+      log.info("Block received")
       (block,no)
     }
 

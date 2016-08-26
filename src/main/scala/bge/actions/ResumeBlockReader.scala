@@ -65,26 +65,31 @@ class ResumeBlockReader extends FastBlockReader with PeerSource {
     val lastBlock = chain.getChainHead
     val lastNo = lastBlock.getHeight
 
-    val blockWithHeightBlockCount = (blockCount to lastNo).foldRight(lastBlock){
+
+    val blockWithLastHeight = (blockCount to lastNo).foldRight(lastBlock){
       case (no,bl) =>
         bl.getPrev(blockStore)
-    }
+    } // at this point bitcoinJ should have at least blockCount blocks
 
     @scala.annotation.tailrec def rollBackFromBlock(block: org.bitcoinj.core.StoredBlock): Unit =
     {
       val (hash, height) = getLastBlock
-      if (Hash(block.getHeader.getHash.getBytes) != Hash(hash)){
+      val prevBlock = block.getPrev(blockStore)
+      if (Hash(block.getHeader.getHash.getBytes) != Hash(hash))
+      {
+        log.info(Hash(hash)+" != "+ Hash(block.getHeader.getHash.getBytes))
         rollBack(height)
-        rollBackFromBlock(block.getPrev((blockStore)))
+        rollBackFromBlock(prevBlock)
       }
     }
 
-    rollBackFromBlock(blockWithHeightBlockCount)
+    
+    rollBackFromBlock(blockWithLastHeight)
     deletedUTXOs = Vector()
   }
 
   override def post = {
-    println("finishing ...")
+    log.info("finishing ...")
     super.post
     table.close
   }
@@ -100,7 +105,7 @@ class ResumeBlockReader extends FastBlockReader with PeerSource {
     }
 
   def saveUTXOs = {
-    println("DEBUG: Inserting UTXOs into SQL database ...")
+    log.info("Inserting UTXOs into SQL database ...")
 
     def vectorUTXOConverter[A, B, C](v: Map[(Hash, A), (Hash, B, C)]) = v map {
       case ((a, b), (c, d, e)) => (hashToArray(a), hashToArray(c), b, d, e)
@@ -112,7 +117,7 @@ class ResumeBlockReader extends FastBlockReader with PeerSource {
 
     newUtxos.clear
 
-    println("DEBUG: Data inserted")
+    log.info("Data inserted")
 
   }
 }

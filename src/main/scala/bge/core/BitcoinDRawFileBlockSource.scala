@@ -11,12 +11,12 @@ trait BitcoinDRawFileBlockSource extends BlockSource
   override def blockSource: Iterator[(Block,Int)] = {
 
     startBitcoinJ
-    println("starting at " +  java.util.Calendar.getInstance().getTime())
-    val almostCurrentChain = getCurrentLongestChainFromBlockCount
+    log.info("starting")
+    val almostCurrentChain = getCurrentLongestChainFromBlockCount take(100000)
     val blockMap = almostCurrentChain toMap
 
     for {
-      block <- asScalaIterator(loader) 
+      block <- asScalaIterator(loader) .take(150000)
       hash = block.getHash
       if blockMap.contains(hash)      
     }

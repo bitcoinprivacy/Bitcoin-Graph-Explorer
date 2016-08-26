@@ -73,7 +73,7 @@ trait FastBlockReader extends BlockReader {
   def finishBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long, height:Int) = {
     processedBlocks :+= height
     insertBlock(b, height, txs, btcs, tstamp)
-    println("DEBUG: Saved block " + height + " consisting of " + txs + " txs at " + java.util.Calendar.getInstance().getTime() )
+    log.info("Saved block " + height + " consisting of " + txs + " txs")
   }
 
   def pre  = {
@@ -87,7 +87,7 @@ trait FastBlockReader extends BlockReader {
     saveDataToDB
     saveUnmatchedInputs
 
-    println("DONE: " + totalOutIn + " movements, " + transactionCounter + " transactions saved in " + (System.currentTimeMillis - startTime)/1000 + "s")
+    log.info("" + totalOutIn + " movements, " + transactionCounter + " transactions saved in " + (System.currentTimeMillis - startTime)/1000 + "s")
   }
 
   def saveUnmatchedInputs: Unit =
@@ -100,7 +100,7 @@ trait FastBlockReader extends BlockReader {
   def saveDataToDB: Unit =
   {
     val amount = vectorBlocks.length + vectorMovements.length
-    println("DEBUG: Saving blocks/movements (" + amount + ")  into database ...")
+    log.info("Saving blocks/movements (" + amount + ")  into database ...")
 
     val convertedVectorBlocks = vectorBlocks map { case (a,b,c,d,e) => (a.array.toArray,b,c,d,e) }
     DB.withSession(blockDB.insertAll(convertedVectorBlocks:_*)(_))
@@ -122,7 +122,7 @@ trait FastBlockReader extends BlockReader {
     vectorMovements = Vector()
     vectorBlocks = Vector()
 
-    //println("DEBUG: Data inserted")
+    //log.info("Data inserted")
   }
 
   // block

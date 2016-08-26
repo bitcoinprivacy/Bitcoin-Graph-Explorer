@@ -98,7 +98,7 @@ trait BitcoinDB {
   def createBalanceTables = {
     var clock = System.currentTimeMillis
     DB withSession { implicit session =>
-      println("DEBUG: Creating balances")
+      log.info("Creating balances")
       deleteIfExists(balances, closureBalances)
       balances.ddl.create
       closureBalances.ddl.create
@@ -113,7 +113,7 @@ trait BitcoinDB {
       (Q.u + "create index addresses_balance_2 on closure_balances(address)").execute
         (Q.u + "create index balance_2 on closure_balances(balance)").execute
 
-      println("DONE: Balances created in %s s" format (System.currentTimeMillis - clock)/1000)
+      log.info("Balances created in %s s" format (System.currentTimeMillis - clock)/1000)
     }
   }
 
@@ -129,7 +129,7 @@ trait BitcoinDB {
 
   def updateBalanceTables(changedAddresses: Map[Hash,Long], changedReps: Map[Hash,Set[Hash]]) = {
     var clock = System.currentTimeMillis
-    println("DEBUG: Updating balances ...")
+    log.info("Updating balances ...")
     currentStat.total_bitcoins_in_addresses+=changedAddresses.map{_._2}.sum
 
     DB withSession { implicit session =>
@@ -172,7 +172,7 @@ trait BitcoinDB {
 
       table.close
 
-      println("DONE: %s balances updated in %s s, %s µs per address "
+      log.info("%s balances updated in %s s, %s µs per address "
                 format
                 (adsAndBalances.size, (System.currentTimeMillis - clock)/1000, (System.currentTimeMillis - clock)*1000/(adsAndBalances.size+1)))
     
@@ -193,7 +193,7 @@ trait BitcoinDB {
   }
 
   def insertRichestClosures = {
-    println("DEBUG: Calculating richest closure list...")
+    log.info("Calculating richest closure list...")
     var startTime = System.currentTimeMillis
     DB withSession { implicit session =>
       val bh = blockCount-1
@@ -212,13 +212,13 @@ trait BitcoinDB {
       val mixedWithBh = for ((rep,bal) <- mixed) yield (bh,rep,bal)
       richestClosures.insertAll(mixedWithBh: _*)
 
-      println("RichestList calculated in " + (System.currentTimeMillis - startTime)/1000 + "s")
+      log.info("RichestList calculated in " + (System.currentTimeMillis - startTime)/1000 + "s")
     }
   }
 
   def insertRichestAddresses = {
 
-    println("DEBUG: Calculating richest address list...")
+    log.info("Calculating richest address list...")
     var startTime = System.currentTimeMillis
 
     DB withSession { implicit session =>
@@ -236,7 +236,7 @@ trait BitcoinDB {
         balance desc
       limit 1000
     ;""").execute
-      println("RichestList calculated in " + (System.currentTimeMillis - startTime)/1000 + "s")
+      log.info("RichestList calculated in " + (System.currentTimeMillis - startTime)/1000 + "s")
     }
   }
 
@@ -245,7 +245,7 @@ trait BitcoinDB {
     val (nonDustAddresses,addressGini) = getGini(balances)
     val (nonDustClosures, closureGini) = getGini(closureBalances)
 
-    println("DEBUG: Calculating stats...")
+    log.info("Calculating stats...")
 
       val startTime = System.currentTimeMillis
       DB withSession { implicit session =>
@@ -266,14 +266,14 @@ trait BitcoinDB {
        """+ (System.currentTimeMillis/1000).toString +""";"""
 
         (Q.u + query).execute
-        println("DONE: Stats calculated in " + (System.currentTimeMillis - startTime)/1000 + "s");
+        log.info("Stats calculated in " + (System.currentTimeMillis - startTime)/1000 + "s");
 
     }
   }
 
   def updateStatistics(changedReps: Map[Hash,Set[Hash]], addedAds: Int, addedReps: Int) = {
 
-    println("Updating stats")
+    log.info("Updating stats")
     val time = System.currentTimeMillis
     val (nonDustAddresses, addressGini) = getGini(balances)
     val (nonDustClosures, closureGini) = getGini(closureBalances)
@@ -309,12 +309,12 @@ trait BitcoinDB {
       stat.total_addresses += addedAds
       stat.total_closures += addedReps - changedReps.values.map(_.size).sum
       saveStat(stat)
-      println("Updated in " + (System.currentTimeMillis - time)/1000 + " seconds")
+      log.info("Updated in " + (System.currentTimeMillis - time)/1000 + " seconds")
     }
   }
 
   def getGini[A <: Table[_] with BalanceField](balanceTable: TableQuery[A]): (Long, Double) = {
-    println("DEBUG: calculating Gini: " + balanceTable + java.util.Calendar.getInstance().getTime())
+    log.info("calculating Gini: " + balanceTable)
     val time = System.currentTimeMillis
 
     val balanceVector = DB withSession { implicit session =>
@@ -328,13 +328,13 @@ trait BitcoinDB {
     val summe = balances.sum
     val mainSum = balances.zipWithIndex.map(p => p._1*(p._2+1.0)/n).sum
     val gini:Double = if (n==0) 0.0 else 2.0*mainSum/(summe) - (n+1.0)/n
-    println("DONE: gini calculated in " + (System.currentTimeMillis - time)/1000 + "s")
+    log.info("gini calculated in " + (System.currentTimeMillis - time)/1000 + "s")
     (n, gini)
   }
 
   def createAddressIndexes = {
 
-    println("DEBUG: Creating indexes ...")
+    log.info("Creating indexes ...")
     val time = System.currentTimeMillis
 
     DB withSession { implicit session =>
@@ -344,19 +344,19 @@ trait BitcoinDB {
            ))
       {
         Q.updateNA(query).execute
-        println("DEBUG: Finished "+ query)
+        log.info("Finished "+ query)
       }
 
 
     }
 
-    println("DONE: Indexes created in %s s" format (System.currentTimeMillis - time)/1000)
+    log.info("Indexes created in %s s" format (System.currentTimeMillis - time)/1000)
 
   }
 
   def createIndexes = {
 
-    println("DEBUG: Creating indexes ...")
+    log.info("Creating indexes ...")
     val time = System.currentTimeMillis
 
     DB withSession { implicit session =>
@@ -379,12 +379,12 @@ trait BitcoinDB {
 
       {
         Q.updateNA(query).execute
-        println("DEBUG: Finished"+ query)
+        log.info("Finished"+ query)
       }
 
     }
 
-    println("DONE: Indexes created in %s s" format (System.currentTimeMillis - time)/1000)
+    log.info("Indexes created in %s s" format (System.currentTimeMillis - time)/1000)
 
   }
 
@@ -406,7 +406,7 @@ trait BitcoinDB {
 
   def rollBack(blockHeight: Int) = DB withSession { implicit session =>
 
-    println("rolling back block " + blockHeight + " at " + java.util.Calendar.getInstance().getTime())
+    log.info("rolling back block " + blockHeight)
     
     stats.filter(_.block_height === blockHeight).delete
     richestAddresses.filter(_.block_height === blockHeight).delete
@@ -430,7 +430,6 @@ trait BitcoinDB {
     blockDB.filter(_.block_height === blockHeight).delete
 
     table.close
-
 
   }
 }

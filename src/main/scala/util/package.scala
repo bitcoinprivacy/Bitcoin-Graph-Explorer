@@ -9,6 +9,8 @@ import org.bitcoinj.params.MainNetParams
 import org.bitcoinj.store._
 import org.bitcoinj.utils.BlockFileLoader
 import scala.collection.mutable.ArrayBuffer
+import com.typesafe.scalalogging._
+import org.slf4j.LoggerFactory;
 
 package object util 
 {
@@ -27,6 +29,10 @@ package object util
 
   def params = MainNetParams.get
 
+  val log = Logger(LoggerFactory.getLogger("bge"))
+
+
+
   lazy val blockStore = new LevelDBBlockStore(new Context(params), blockStoreFile) //, factory)
   lazy val chain = new BlockChain(params, blockStore)
   lazy val peerGroup = new PeerGroup(params, chain)
@@ -36,7 +42,7 @@ package object util
   lazy val addr = new PeerAddress(InetAddress.getLocalHost(), params.getPort());
    
   def startBitcoinJ: Unit = {
-    println("DEBUG: starting peergroup")
+    log.info("starting peergroup")
     peerGroup.start
     peerGroup.addAddress(addr)
     peerGroup.waitForPeers(1).get();
@@ -70,5 +76,7 @@ package object util
       def & = (_ & _)
     }
   }
+
+  
 }
 

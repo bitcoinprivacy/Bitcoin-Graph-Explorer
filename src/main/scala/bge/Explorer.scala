@@ -76,7 +76,7 @@ object Explorer extends App with db.BitcoinDB {
     val values = for ( (_,(_,value,_)) <- outputMap.view) yield value //makes it a lazy collection
     val tuple = values.grouped(100000).foldLeft((0,0L)){
       case ((count,sum),group) =>
-        println(count + " elements read at " + java.util.Calendar.getInstance().getTime())
+        log.info(count + " elements read at ")
         val seq = group.toSeq
         (count+seq.size,sum+seq.sum)
     }
@@ -111,7 +111,7 @@ object Explorer extends App with db.BitcoinDB {
   def resume = {
     val read = new ResumeBlockReader
     val closure = new ResumeClosure(read.processedBlocks)
-    println("DEBUG: making new stats")
+    log.info("making new stats")
     resumeStats(read.changedAddresses, closure.changedReps, closure.addedAds, closure.addedReps)
   }
 
@@ -132,13 +132,13 @@ object Explorer extends App with db.BitcoinDB {
     {
       if (blockCount > chain.getBestChainHeight)
       {
-        println("waiting for new blocks at " + java.util.Calendar.getInstance().getTime())
+        log.info("waiting for new blocks at ")
         chain.getHeightFuture(blockCount).get //wait until the chain overtakes our DB
       }
       resume
-     }
-    println("process stopped")
-    //Seq("bitcoin-cli","stop").run
+    }
+
+    log.info("process stopped")
   }
 
   def getWrongBlock: Option[Int] = {
@@ -155,10 +155,10 @@ object Explorer extends App with db.BitcoinDB {
     val rightValue = amount <= expected
     val rightBlock = (blockCount - 1 == lch) && utxosMaxHeight == lch
 
-    if (!rightValue)  println("we have " + ((amount-expected)/100000000.0) + " too many bitcoins")
-    if (!sameCount)   println("we lost utxos")
-    if (!sameValue)   println("different sum of btcs in db and lmdb")
-    if (!rightBlock)  println("wrong or incomplete block")
+    if (!rightValue)  log.error("we have " + ((amount-expected)/100000000.0) + " too many bitcoins")
+    if (!sameCount)   log.error("we lost utxos")
+    if (!sameValue)   log.error("different sum of btcs in db and lmdb")
+    if (!rightBlock)  log.error("wrong or incomplete block")
 
     if (sameCount && sameValue && rightValue && rightBlock) None
     else if (utxosMaxHeight > bc -1) Some(utxosMaxHeight)
@@ -168,7 +168,7 @@ object Explorer extends App with db.BitcoinDB {
 
   def resumeStats(changedAddresses: Map[Hash,Long], changedReps: Map[Hash,Set[Hash]], addedAds: Int, addedReps: Int)  = {
     
-    println("DEBUG: "+ changedAddresses.size + " addresses changed balance")
+    log.info(changedAddresses.size + " addresses changed balance")
 
     if (changedAddresses.size < 38749 )
     {

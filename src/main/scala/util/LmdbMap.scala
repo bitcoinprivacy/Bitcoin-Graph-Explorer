@@ -128,7 +128,7 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
     for (kv <- cache)
       db.put(tx, kv._1, kv._2)
     tx.commit
-    println("commit took " + (System.currentTimeMillis - t) + " ms")
+    log.info("commit took " + (System.currentTimeMillis - t) + " ms")
     cache.clear
   }
 
