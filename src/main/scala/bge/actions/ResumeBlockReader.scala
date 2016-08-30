@@ -83,8 +83,11 @@ class ResumeBlockReader extends FastBlockReader with PeerSource {
       }
     }
 
-    
+    val countBefore = blockCount
     rollBackFromBlock(blockWithLastHeight)
+    if (countBefore != blockCount){
+      createBalanceTables
+    }
     deletedUTXOs = Vector()
   }
 

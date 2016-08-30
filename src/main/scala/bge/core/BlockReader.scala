@@ -46,8 +46,10 @@ trait BlockReader extends BlockSource {
   def process: Unit = {
     for ((block, height) <- filteredBlockSource)
     {
-      for (transaction <- transactionsInBlock(block))
+      for (transaction <- transactionsInBlock(block)) {
         saveTransaction(transaction, height)
+        transactionCounter +=1
+      }
       val blockHash = Hash(block.getHash.getBytes)
       finishBlock(blockHash, block.getTransactions.size,getTxValue(block),block.getTimeSeconds,height)
     }

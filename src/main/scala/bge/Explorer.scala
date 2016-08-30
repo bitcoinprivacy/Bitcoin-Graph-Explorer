@@ -132,7 +132,7 @@ object Explorer extends App with db.BitcoinDB {
     {
       if (blockCount > chain.getBestChainHeight)
       {
-        log.info("waiting for new blocks at ")
+        log.info("waiting for new blocks")
         chain.getHeightFuture(blockCount).get //wait until the chain overtakes our DB
       }
       resume
