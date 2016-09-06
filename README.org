@@ -1,0 +1,145 @@
+* Bitcoin Graph Explorer
+
+Probably the first project bringing together Scala and bitcoin, Bitcoin Graph
+Explorer (BGE) parses the blockchain, stores the relevant data in databases, and gives
+the user access to powerful analysis tools like the closure of an address with
+regard to probable co-ownership. We offer a REST API for easy access.
+
+Please see https://bitcoinprivacy.net/ for a reference project using BGE. There
+you can also find a publicly running example of the API under
+https://api.bitcoinprivacy.net. 
+
+** REQUIREMENTS
+
+*** postgres
+
+BGE uses [[https://www.postgresql.org/][postgres]] for storing its main database. Install and run the service
+according to your OS.
+
+*** bitcoind
+
+BGE uses a locally running [[https://bitcoincore.org][bitcoin daemon]] in order to read its raw files and
+connect to it via bitcoin protocol. Install, run and let sync before starting
+BGE.
+
+*** hardware
+
+Using LMDB for UTXOs means that this should work ok even on machines with not
+too much RAM. BGE is heavily disk bound, though:
+
+We recommend an SSD with at least three times the space the raw blockchain
+needs. At the moment that means about 270G including everything and takes about
+24 hours to catch up.
+
+
+** INSTALLATION
+
+*** automatic
+
+For easiest installation on linux 64-bit architectures use [[http://nixos.org/nix/][nix]]. Install nix
+first (or use nixos), then
+
+#+BEGIN_SRC sh
+git clone https://github.com/bitcoinprivacy/nixpkgs
+nix-env -f nixpkgs -i bge
+#+END_SRC
+
+*** manual
+
+If you don't want nix or need this to run on a different architecure, you can
+install bge manually. Install [[http://www.scala-sbt.org/][sbt]] first, then
+
+#+BEGIN_SRC sh
+git clone https://github.com/bitcoinprivacy/Bitcoin-Graph-Explorer bge
+cd bge
+#+END_SRC
+
+Change build.sbt in order to import the correct [[https://github.com/deephacks/lmdbjni][LMDB JNI]] architecture library.
+E.g., for mac use lmdbjni-osx64 instead of lmdbjni-linux64. Then
+
+#+BEGIN_SRC sh
+sbt assembly publish-local
+cd api
+sbt assembly
+#+END_SRC
+
+Modify the bge and api/bgeapi scripts such that they point at the correct jars
+in target/scala-2.11/bge-assembly-3.0.jar and
+api/target/scala-2.11/bgeapi-assembly-1.0.jar. Put these scripts somewhere in your
+PATH.
+
+LMDB JNI needs access to libstdc++.so.6, so set LD_LIBRARY_PATH accordingly
+before running bge manually. Nix builds a wrapper script for this automatically.
+
+
+** USAGE 
+
+*** Configuration
+
+Per default, bge assumes user "postgres" with password "trivial" in psql. Either
+configure psql like this or override configuration file reference.conf with
+application.conf, changing this line
+#+BEGIN_SRC 
+password = "trivial"
+#+END_SRC
+with the password you have defined in the psql installation. The configuration
+is done via [[https://github.com/typesafehub/config][typesafe config]]. Read the doc for all the possibilities or simply
+include -Dconfig.file=<your config file> in the java -jar call.
+
+*** Start 
+
+#+BEGIN_SRC 
+bge start
+#+END_SRC
+initializes everything and begins populating the database with all blocks
+available in the bitcoind raw data at the moment. When it is finished, it
+automatically does 
+
+#+BEGIN_SRC 
+bge resume
+#+END_SRC
+
+to keep up with the incoming new blocks. If you just want to populate the DB, do
+
+#+BEGIN_SRC 
+bge populate
+#+END_SRC
+.
+
+*** API
+
+#+BEGIN_SRC sh
+bgeapi [port]
+#+END_SRC
+
+starts the api on localhost, default port is 8080.
+
+These are all available queries:
+
+#+BEGIN_SRC 
+GET /blocks/:from/:until
+GET /blocks/summary
+GET /distribution/:limit
+GET /inputs/:tx/:from/:until
+GET /inputs/:tx/summary
+GET /movements/:ad/:from/:until
+GET /movements/:ad/summary
+GET /outputs/:tx/:from/:until
+GET /outputs/:tx/summary
+GET /richlist/addresses/:block_height/:from/:until
+GET /richlist/addresses/:block_height/summary
+GET /richlist/wallets/:block_height/:from/:until
+GET /richlist/wallets/:block_height/summary
+GET /stats
+GET /stats/history
+GET /tx_utxos/:tx/:from/:until
+GET /tx_utxos/:tx/summary
+GET /txs/:block_height/:from/:until
+GET /txs/:block_height/summary
+GET /utxos/:ad/:from/:until
+GET /utxos/:ad/summary
+GET /wallet/:ad/:from/:until
+GET /wallet/:ad/summary
+#+END_SRC
+
+

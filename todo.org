@@ -1,3 +1,0 @@
-* TODO match out-of-order inputs in slowblockreader
-shouldn't really be necessary once we get blocks in correct order by http
-   

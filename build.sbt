@@ -20,9 +20,9 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.1.5" % "test",
   "org.deephacks.lmdbjni" % "lmdbjni" % "0.4.6",
   "org.deephacks.lmdbjni" % "lmdbjni-linux64" % "0.4.6",
+  // change here for different architectures
   "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0",
   "ch.qos.logback" %  "logback-classic" % "1.1.7"
-  // change here for different architectures
 )
 
 libraryDependencies ~= { _.map(_.exclude("org.slf4j", "slf4j-simple")) }

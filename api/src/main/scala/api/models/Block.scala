@@ -14,7 +14,7 @@ object Block extends db.BitcoinDB
     DB withSession { implicit session =>
 
       val max = stats.map(_.block_height).max.run.getOrElse(0)
-      val blockslist = for (b<- blockDB.filter(_.block_height < max).sortBy(_.block_height asc).drop(from).take(until-from))
+      val blockslist = for (b<- blockDB.filter(_.block_height <= max).sortBy(_.block_height asc).drop(from).take(until-from))
                        yield (b.hash, b.block_height, b.txs,b.btcs, b.tstamp)
 
       blockslist.run map (p => Block(Hash(p._1).toString, p._2,p._3,p._4,p._5))
