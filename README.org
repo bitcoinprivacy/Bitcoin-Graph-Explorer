@@ -88,23 +88,37 @@ include -Dconfig.file=<your config file> in the java -jar call.
 
 *** Start 
 
-#+BEGIN_SRC 
-bge start
+#+BEGIN_SRC sh
+bge start [--force]
 #+END_SRC
-initializes everything and begins populating the database with all blocks
-available in the bitcoind raw data at the moment. When it is finished, it
-automatically does 
 
-#+BEGIN_SRC 
+If the database is not populated yet (or you --force), initializes everything in
+the background and begins populating the database with all blocks available in
+the bitcoind raw data at the moment. Then, it automatically does
+
+#+BEGIN_SRC sh
 bge resume
 #+END_SRC
 
-to keep up with the incoming new blocks. If you just want to populate the DB, do
+to keep up with the incoming new blocks. 
 
-#+BEGIN_SRC 
+If you just want to populate the DB, do
+
+#+BEGIN_SRC sh
 bge populate
 #+END_SRC
 .
+
+In order to gently stop the machine say
+#+BEGIN_SRC sh
+bge stop
+#+END_SRC
+
+Note that this only halts after the current iteration, so it could take a few
+days if you have just started the populate process.
+
+Logs are written to bge.log in the current directory per default. This can be
+changed in the config.
 
 *** API
 
