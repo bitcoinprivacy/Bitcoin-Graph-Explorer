@@ -64,7 +64,7 @@ sbt assembly
 #+END_SRC
 
 Modify the bge and api/bgeapi scripts such that they point at the correct jars
-in target/scala-2.11/bge-assembly-3.0.jar and
+in target/scala-2.11/bge-assembly-3.1.jar and
 api/target/scala-2.11/bgeapi-assembly-1.0.jar. Put these scripts somewhere in your
 PATH.
 
