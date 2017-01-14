@@ -8,7 +8,6 @@ scalaVersion := "2.11.8"
 
 // additional libraries
 libraryDependencies ++= Seq(
-//  "org.slf4j" % "slf4j-simple" % "1.7.5",
   "org.bitcoinj" % "bitcoinj-core" % "0.13.6",
   "org.xerial.snappy"%"snappy-java"%"1.1.2.4",
   "org.iq80.leveldb"%"leveldb"%"0.7",
@@ -19,10 +18,14 @@ libraryDependencies ++= Seq(
   "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
   "org.scalatest" %% "scalatest" % "2.1.5" % "test",
   "org.deephacks.lmdbjni" % "lmdbjni" % "0.4.6",
-  "org.deephacks.lmdbjni" % "lmdbjni-linux64" % "0.4.6",
-  // change here for different architectures
   "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0",
   "ch.qos.logback" %  "logback-classic" % "1.1.7"
+  ////////////////////////////////////////////////////////////////////
+  // select one of the following depending on your architecture
+  //"org.deephacks.lmdbjni" % "lmdbjni-osx64" % "0.4.6",
+  "org.deephacks.lmdbjni" % "lmdbjni-linux64" % "0.4.6",
+////////////////////////////////////////////////////////////////////
+
 )
 
 libraryDependencies ~= { _.map(_.exclude("org.slf4j", "slf4j-simple")) }
@@ -84,21 +87,5 @@ scalacOptions ++= Seq(
 
 javaOptions in run += "-Xmx16G"
 javaOptions in run += "-Xms1G"
-// javaOptions in run += "-Dcom.sun.management.jmxremote.port=3333"
-// javaOptions in run += "-Dcom.sun.management.jmxremote.authenticate=false"
-// javaOptions in run += "-Dcom.sun.management.jmxremote.ssl=false"
-// javaOptions in run += "-Djava.rmi.server.hostname=bitcoinprivacy.net"
-
-//javaOptions in run += "-XX:+UseParallelGC"
-
-//javaOptions in run += "-XX:-UseGCOverheadLimit"
-
-//javaOptions in run += "-XX:+UseStringDeduplicationJVM"
-
-//javaOptions in run += "-XX:+UseG1GC"
-
-//javaOptions in run += "-XX:+PrintCommandLineFlags"
-
-//javaOptions in run += "-XX:+PrintGCDetails"
 
 fork := true
