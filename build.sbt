@@ -22,8 +22,8 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" %  "logback-classic" % "1.1.7"
   ////////////////////////////////////////////////////////////////////
   // select one of the following depending on your architecture
-  //"org.deephacks.lmdbjni" % "lmdbjni-osx64" % "0.4.6",
-  "org.deephacks.lmdbjni" % "lmdbjni-linux64" % "0.4.6",
+  //"org.deephacks.lmdbjni" % "lmdbjni-osx64" % "0.4.6"
+  "org.deephacks.lmdbjni" % "lmdbjni-linux64" % "0.4.6"
 ////////////////////////////////////////////////////////////////////
 
 )
