@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.1.5" % "test",
   "org.deephacks.lmdbjni" % "lmdbjni" % "0.4.6",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0",
-  "ch.qos.logback" %  "logback-classic" % "1.1.7"
+  "ch.qos.logback" %  "logback-classic" % "1.1.7",
   ////////////////////////////////////////////////////////////////////
   // select one of the following depending on your architecture
   //"org.deephacks.lmdbjni" % "lmdbjni-osx64" % "0.4.6"
