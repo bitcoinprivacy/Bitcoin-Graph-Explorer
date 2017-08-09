@@ -166,8 +166,8 @@ trait BitcoinDB {
         val repOpt = closures.find(address)._1
 
         for (rep <- repOpt) { // only consider existing closures, because we omit trivial ones
-          val newBalance = repsAndChanges.getOrElse(rep, 0L) + change
-          repsAndChanges += (rep -> newBalance)
+          val changedChange = repsAndChanges.getOrElse(rep, 0L) + change
+          repsAndChanges += (rep -> changedChange)
         }
       }
 
