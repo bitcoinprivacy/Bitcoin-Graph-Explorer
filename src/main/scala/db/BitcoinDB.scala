@@ -196,27 +196,14 @@ trait BitcoinDB {
      }
   }
 
-
   def insertRichestClosures = {
     log.info("Calculating richest closure list...")
     var startTime = System.currentTimeMillis
     DB withSession { implicit session =>
       val bh = blockCount - 1
-      val topClosures = closureBalances.sortBy(_.balance.desc).take(1000).run.toVector
-      val topAddresses = richestAddresses.sortBy(_.block_height.desc).take(1000).run.toVector
-      val repsAndBalances = topAddresses map { p =>
-        (addresses.filter(_.hash === p._2).map(_.representant).firstOption.getOrElse(p._2), p._3)
-      }
-      val topClosureReps = topClosures map (p => Hash(p._1)) //need Hash in order to compare
-      val filtered = for {
-        (rep, bal) <- repsAndBalances
-        if (!topClosureReps.contains(Hash(rep)))
-      } yield (rep, bal)
-
-      val mixed = filtered ++ topClosures
-      val mixedWithBh = for ((rep, bal) <- mixed) yield (bh, rep, bal)
-      richestClosures.insertAll(mixedWithBh: _*)
-
+      val topClosures = closureBalances.sortBy(_.balance.desc).take(richlistSize).run.toVector
+      val topClosuresWithBh = for ((rep, bal) <- topClosures) yield (bh, rep, bal)
+      richestClosures.insertAll(topClosuresWithBh: _*)
       log.info("RichestList calculated in " + (System.currentTimeMillis - startTime) / 1000 + "s")
     }
   }
@@ -239,7 +226,7 @@ trait BitcoinDB {
       where address!= ''
       order by
         balance desc
-      limit 1000
+      limit """ + richlistSize + """
     ;""").execute
       log.info("RichestList calculated in " + (System.currentTimeMillis - startTime) / 1000 + "s")
     }
