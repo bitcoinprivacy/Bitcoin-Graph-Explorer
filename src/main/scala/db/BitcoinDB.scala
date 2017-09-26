@@ -169,11 +169,11 @@ trait BitcoinDB {
       val closures = new DisjointSets[Hash](unionFindTable)
 
       val repsAndChanges: collection.mutable.Map[Hash, Long] = collection.mutable.Map()
-        for ((address, change) <- changedAddresses - Hash.zero(0) ) {
+
+      for ((address, change) <- changedAddresses - Hash.zero(0) ) {
                val rep = closures.find(address)._1.getOrElse(address)
                val newBalance = repsAndChanges.getOrElse(rep, 0L) + change
                repsAndChanges += (rep -> newBalance)
-       
       } 
 
       // don't forget the new reps that had no balance change!
