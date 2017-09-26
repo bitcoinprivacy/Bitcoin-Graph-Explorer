@@ -28,7 +28,7 @@ Using LMDB for UTXOs means that this should work ok even on machines with not
 too much RAM. BGE is heavily disk bound, though:
 
 We recommend an SSD with at least three times the space the raw blockchain
-needs. At the moment that means about 270G including everything and takes about
+needs. At the moment that means about 600G including everything and takes about
 24 hours to catch up.
 
 
