@@ -23,6 +23,7 @@ package object util
   lazy val blockHashListFile= conf.getString("blockHashListFile")
   lazy val dustLimit = conf.getLong("dustLimit")
   lazy val dataDir = conf.getString( "dataDir")
+  lazy val richlistSize = conf.getInt("richlistSize")
 
   lazy val blockStoreFile = new java.io.File(conf.getString("levelDBFile"))
   lazy val lockFile = conf.getString("lockFile")

@@ -90,8 +90,8 @@ object Explorer extends App with db.BitcoinDB {
 
     val dataDirectory = new java.io.File(dataDir)
 
-    if (!dataDirectory.isDirectory)
-      dataDirectory.mkdir
+    dataDirectory.delete
+    dataDirectory.mkdir
 
     initializeReaderTables
     initializeClosureTables

@@ -38,10 +38,10 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
     def recordChangedRep(newRep: Hash, oldRep: Hash) = {
       // a changed to b, then b changed to c
       // 1 we insert (b, a) in the map
-      // 2 we receive (c, b) cause b is already new, replace it with (c, a)
+      // 2 we receive (c, b) cause b is already new, replace it with (c, {a,b})
       val oldReps = changedReps.getOrElse(newRep,Set())
       if (changedReps.contains(oldRep)) {
-        changedReps += (newRep -> changedReps(oldRep))
+        changedReps += (newRep -> (changedReps(oldRep)+ oldRep))
         changedReps -= oldRep
       }
       else changedReps += (newRep -> (oldReps + oldRep) )

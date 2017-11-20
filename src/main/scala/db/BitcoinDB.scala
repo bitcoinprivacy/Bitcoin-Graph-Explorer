@@ -107,14 +107,21 @@ trait BitcoinDB {
       deleteIfExists(balances, closureBalances)
       balances.ddl.create
       closureBalances.ddl.create
-
-      Q.updateNA("insert into balances select address, sum(value) as balance from utxo group by address;").execute
+      // '\x' is not an address
+      Q.updateNA("""insert into balances select address, sum(value) as balance from utxo where address != '\x' group by address;""").execute
 
       (Q.u + "create index addresses_balance on balances(address)").execute
       (Q.u + "create index balance on balances(balance)").execute
 
-      Q.updateNA("insert into closure_balances select a.representant, sum(b.balance) as balance from balances b, addresses a where b.address = a.hash group by a.representant;").execute
-      //Q.updateNA("insert into closure_balances select a.address, a.balance from balances a left outer join  addresses b on a.address = b.hash where b.representant is null").execute
+      Q.updateNA("""
+         insert into closure_balances
+              select address, sum(balance) from
+                ((select a.representant as address, b.balance as balance from balances b, addresses a where b.address = a.hash and b.address != '\x')
+                 UNION ALL
+                (select a.address as address, a.balance as balance from balances a left outer join  addresses b on a.address = b.hash where a.address != '\x' and b.representant is null)) table2
+         group by address;
+      """).execute
+
       (Q.u + "create index addresses_balance_2 on closure_balances(address)").execute
       (Q.u + "create index balance_2 on closure_balances(balance)").execute
 
@@ -148,9 +155,9 @@ trait BitcoinDB {
         else
           balances.filter(_.address === addressArray).delete
       }
-
+      // Hash.zero(0) is not an address
       session.withTransaction {
-      val adsAndBalances = for ((address, change) <- changedAddresses)
+      val adsAndBalances = for ((address, change) <- changedAddresses - Hash.zero(0))
         yield (address,
         balances.filter(_.address === Hash.hashToArray(address)).
         map(_.balance).firstOption.getOrElse(0L) + change)
@@ -162,18 +169,20 @@ trait BitcoinDB {
       val closures = new DisjointSets[Hash](unionFindTable)
 
       val repsAndChanges: collection.mutable.Map[Hash, Long] = collection.mutable.Map()
-      for ((address, change) <- changedAddresses - Hash.zero(0)) {
-        val repOpt = closures.find(address)._1
 
-        for (rep <- repOpt) { // only consider existing closures, because we omit trivial ones
-          val changedChange = repsAndChanges.getOrElse(rep, 0L) + change
-          repsAndChanges += (rep -> changedChange)
-        }
-      }
+      for ((address, change) <- changedAddresses - Hash.zero(0) ) {
+               val rep = closures.find(address)._1.getOrElse(address)
+               val newBalance = repsAndChanges.getOrElse(rep, 0L) + change
+               repsAndChanges += (rep -> newBalance)
+      } 
 
+      // don't forget the new reps that had no balance change!
+      for ((rep,_) <- changedReps)
+        repsAndChanges += (rep -> repsAndChanges.getOrElse(rep, 0L))
+  
       val repsAndBalances: Map[Hash, Long] =
         for {
-          (rep, change) <- repsAndChanges
+          (rep, change) <- repsAndChanges 
           oldReps = (changedReps.getOrElse(rep, Set()) + rep).map(Hash.hashToArray(_))
         } yield (rep,
           closureBalances.filter(_.address inSetBind oldReps).
@@ -196,27 +205,14 @@ trait BitcoinDB {
      }
   }
 
-
   def insertRichestClosures = {
     log.info("Calculating richest closure list...")
     var startTime = System.currentTimeMillis
     DB withSession { implicit session =>
       val bh = blockCount - 1
-      val topClosures = closureBalances.sortBy(_.balance.desc).take(1000).run.toVector
-      val topAddresses = richestAddresses.sortBy(_.block_height.desc).take(1000).run.toVector
-      val repsAndBalances = topAddresses map { p =>
-        (addresses.filter(_.hash === p._2).map(_.representant).firstOption.getOrElse(p._2), p._3)
-      }
-      val topClosureReps = topClosures map (p => Hash(p._1)) //need Hash in order to compare
-      val filtered = for {
-        (rep, bal) <- repsAndBalances
-        if (!topClosureReps.contains(Hash(rep)))
-      } yield (rep, bal)
-
-      val mixed = filtered ++ topClosures
-      val mixedWithBh = for ((rep, bal) <- mixed) yield (bh, rep, bal)
-      richestClosures.insertAll(mixedWithBh: _*)
-
+      val topClosures = closureBalances.sortBy(_.balance.desc).take(richlistSize).run.toVector
+      val topClosuresWithBh = for ((rep, bal) <- topClosures) yield (bh, rep, bal)
+      richestClosures.insertAll(topClosuresWithBh: _*)
       log.info("RichestList calculated in " + (System.currentTimeMillis - startTime) / 1000 + "s")
     }
   }
@@ -225,7 +221,6 @@ trait BitcoinDB {
 
     log.info("Calculating richest address list...")
     var startTime = System.currentTimeMillis
-
     DB withSession { implicit session =>
       Q.updateNA("""
        insert
@@ -239,7 +234,7 @@ trait BitcoinDB {
       where address!= ''
       order by
         balance desc
-      limit 1000
+      limit """ + richlistSize + """
     ;""").execute
       log.info("RichestList calculated in " + (System.currentTimeMillis - startTime) / 1000 + "s")
     }

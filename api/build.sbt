@@ -1,5 +1,7 @@
 // replicated the original sbt merge strategy to pick the first file per default
 
+maintainer:= "Bitcoinprivacy.net <info@bitcoinprivacy.net>"
+
 assemblyMergeStrategy in assembly := {
   case x if Assembly.isConfigFile(x) =>
     MergeStrategy.concat
@@ -22,3 +24,5 @@ assemblyMergeStrategy in assembly := {
     }
   case _ => MergeStrategy.first
 }
+
+enablePlugins(JavaAppPackaging)
