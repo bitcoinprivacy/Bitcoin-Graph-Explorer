@@ -6,6 +6,8 @@ version := "3.1"
 
 scalaVersion := "2.11.8"
 
+maintainer := "Bitcoinprivacy <info@bitcoinprivacy.net>"
+
 // additional libraries
 libraryDependencies ++= Seq(
   "org.bitcoinj" % "bitcoinj-core" % "0.13.6",
@@ -27,6 +29,8 @@ libraryDependencies ++= Seq(
 ////////////////////////////////////////////////////////////////////
 
 )
+
+enablePlugins(JavaAppPackaging)
 
 libraryDependencies ~= { _.map(_.exclude("org.slf4j", "slf4j-simple")) }
 
@@ -68,8 +72,6 @@ case x if Assembly.isConfigFile(x) =>
     }
   case _ => MergeStrategy.first
   }
-
-
 
 
 scalacOptions ++= Seq(

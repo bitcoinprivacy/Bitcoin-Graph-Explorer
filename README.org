@@ -10,7 +10,7 @@ you can also find a publicly running example of the API under
 https://api.bitcoinprivacy.net. 
 
 ** REQUIREMENTS
-
+   
 *** postgres
 
 BGE uses [[https://www.postgresql.org/][postgres]] for storing its main database. Install and run the service
@@ -34,43 +34,32 @@ needs. At the moment that means about 600G including everything and takes about
 
 ** INSTALLATION
 
-*** automatic
-
-For easiest installation on linux 64-bit architectures use [[http://nixos.org/nix/][nix]]. Install nix
-first (or use nixos), then
-
-#+BEGIN_SRC sh
-git clone https://github.com/bitcoinprivacy/nixpkgs
-nix-env -f nixpkgs -i bge
-#+END_SRC
-
-*** manual
-
-If you don't want nix or need this to run on a different architecure, you can
-install bge manually. Install [[http://www.scala-sbt.org/][sbt]] first, then
+Install [[http://www.scala-sbt.org/][sbt]] first, then
 
 #+BEGIN_SRC sh
 git clone https://github.com/bitcoinprivacy/Bitcoin-Graph-Explorer bge
 cd bge
 #+END_SRC
 
-Change build.sbt in order to import the correct [[https://github.com/deephacks/lmdbjni][LMDB JNI]] architecture library.
-E.g., for mac use lmdbjni-osx64 instead of lmdbjni-linux64. Then
+If necessary, change build.sbt in order to import the correct [[https://github.com/deephacks/lmdbjni][LMDB JNI]]
+architecture library. E.g., for mac use lmdbjni-osx64 instead of
+lmdbjni-linux64. Then
 
 #+BEGIN_SRC sh
-sbt assembly publish-local
+sbt stage publish-local
 cd api
-sbt assembly
+sbt stage
 #+END_SRC
 
-Modify the bge and api/bgeapi scripts such that they point at the correct jars
-in target/scala-2.11/bge-assembly-3.1.jar and
-api/target/scala-2.11/bgeapi-assembly-1.0.jar. Put these scripts somewhere in your
-PATH.
+This puts executables at target/universal/stage/bin/bge and
+api/target/universal/stage/bin/bgeapi. We use [[https://github.com/sbt/sbt-native-packager][sbt native packager]] for packaging,
+so you can replace both sbt stage commands above by something like sbt
+universal:packageBin to receive a zip File, sbt debian:packageBin or sbt
+rpm:packageBin for a package or even sbt docker:publishLocal to have a docker
+file published to your local repo. See the native packager docs for more options!
 
-LMDB JNI needs access to libstdc++.so.6, so set LD_LIBRARY_PATH accordingly
-before running bge manually. Nix builds a wrapper script for this automatically.
-
+LMDB JNI needs access to libstdc++.so.6, so you might need to set
+LD_LIBRARY_PATH accordingly before running bge manually. 
 
 ** USAGE 
 
