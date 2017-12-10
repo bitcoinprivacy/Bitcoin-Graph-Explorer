@@ -4,7 +4,7 @@ import scala.slick.driver.PostgresDriver.simple._
 
 import util.Hash
 
-case class Movement(tx: String, value:Long, spentInTx: String, address: String)
+case class Movement(tx: String, value:Long, spentInTx: String, address: String, blockHeightIn: Int, blockHeightOut: Int)
 
 case class MovementsSummary(sum: Long, count: Long, minHeight: Int, maxHeight: Int)
 
@@ -26,9 +26,9 @@ object Movement extends db.BitcoinDB {
     DB withSession { implicit session =>
 
       val inputs = for (b<-movements filter f drop from take (until-from))
-                   yield (b.transaction_hash, b.value, b.spent_in_transaction_hash, b.address)
+                   yield (b.transaction_hash, b.value, b.spent_in_transaction_hash, b.address, b.height_in, b.height_out)
 
-      inputs.run map (p => Movement(Hash(p._1).toString, p._2, Hash(p._3).toString, Address.hashToAddress(p._4)))
+      inputs.run map (p => Movement(Hash(p._1).toString, p._2, Hash(p._3).toString, Address.hashToAddress(p._4), p._5,  p._6))
 
     }
 
