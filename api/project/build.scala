@@ -11,7 +11,7 @@ import com.earldouglas.xwp.ContainerPlugin.autoImport._
 object BgeapiBuild extends Build {
   val Organization = "net.bitcoinprivacy"
   val Name = "bgeapi"
-  val Version = "3.2.1"
+  val Version = "3.3"
   val ScalaVersion = "2.11.8"
   val ScalatraVersion = "2.4.0"
 
@@ -36,7 +36,7 @@ object BgeapiBuild extends Build {
         "org.eclipse.jetty" % "jetty-webapp" % "9.2.15.v20160210" % "container;compile",
         "javax.servlet" % "javax.servlet-api" % "3.1.0" % "provided"
       ),
-      containerPort in Jetty := 8081,
+//    containerPort in Jetty := 8081,
       scalateTemplateConfig in Compile <<= (sourceDirectory in Compile){ base =>
         Seq(
           TemplateConfig(

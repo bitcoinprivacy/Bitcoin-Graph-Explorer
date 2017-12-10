@@ -2,7 +2,7 @@ organization := "net.bitcoinprivacy"
 
 name := "bge"
 
-version := "3.2.1"
+version := "3.3"
 
 scalaVersion := "2.11.8"
 

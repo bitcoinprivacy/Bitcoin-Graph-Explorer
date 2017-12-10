@@ -112,10 +112,10 @@ changed in the config.
 *** API
 
 #+BEGIN_SRC sh
-bgeapi [port]
+bgeapi [-Dapi.port=PORT] [-Dapi.mode=development]
 #+END_SRC
 
-starts the api on localhost, default port is 8080.
+starts the api on localhost, default port is 8080, default mode is production.
 
 These are all available queries:
 
