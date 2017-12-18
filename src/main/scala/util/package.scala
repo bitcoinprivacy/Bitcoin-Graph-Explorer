@@ -5,7 +5,7 @@
 import com.typesafe.config.ConfigFactory
 import java.net.InetAddress
 import org.bitcoinj.core._
-import org.bitcoinj.params.MainNetParams
+import org.bitcoinj.params._
 import org.bitcoinj.store._
 import org.bitcoinj.utils.BlockFileLoader
 import scala.collection.mutable.ArrayBuffer
@@ -32,11 +32,9 @@ package object util
     if (networkMode == "main")
       MainNetParams.get
     else if (networkMode == "testnet")
-      TestNetParams.get()
-    else if (networkMode == "regtest")
-      RegTestParams.get()
-    else 
-      throw new Exception("Invalid parameter 'network'. Valid values 'main', 'testnet' or 'regtest'
+      TestNet3Params.get
+    else
+      RegTestParams.get
 
   val log = Logger(LoggerFactory.getLogger("bge"))
 
@@ -51,9 +49,6 @@ package object util
   def startBitcoinJ: Unit = {
     log.info("starting peergroup")
     
-    if (List("testnet", "regtest").contains(networkMode) {
-        peerGroup.connectToLocalHost()
-    }
     peerGroup.start
     peerGroup.addAddress(addr)
     peerGroup.waitForPeers(1).get();
