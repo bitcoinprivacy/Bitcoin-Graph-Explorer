@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 package object util 
 {
   lazy val conf = ConfigFactory.load()
-  
+  lazy val networkMode = conf.getString("network")  
   lazy val closureTransactionSize = conf.getInt("closureTransactionSize")
   lazy val closureReadSize = conf.getInt("closureReadSize")
   lazy val populateTransactionSize = conf.getInt("populateTransactionSize")
@@ -28,11 +28,17 @@ package object util
   lazy val blockStoreFile = new java.io.File(conf.getString("levelDBFile"))
   lazy val lockFile = conf.getString("lockFile")
 
-  def params = MainNetParams.get
+  def params = 
+    if (networkMode == "main")
+      MainNetParams.get
+    else if (networkMode == "testnet")
+      TestNetParams.get()
+    else if (networkMode == "regtest")
+      RegTestParams.get()
+    else 
+      throw new Exception("Invalid parameter 'network'. Valid values 'main', 'testnet' or 'regtest'
 
   val log = Logger(LoggerFactory.getLogger("bge"))
-
-
 
   lazy val blockStore = new LevelDBBlockStore(new Context(params), blockStoreFile) //, factory)
   lazy val chain = new BlockChain(params, blockStore)
@@ -44,6 +50,10 @@ package object util
    
   def startBitcoinJ: Unit = {
     log.info("starting peergroup")
+    
+    if (List("testnet", "regtest").contains(networkMode) {
+        peerGroup.connectToLocalHost()
+    }
     peerGroup.start
     peerGroup.addAddress(addr)
     peerGroup.waitForPeers(1).get();
