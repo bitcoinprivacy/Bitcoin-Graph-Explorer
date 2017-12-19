@@ -42,7 +42,12 @@ package object util
   lazy val chain = new BlockChain(params, blockStore)
   lazy val peerGroup = new PeerGroup(params, chain)
   lazy val loader = {
-    new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)
+    if (networkMode == "main")
+      new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)
+    else if (networkMode == "testnet")
+      new TestNetBlockFileLoader(params,TestNetBlockFileLoader.getReferenceClientBlockFileList)
+    else
+      throw new Exception(s"Not implemented FileLoader for $networkMode")
   }
   lazy val addr = new PeerAddress(InetAddress.getLocalHost(), params.getPort());
    
