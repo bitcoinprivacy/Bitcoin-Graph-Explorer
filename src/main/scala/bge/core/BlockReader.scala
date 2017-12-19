@@ -44,14 +44,21 @@ trait BlockReader extends BlockSource {
   }
 
   def process: Unit = {
-    for ((block, height) <- filteredBlockSource)
-    {
-      for (transaction <- transactionsInBlock(block)) {
-        saveTransaction(transaction, height)
-        transactionCounter +=1
+    try {
+      for ((block, height) <- filteredBlockSource)
+      {
+        for (transaction <- transactionsInBlock(block)) {
+          saveTransaction(transaction, height)
+          transactionCounter +=1
+        }
+        val blockHash = Hash(block.getHash.getBytes)
+        finishBlock(blockHash, block.getTransactions.size,getTxValue(block),block.getTimeSeconds,height)
       }
-      val blockHash = Hash(block.getHash.getBytes)
-      finishBlock(blockHash, block.getTransactions.size,getTxValue(block),block.getTimeSeconds,height)
+    }
+    catch {
+      case e: Exception => 
+        log.error(e.getMessage)
+        log.warn("Try to recovery starting resume at these point")
     }
   }
 

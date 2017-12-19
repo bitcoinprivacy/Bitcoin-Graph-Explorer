@@ -42,9 +42,14 @@ package object util
   lazy val chain = new BlockChain(params, blockStore)
   lazy val peerGroup = new PeerGroup(params, chain)
   lazy val loader = {
-    new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)
+    if (networkMode == "main")
+      new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)
+    else if (networkMode == "testnet")
+      new TestNetBlockFileLoader(params,TestNetBlockFileLoader.getReferenceClientBlockFileList)
+    else
+      new RegTestBlockFileLoader(params,RegTestBlockFileLoader.getReferenceClientBlockFileList)
   }
-  lazy val addr = new PeerAddress(InetAddress.getLocalHost(), params.getPort());
+  lazy val addr = new PeerAddress(params, InetAddress.getLocalHost(), params.getPort());
    
   def startBitcoinJ: Unit = {
     log.info("starting peergroup")

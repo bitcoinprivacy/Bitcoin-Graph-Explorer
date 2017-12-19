@@ -11,7 +11,7 @@ import com.earldouglas.xwp.ContainerPlugin.autoImport._
 object BgeapiBuild extends Build {
   val Organization = "net.bitcoinprivacy"
   val Name = "bgeapi"
-  val Version = "3.3"
+  val Version = "3.3-SNAPSHOTj"
   val ScalaVersion = "2.11.8"
   val ScalatraVersion = "2.4.0"
 
