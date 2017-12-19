@@ -2,15 +2,28 @@ package net.bitcoinprivacy.bge.models
 
 import db._
 import org.bitcoinj.core.{Address => Add}
-import org.bitcoinj.params.MainNetParams
+import org.bitcoinj.params._
 import scala.slick.driver.PostgresDriver.simple._
-
+import com.typesafe.config.ConfigFactory
 
 case class Address(address: String, balance: Long)
 case class AddressesSummary(count: Int, sum: Long)
 
 object Address extends db.BitcoinDB {
+  lazy val conf = ConfigFactory.load()
+  lazy val network = conf.getString("network")
 
+  lazy val params = network match {
+    case "main" =>
+      MainNetParams.get
+    case "regtest" =>
+      RegTestParams.get
+    case "testnet" =>
+      TestNet3Params.get
+    case _ =>
+      throw new Exception(s"Unknow params for network $network")
+  }
+					    
   def getWallet(hash: Array[Byte], from: Int, until: Int) = DB withSession { implicit session =>
 
     val repOpt = addresses.filter(_.hash === hash).map(_.representant).firstOption
@@ -82,9 +95,9 @@ object Address extends db.BitcoinDB {
 
   def hashToAddress(hash: Array[Byte]): String = hash.length match {
 
-    case 20 => new Add(MainNetParams.get,0,hash).toString
+    case 20 => new Add(params,0,hash).toString
 
-    case 21 => new Add(MainNetParams.get,hash.head.toInt,hash.tail).toString
+    case 21 => new Add(params,hash.head.toInt,hash.tail).toString
 
     case 0 => "No decodable address found"
 
