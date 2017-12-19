@@ -53,7 +53,6 @@ trait BlockReader extends BlockSource {
         }
         val blockHash = Hash(block.getHash.getBytes)
         finishBlock(blockHash, block.getTransactions.size,getTxValue(block),block.getTimeSeconds,height)
-        if (height > 120000) throw new Exception("motherfuckers")
       }
     }
     catch {
