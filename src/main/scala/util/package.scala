@@ -46,10 +46,12 @@ package object util
       new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)
     else if (networkMode == "testnet")
       new TestNetBlockFileLoader(params,TestNetBlockFileLoader.getReferenceClientBlockFileList)
+    else if (networkMode == "regtest")
+      new RegTestBlockFileLoader(params,RegTestBlockFileLoader.getReferenceClientBlockFileList)
     else
       throw new Exception(s"Not implemented FileLoader for $networkMode")
   }
-  lazy val addr = new PeerAddress(InetAddress.getLocalHost(), params.getPort());
+  lazy val addr = new PeerAddress(params, InetAddress.getLocalHost(), params.getPort());
    
   def startBitcoinJ: Unit = {
     log.info("starting peergroup")

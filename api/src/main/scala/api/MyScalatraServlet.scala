@@ -9,12 +9,41 @@ import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.json._
 import net.bitcoinprivacy.bge.models._
 import org.bitcoinj.core.{Address => BitcoinJAddress}
-import org.bitcoinj.params.MainNetParams
+import org.bitcoinj.params._
 import org.scalatra.CorsSupport
+import com.typesafe.config.ConfigFactory
 
 class MyScalatraServlet extends BgeapiStack with db.BitcoinDB with JacksonJsonSupport with CorsSupport {
 
-  // Sets up automatic case class to JSON output serialization, required by
+  lazy val conf = ConfigFactory.load()
+  lazy val network = conf.getString("network")
+
+  lazy val networkParams = network match {
+    case "main" =>
+      MainNetParams.get
+    case "regtest" =>
+      RegTestParams.get
+    case "testnet" =>
+      TestNet3Params.get
+    case _ =>
+      throw new Exception("Unknow params for network"+network)
+
+  }
+
+  case class AddressPrefixes(p2pAddress: String, normalAddress: String)
+  lazy val prefix = network match {
+    case "main" =>
+      AddressPrefixes("05", "00")
+    case "regtest" =>
+      AddressPrefixes("C4", "6F")
+    case "testnet" =>
+      AddressPrefixes("C4", "6F")
+    case _ =>
+      throw new Exception("Unknow params for network"+network)
+
+  }
+					    
+  // Sets  up automatic case class to JSON output serialization, required by
   // the JValueResult trait.
   protected implicit lazy val jsonFormats: Formats = DefaultFormats
 
@@ -144,13 +173,13 @@ class MyScalatraServlet extends BgeapiStack with db.BitcoinDB with JacksonJsonSu
   def hexAddress(stringAddress: String): String = {
     val arrayAddress = stringAddress.split(",")
     if (arrayAddress.length == 1) {
-      val address = new BitcoinJAddress(MainNetParams.get, stringAddress)
-                                       (if(address.isP2SHAddress) "05" else "00")+valueOf(address.getHash160)
+      val address = new BitcoinJAddress(networkParams, stringAddress)
+      (if(address.isP2SHAddress) prefix.p2pAddress else prefix.normalAddress)+valueOf(address.getHash160)
     }
     else{
       "0" + arrayAddress.length + 
         (for (i <- 0 until arrayAddress.length) 
-         yield  valueOf(new BitcoinJAddress(MainNetParams.get, arrayAddress(i)).getHash160) ).mkString("")
+         yield  valueOf(new BitcoinJAddress(networkParams, arrayAddress(i)).getHash160) ).mkString("")
     }
   }
 

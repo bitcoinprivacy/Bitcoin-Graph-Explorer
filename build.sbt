@@ -2,7 +2,7 @@ organization := "net.bitcoinprivacy"
 
 name := "bge"
 
-version := "3.3"
+version := "3.3-SNAPSHOT"
 
 scalaVersion := "2.11.8"
 
@@ -10,7 +10,7 @@ maintainer := "Bitcoinprivacy <info@bitcoinprivacy.net>"
 
 // additional libraries
 libraryDependencies ++= Seq(
-  "org.bitcoinj" % "bitcoinj-core" % "0.14.5",
+  "org.bitcoinj" % "bitcoinj-core" % "0.15-SNAPSHOT",
   "org.xerial.snappy"%"snappy-java"%"1.1.2.4",
   "org.iq80.leveldb"%"leveldb"%"0.7",
   "org.fusesource.leveldbjni"%"leveldbjni-all"%"1.8",
@@ -34,7 +34,7 @@ enablePlugins(JavaAppPackaging)
 
 libraryDependencies ~= { _.map(_.exclude("org.slf4j", "slf4j-simple")) }
 
-resolvers += "Local Maven Repository" at "file:///"+Path.userHome.absolutePath+"/.m2/repository"
+resolvers += "Local Maven Repository" at "file:///root/.m2/repository"
 
 resolvers += "Fakod Snapshots" at "https://raw.github.com/FaKod/fakod-mvn-repo/master/snapshots"
 

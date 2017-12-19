@@ -92,9 +92,9 @@ trait FastBlockReader extends BlockReader {
 
   def saveUnmatchedInputs: Unit =
   {
-    assert(outOfOrderInputMap.size == 0, "unmatched Inputs: " + outOfOrderInputMap.toList)
-    //for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
-    //  insertInsertIntoList(Some(transactionHash), Some(outpointTransactionHash), None, Some(outpointIndex), None, None)
+    val unmatchedCount = outOfOrderInputMap.size
+    log.debug(outOfOrderInputMap.toList.toString)
+    assert(unmatchedCount == 0, "unmatched Inputs found")
   }
 
   def saveDataToDB: Unit =
