@@ -95,9 +95,9 @@ object Address extends db.BitcoinDB {
 
   def hashToAddress(hash: Array[Byte]): String = try {hash.length match {
 
-    case 20 => new Add(params,0,hash).toString
+    case 20 => new Add(params,params.getAddressHeader,hash).toString
 
-    case 21 => new Add(params,hash.head.toInt,hash.tail).toString
+    case 21 => new Add(params,params.getAddressHeader,hash.tail).toString
 
     case 0 => "No decodable address found"
 
