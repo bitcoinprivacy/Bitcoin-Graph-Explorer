@@ -93,7 +93,9 @@ trait FastBlockReader extends BlockReader {
   def saveUnmatchedInputs: Unit =
   {
     val unmatchedCount = outOfOrderInputMap.size
-    log.debug(outOfOrderInputMap.toList.toString)
+    for (input <- outOfOrderInputMap){
+    	log.error(input.toString)
+    }
     assert(unmatchedCount == 0, "unmatched Inputs found")
   }
 

@@ -93,7 +93,7 @@ object Address extends db.BitcoinDB {
 
   }
 
-  def hashToAddress(hash: Array[Byte]): String = hash.length match {
+  def hashToAddress(hash: Array[Byte]): String = try {hash.length match {
 
     case 20 => new Add(params,0,hash).toString
 
@@ -102,11 +102,12 @@ object Address extends db.BitcoinDB {
     case 0 => "No decodable address found"
 
     case x if (x%20==1) =>
-
+      try {    
       (for (i <- 1 to hash.length-20 by 20)
        yield hashToAddress(hash.slice(i,i+20)) ).mkString(",")
-
+      } catch { case e:Exception => hash.toString }
     case _  => hash.length + " undefined"
-  }
+    }} catch { case _ => "Bitcoinj failed decoding address" }
+  
 
 }
