@@ -5,7 +5,7 @@ import util._
 
 trait PeerSource extends BlockSource {
   
-  lazy val truncated = getCurrentLongestChainFromBlockCount take 100 // take 100 so the changes don't get too big for memory
+  lazy val truncated = getCurrentLongestChainFromBlockCount take resumeBlockSize 
   
   override def blockSource =
   {

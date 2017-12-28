@@ -12,7 +12,13 @@ trait BitcoinDRawFileBlockSource extends BlockSource
 
     startBitcoinJ
     log.info("starting")
-    val almostCurrentChain = getCurrentLongestChainFromBlockCount
+    val almostCurrentChain = if (maxPopulate == 0)
+	CurrentLongestChainFromBlockCount
+    else if (maxPopulate > 0)
+        CurrentLongestChainFromBlockCount.take(maxPopulate)
+    else
+	throw new Exception(s"invalid parameter bitcoin.maxPopulate = '$maxPopulate'")
+
     val blockMap = almostCurrentChain toMap
 
     for {

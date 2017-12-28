@@ -24,10 +24,17 @@ package object util
   lazy val dustLimit = conf.getLong("dustLimit")
   lazy val dataDir = conf.getString( "dataDir")
   lazy val richlistSize = conf.getInt("richlistSize")
-
+  lazy val resumeBlockSize = conf.getInt("resumeBlockSize")
   lazy val blockStoreFile = new java.io.File(conf.getString("levelDBFile"))
   lazy val lockFile = conf.getString("lockFile")
+  lazy val internetAddress = bitcoinAddress = conf.getString("bitcoin.ip") match {
+    case "localhost" => 
+      InetAddress.getLocalHost()
+    case e: String =>
+      InetAddress.getByName(e)
+  lazy val maxPopulate = conf.getString("bitcoin.maxPopulate")
 
+  }
   def params = 
     if (networkMode == "main")
       MainNetParams.get
@@ -51,7 +58,7 @@ package object util
     else
       throw new Exception(s"Not implemented FileLoader for $networkMode")
   }
-  lazy val addr = new PeerAddress(params, InetAddress.getLocalHost(), params.getPort());
+  lazy val addr = new PeerAddress(params, internetAddress, params.getPort());
    
   def startBitcoinJ: Unit = {
     log.info("starting peergroup")
