@@ -27,14 +27,14 @@ package object util
   lazy val resumeBlockSize = conf.getInt("resumeBlockSize")
   lazy val blockStoreFile = new java.io.File(conf.getString("levelDBFile"))
   lazy val lockFile = conf.getString("lockFile")
-  lazy val internetAddress = bitcoinAddress = conf.getString("bitcoin.ip") match {
+  lazy val internetAddress = conf.getString("bitcoin.ip") match {
     case "localhost" => 
       InetAddress.getLocalHost()
     case e: String =>
       InetAddress.getByName(e)
-  lazy val maxPopulate = conf.getString("bitcoin.maxPopulate")
-
   }
+  lazy val maxPopulate = conf.getInt("bitcoin.maxPopulate")
+
   def params = 
     if (networkMode == "main")
       MainNetParams.get
