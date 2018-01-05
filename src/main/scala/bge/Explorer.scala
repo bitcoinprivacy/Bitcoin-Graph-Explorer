@@ -171,7 +171,7 @@ object Explorer extends App with db.BitcoinDB {
     
     log.info(changedAddresses.size + " addresses changed balance")
 
-    if (changedAddresses.size < 38749 )
+    if (changedAddresses.size < balanceUpdateLimit )
     {
       updateBalanceTables(changedAddresses, changedReps)
       insertRichestAddresses
