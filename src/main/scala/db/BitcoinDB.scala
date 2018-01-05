@@ -1,4 +1,5 @@
 // this has all the database stuff.
+
 package db
 
 import slick.driver.PostgresDriver.simple._
@@ -110,8 +111,7 @@ trait BitcoinDB {
       // '\x' is not an address
       Q.updateNA("""insert into balances select address, sum(value) as balance from utxo where address != '\x' group by address;""").execute
 
-      (Q.u + "create index addresses_balance on balances(address)").execute
-      (Q.u + "create index balance on balances(balance)").execute
+     (Q.u + "create index balance on balances(balance)").execute
 
       Q.updateNA("""
          insert into closure_balances
@@ -122,8 +122,7 @@ trait BitcoinDB {
          group by address;
       """).execute
 
-      (Q.u + "create index addresses_balance_2 on closure_balances(address)").execute
-      (Q.u + "create index balance_2 on closure_balances(balance)").execute
+       (Q.u + "create index balance_2 on closure_balances(balance)").execute
 
       log.info("Balances created in %s s" format (System.currentTimeMillis - clock) / 1000)
     }
