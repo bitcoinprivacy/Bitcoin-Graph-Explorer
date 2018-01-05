@@ -25,6 +25,7 @@ package object util
   lazy val dataDir = conf.getString( "dataDir")
   lazy val richlistSize = conf.getInt("richlistSize")
   lazy val resumeBlockSize = conf.getInt("resumeBlockSize")
+  lazy val balanceUpdateLimit = conf.getInt("balanceUpdateLimit")
   lazy val blockStoreFile = new java.io.File(conf.getString("levelDBFile"))
   lazy val lockFile = conf.getString("lockFile")
   lazy val internetAddress = conf.getString("bitcoin.ip") match {
