@@ -116,19 +116,19 @@ object Explorer extends App with db.BitcoinDB {
     resumeStats(read.changedAddresses, closure.changedReps, closure.addedAds, closure.addedReps)
   }
 
+  def rollBackToLastStatIfNecessary: Unit =
+    for (block <- getWrongBlock){
+      rollBack(block)
+      rollBackToLastStatIfNecessary
+    }
+
   def iterateResume = {
     // Seq("bitcoind","-daemon").run
     
     if (!peerGroup.isRunning) startBitcoinJ
 
-    // if there are more stats than blocks we could delete it
-    for (block <- getWrongBlock){
+    rollBackToLastStatIfNecessary
       
-      rollBack(block)
-      populateStats 
-      assert(getWrongBlock == None, "The database is inconsistent. See logs for details.")
-    }
-
     while (new java.io.File(lockFile).exists)
     {
       if (blockCount > chain.getBestChainHeight)
@@ -164,7 +164,8 @@ object Explorer extends App with db.BitcoinDB {
     if (sameCount && sameValue && rightValue && rightBlock) None
     else if (utxosMaxHeight > bc -1) Some(utxosMaxHeight)
     else if (bc - 1 > lch) Some(bc-1)
-    else throw new Exception("This should not have happened. See logs for details.")
+    else Some(lch)
+      //throw new Exception("This should not have happened. See logs for details.")
   }
 
   def resumeStats(changedAddresses: Map[Hash,Long], changedReps: Map[Hash,Set[Hash]], addedAds: Int, addedReps: Int)  = {
