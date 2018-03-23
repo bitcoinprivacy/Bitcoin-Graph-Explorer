@@ -3,7 +3,7 @@ package core
 import org.bitcoinj.core._
 import util._
 
-import scala.collection.convert.WrapAsScala._
+import scala.collection.JavaConverters.asScalaIterator
 
 // In java that should be implements libs.BlockSource
 trait BitcoinDRawFileBlockSource extends BlockSource

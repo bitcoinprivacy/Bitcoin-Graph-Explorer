@@ -1,6 +1,6 @@
 package util
 
-import scala.collection.convert.WrapAsScala._
+import scala.collection.JavaConverters.asScalaIterator
 import org.fusesource.lmdbjni._
 import org.fusesource.lmdbjni.Constants._
 import scala.collection.mutable.Map

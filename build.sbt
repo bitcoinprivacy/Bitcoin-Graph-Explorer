@@ -4,7 +4,7 @@ name := "bge"
 
 version := "3.3-SNAPSHOT"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.4"
 
 maintainer := "Bitcoinprivacy <info@bitcoinprivacy.net>"
 
@@ -17,10 +17,10 @@ libraryDependencies ++= Seq(
   "org.postgresql" % "postgresql" % "9.4-1200-jdbc41",
   "com.typesafe.slick" %% "slick" % "2.1.0",
   "com.typesafe" % "config" % "1.2.1",
-  "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
-  "org.scalatest" %% "scalatest" % "2.1.5" % "test",
+  "org.scalacheck" %% "scalacheck" % "1.13.5" % "test",
+  "org.scalatest" %% "scalatest" % "3.2.0-SNAP10" % "test",
   "org.deephacks.lmdbjni" % "lmdbjni" % "0.4.6",
-  "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0",
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
   "ch.qos.logback" %  "logback-classic" % "1.1.7",
   ////////////////////////////////////////////////////////////////////
   // select one of the following depending on your architecture
