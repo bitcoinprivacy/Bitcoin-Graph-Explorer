@@ -1,10 +1,7 @@
-import org.scalatest.prop._
 import org.scalatest._
-import core._
-import org.scalacheck.Gen._
-import actions._
+import org.scalatest.prop._
 
-class RawReaderPropertySuite extends PropSpec with ShouldMatchers with PropertyChecks {
+class RawReaderPropertySuite extends PropSpec with Matchers with PropertyChecks {
   /*databaseFile = "blockchain/test.db"
    
   property("populater.end should be the minimum of given end and number of blocks available") 
