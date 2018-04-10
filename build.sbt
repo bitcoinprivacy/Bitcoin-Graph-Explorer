@@ -10,7 +10,7 @@ maintainer := "Bitcoinprivacy <info@bitcoinprivacy.net>"
 
 // additional libraries
 libraryDependencies ++= Seq(
-  "org.bitcoinj" % "bitcoinj-core" % "0.15-SNAPSHOT",
+  "org.bitcoinj" % "bitcoinj-core" % "0.14.7",
   "org.xerial.snappy"%"snappy-java"%"1.1.2.4",
   "org.iq80.leveldb"%"leveldb"%"0.7",
   "org.fusesource.leveldbjni"%"leveldbjni-all"%"1.8",

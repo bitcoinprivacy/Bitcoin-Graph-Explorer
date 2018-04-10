@@ -96,7 +96,7 @@ trait FastBlockReader extends BlockReader {
     for (input <- outOfOrderInputMap){
     	log.error(input.toString)
     }
-    assert(unmatchedCount == 0, "unmatched Inputs found")
+    assert(unmatchedCount == 0, unmatchedCount + " unmatched Inputs found")
   }
 
   def saveDataToDB: Unit =
