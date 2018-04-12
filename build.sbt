@@ -10,11 +10,11 @@ maintainer := "Bitcoinprivacy <info@bitcoinprivacy.net>"
 
 // additional libraries
 libraryDependencies ++= Seq(
-  "org.bitcoinj" % "bitcoinj-core" % "0.14.7",
+  "org.bitcoinj" % "bitcoinj-core" % "0.15-SNAPSHOT",
   "org.xerial.snappy"%"snappy-java"%"1.1.2.4",
   "org.iq80.leveldb"%"leveldb"%"0.7",
   "org.fusesource.leveldbjni"%"leveldbjni-all"%"1.8",
-  "org.postgresql" % "postgresql" % "9.4-1200-jdbc41",
+  "org.postgresql" % "postgresql" % "42.2.2",
   "com.typesafe.slick" %% "slick" % "2.1.0",
   "com.typesafe" % "config" % "1.2.1",
   "org.scalacheck" %% "scalacheck" % "1.13.5" % "test",
@@ -31,6 +31,11 @@ libraryDependencies ++= Seq(
 )
 
 enablePlugins(JavaAppPackaging)
+enablePlugins(DockerPlugin)
+
+dockerEntrypoint := Seq("bin/bge", "-Dlogback.configurationFile=/conf/logback.xml", "--", "start")
+dockerUsername := Some("jorgemartinezpizarro")
+daemonUser in Docker := "root"
 
 libraryDependencies ~= { _.map(_.exclude("org.slf4j", "slf4j-simple")) }
 
