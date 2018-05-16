@@ -13,7 +13,7 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
   override lazy val unionFindTable = new ClosureMap(table)
 
   lazy val changedReps = Map[Hash,Set[Hash]]()
-  
+
 
   override def insertInputsIntoTree(addressList: Iterable[Hash], tree: DisjointSets[Hash]): DisjointSets[Hash] =
   {
@@ -46,16 +46,16 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
       }
       else changedReps += (newRep -> (oldReps + oldRep) )
     }
-    
+
 
     DB withSession { implicit session =>
 
-      for ((address, oldRepOpt) <- pairList)
+      for ((address, oldRepOpt) <- pairList.distinct)
         oldRepOpt match
         {
           case None =>
             insertAddress(address,newRep)
-        
+            recordChangedRep(address,newRep)
           case Some(oldRep) if (oldRep != newRep) =>
             // if representant new, update everything that had the old one
             val updateQuery = for(p <- addresses if p.representant === hashToArray(oldRep)) yield p.representant
@@ -68,10 +68,10 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
 
     result
 
-    
+
   }
 
-  
+
   override def saveTree(tree: DisjointSets[Hash]): Int =  // don't replace the postgres DB
   {
     val no = tree.elements.size - startTableSize // return the number of new elements in the union-find structure

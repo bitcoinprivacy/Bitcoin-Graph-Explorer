@@ -33,7 +33,7 @@ libraryDependencies ++= Seq(
 enablePlugins(JavaAppPackaging)
 enablePlugins(DockerPlugin)
 
-dockerEntrypoint := Seq("bin/bge", "-Dlogback.configurationFile=/conf/logback.xml", "--", "start")
+dockerEntrypoint := Seq("bin/bge", "-Dlogback.configurationFile=/conf/logback.xml", "-Dconfig.file=/conf/bge.conf", "--", "start")
 dockerUsername := Some("jorgemartinezpizarro")
 daemonUser in Docker := "root"
 

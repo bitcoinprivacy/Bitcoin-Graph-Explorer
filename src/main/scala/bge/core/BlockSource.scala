@@ -23,7 +23,6 @@ trait BlockSource extends db.BitcoinDB {
         previousElement
     }._1
 
-
     val hashes = blockList map (_._1)
     assert(hashes.length == hashes.distinct.length, "duplicate block hashes in blockChain (bitcoinJ/levelDB problems?)")
 
