@@ -163,10 +163,6 @@ trait BitcoinDB {
 
         updateAdsBalancesTable(adsAndBalances, balances)
 
-        // insert new trivial closures into closure_balance before accounting for changedReps!
-        val newRepsAndBalances = (changedAddresses - Hash.zero(0)) filter {case (address, _) => (addresses.filter(_.hash === Hash.hashToArray(address)).firstOption == None)}
-        updateAdsBalancesTable(newRepsAndBalances, closureBalances)                         
-
         val table = LmdbMap.open("closures")
         val unionFindTable = new ClosureMap(table)
         val closures = new DisjointSets[Hash](unionFindTable)

@@ -55,7 +55,7 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
         {
           case None =>
             insertAddress(address,newRep)
-            recordChangedRep(address,newRep)
+            recordChangedRep(newRep,address)
           case Some(oldRep) if (oldRep != newRep) =>
             // if representant new, update everything that had the old one
             val updateQuery = for(p <- addresses if p.representant === hashToArray(oldRep)) yield p.representant
