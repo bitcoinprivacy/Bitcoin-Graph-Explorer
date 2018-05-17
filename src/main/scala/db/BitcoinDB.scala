@@ -156,52 +156,55 @@ trait BitcoinDB {
       }
       // Hash.zero(0) is not an address
       session.withTransaction {
-      val adsAndBalances = for ((address, change) <- changedAddresses - Hash.zero(0))
-        yield (address,
-        balances.filter(_.address === Hash.hashToArray(address)).
-        map(_.balance).firstOption.getOrElse(0L) + change)
+        val adsAndBalances = for ((address, change) <- changedAddresses - Hash.zero(0))
+                             yield (address,
+                                    balances.filter(_.address === Hash.hashToArray(address)).
+                                      map(_.balance).firstOption.getOrElse(0L) + change)
 
-      updateAdsBalancesTable(adsAndBalances, balances)
+        updateAdsBalancesTable(adsAndBalances, balances)
 
-      val table = LmdbMap.open("closures")
-      val unionFindTable = new ClosureMap(table)
-      val closures = new DisjointSets[Hash](unionFindTable)
+        // insert new trivial closures into closure_balance before accounting for changedReps!
+        val newRepsAndBalances = (changedAddresses - Hash.zero(0)) filter {case (address, _) => (addresses.filter(_.hash === Hash.hashToArray(address)).firstOption == None)}
+        updateAdsBalancesTable(newRepsAndBalances, closureBalances)                         
 
-      val repsAndChanges: collection.mutable.Map[Hash, Long] = collection.mutable.Map()
+        val table = LmdbMap.open("closures")
+        val unionFindTable = new ClosureMap(table)
+        val closures = new DisjointSets[Hash](unionFindTable)
 
-      for ((address, change) <- changedAddresses - Hash.zero(0) ) {
-               val rep = closures.find(address)._1.getOrElse(address)
-               val newBalance = repsAndChanges.getOrElse(rep, 0L) + change
-               repsAndChanges += (rep -> newBalance)
-      } 
+        val repsAndChanges: collection.mutable.Map[Hash, Long] = collection.mutable.Map()
 
-      // don't forget the new reps that had no balance change!
-      for ((rep,_) <- changedReps)
-        repsAndChanges += (rep -> repsAndChanges.getOrElse(rep, 0L))
+        for ((address, change) <- changedAddresses - Hash.zero(0) ) {
+          val rep = closures.find(address)._1.getOrElse(address)
+          val newBalance = repsAndChanges.getOrElse(rep, 0L) + change
+          repsAndChanges += (rep -> newBalance)
+        }
+
+        // don't forget the new reps that had no balance change!
+        for ((rep,_) <- changedReps)
+          repsAndChanges += (rep -> repsAndChanges.getOrElse(rep, 0L))
   
-      val repsAndBalances: Map[Hash, Long] =
-        for {
-          (rep, change) <- repsAndChanges 
-          oldReps = (changedReps.getOrElse(rep, Set()) + rep).map(Hash.hashToArray(_))
-        } yield (rep,
-          closureBalances.filter(_.address inSetBind oldReps).
-          map(_.balance).sum.run.getOrElse(0L) + change)
+        val repsAndBalances: Map[Hash, Long] =
+          for {
+            (rep, change) <- repsAndChanges
+            oldReps = (changedReps.getOrElse(rep, Set()) + rep).map(Hash.hashToArray(_))
+          } yield (rep,
+                   closureBalances.filter(_.address inSetBind oldReps).
+                     map(_.balance).sum.run.getOrElse(0L) + change)
 
-      updateAdsBalancesTable(repsAndBalances, closureBalances)
+        updateAdsBalancesTable(repsAndBalances, closureBalances)
 
-      // delete all oldReps that have been unified into new ones
-      val toDelete = changedReps.values.fold(Set())((a, b) => a ++ b).map(Hash.hashToArray(_))
-      closureBalances.filter(_.address inSet toDelete).delete
+        // delete all oldReps that have been unified into new ones
+        val toDelete = changedReps.values.fold(Set())((a, b) => a ++ b).map(Hash.hashToArray(_))
+        closureBalances.filter(_.address inSet toDelete).delete
 
-      table.close
+        table.close
 
-      log.info("%s balances updated in %s s, %s µs per address "
-        format
-        (adsAndBalances.size, (System.currentTimeMillis - clock) / 1000, (System.currentTimeMillis - clock) * 1000 / (adsAndBalances.size + 1)))
+        log.info("%s balances updated in %s s, %s µs per address "
+                   format
+                   (adsAndBalances.size, (System.currentTimeMillis - clock) / 1000, (System.currentTimeMillis - clock) * 1000 / (adsAndBalances.size + 1)))
 
-        
       }
-     }
+    }
   }
 
   def insertRichestClosures = {
