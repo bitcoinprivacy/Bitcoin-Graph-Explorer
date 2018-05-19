@@ -1,18 +1,24 @@
+import sys.process._
+import util._
 import org.scalatest._
-import org.scalatest.prop._
 
-class RawReaderPropertySuite extends PropSpec with Matchers with PropertyChecks {
-  /*databaseFile = "blockchain/test.db"
-   
-  property("populater.end should be the minimum of given end and number of blocks available") 
-  {
-   forAll (choose(0,280000), minSuccessful(1)) { (n:Int) =>
-  	 {
-      val populater = new BlocksReader(List(n.toString,"init"))
-      populater.start should be(0) 
-      populater.end should be (n) // TODO: This is not true. We need the number of blocks available and this is also at least a problem when 0 is given
-  	 }
-  	 	
+class PopulateSpec extends FlatSpec with Matchers {
+  val BITCOIN = "docker exec --user bitcoin regtestbge_bitcoin_1 bitcoin-cli -regtest -rpcuser=foo -rpcpassword=bar -rpcport=18333"
+  def gen(i:Int) = (BITCOIN + " generate " + i.toString) ! ProcessLogger(_ => ())
+  def resetRegtest = "/root/Bitcoin-Graph-Explorer/test.sh" ! ProcessLogger(_ => ())
+
+  "Populate" should "safe 5 blocks as the blockchain contains 5 blocks" in {
+    resetRegtest
+    gen(5)
+    Explorer.populate
+    Explorer.blockCount should be (6)
   }
-  } */
+
+  "Resume" should "add another 10 blocks after being added to blockchain" in {
+    gen(10)
+    Explorer.resume
+    Explorer.blockCount should be (16)
+    
+  }
 }
+
