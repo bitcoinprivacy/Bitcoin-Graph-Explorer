@@ -4,13 +4,9 @@ project/target/
 project/plugins/
 .idea/
 *.log
-neodb/
 .ensime
 .ensime_cache/
 src/main/resources/application.conf
 .history
 blockchain
-src/test/data/blockchain/*
-src/test/data/psql/*
-src/test/data/bitcoin/*
-
+src/test/data/*/*
