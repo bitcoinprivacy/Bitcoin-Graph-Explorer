@@ -10,3 +10,7 @@ neodb/
 src/main/resources/application.conf
 .history
 blockchain
+src/test/data/blockchain/*
+src/test/data/psql/*
+src/test/data/bitcoin/*
+

@@ -1,0 +1,45 @@
+version: "3"
+services: 
+  bitcoin:
+    image: ruimarinho/bitcoin-core:0.16.0
+    networks: 
+      bge_network:
+        ipv4_address: 172.25.1.2 
+    ports:
+      - "18444:18444"
+    command: 
+      -printtoconsole
+      -regtest=1
+      -rest
+      -rpcallowip=173.249.18.12
+      -rpcpassword=bar
+      -rpcport=18333
+      -rpcuser=foo
+      -server
+    volumes:
+      - "/root/Bitcoin-Graph-Explorer/src/test/data/bitcoin:/home/bitcoin/.bitcoin"
+      - "$FOLDER/bitcoin/bitcoin.conf:/etc/bitcoin/bitcoin.conf"
+  postgres:
+    image: postgres:10.1
+    networks:
+      bge_network:
+        ipv4_address: 172.25.1.3
+    expose:
+      - 5433
+    ports:
+      - "5433:5433"
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: trivial
+      POSTGRES_DB: postgres2
+    volumes:
+      - "/root/Bitcoin-Graph-Explorer/src/test/data/psql:/var/lib/postgresql/data"
+      - "$FOLDER/postgres/postgres.conf:/var/lib/postgresql/data/postgresql.conf"
+networks:
+  bge_network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      -
+        subnet: 172.25.1.0/24
