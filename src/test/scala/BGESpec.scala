@@ -21,11 +21,11 @@ class BGESpec extends FlatSpec with Matchers {
     Explorer.blockCount should be (11)
   }
 
-  "Resume" should "after populate 5 blocks and add 5 more, resume should add 5 blocks more" in {
+  "Resume" should "after add 10 blocks, resume save the 10 blocks" in {
     gen(10)
     Explorer.resume
     val result = Explorer.blockCount
-//    stopDocker
+    stopDocker
     result should be (21)
   }
 }

@@ -17,8 +17,8 @@ services:
       -rpcuser=foo
       -server
     volumes:
-      - "${DIR}/files/bitcoin:/home/bitcoin/.bitcoin"
-      - "${DIR}/docker/bitcoin/bitcoin.conf:/etc/bitcoin/bitcoin.conf"
+      - "$DIR/files/bitcoin:/home/bitcoin/.bitcoin"
+      - "$DIR/docker/bitcoin/bitcoin.conf:/etc/bitcoin/bitcoin.conf"
   postgres:
     image: postgres:10.1
     networks:
@@ -33,8 +33,8 @@ services:
       POSTGRES_PASSWORD: trivial
       POSTGRES_DB: postgres2
     volumes:
-      - "${DIR}/files/psql:/var/lib/postgresql/data"
-      - "${DIR}/docker/postgres/postgres.conf:/etc/postgresql/postgresql.conf"
+      - "$DIR/files/psql:/var/lib/postgresql/data"
+      - "$DIR/docker/postgres/postgres.conf:/etc/postgresql/postgresql.conf"
     command:
       -c
       config_file=/etc/postgresql/postgresql.conf

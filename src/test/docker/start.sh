@@ -3,11 +3,11 @@ export VERSION=SNAPSHOT
 export REPOSITORY=jorgemartinezpizarro
 export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
-mkdir -p "${DIR}/files/psql"
+#mkdir -p "${DIR}/files/psql"
 mkdir -p "${DIR}/files/bitcoin"
 rm "${DIR}/files/psql/" -rf
 rm "${DIR}/files/bitcoin/" -rf
-rm "${DIR}/data/blockchain/" -rf
+rm "${DIR}/files/blockchain/" -rf
 cd "${DIR}/docker"
 
 docker-compose kill
@@ -24,7 +24,6 @@ do
   if [ $code1 -eq 0 ] && [ $code2 -eq 0 ]
   then
     echo "Finished loading"
-    sleep 1s
     exit 0
   fi
 done
