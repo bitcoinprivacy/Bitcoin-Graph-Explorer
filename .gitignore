@@ -9,4 +9,3 @@ project/plugins/
 src/main/resources/application.conf
 .history
 blockchain
-src/test/data/*/*
