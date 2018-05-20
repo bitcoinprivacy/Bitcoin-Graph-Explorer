@@ -27,7 +27,6 @@ trait BitcoinDB {
   def DBNAME = conf.getString("databaseName")
   def URL = "jdbc:postgresql://" + HOST + "/" + DBNAME + OPTIONS
   def DRIVER = "org.postgresql.Driver"
-  println(URL)
 
   def statsDone: Boolean = {
     DB.withSession{
