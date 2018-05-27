@@ -35,7 +35,7 @@ class BGESpec extends FlatSpec with Matchers {
     Explorer.resume
     Explorer.blockCount should be (204)
     // Test config?
-    //stopDocker // Deactivate it only if you wannt to analize the database
+    //stopDocker // Deactivate it only if you want to analize the database after the tests ran
     true
   }
 }

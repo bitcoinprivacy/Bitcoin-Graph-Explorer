@@ -144,6 +144,15 @@ trait BitcoinDB {
 
     DB withSession { implicit session =>
 
+      val b3 = balances.map(_.balance).sum.run.getOrElse(0)
+      val b4 = closureBalances.map(_.balance).sum.run.getOrElse(0)
+
+      if (b3 != b4) {
+        log.info("Incomplete or wrong balances, generating it from scratch")
+        createBalanceTables
+      }
+      else {
+
       def updateAdsBalancesTable[A <: Table[(Array[Byte], Long)] with AddressField](adsAndBalances: scala.collection.immutable.Map[Hash, Long], balances: TableQuery[A]): Unit = {
         for {
           (address, balance) <- adsAndBalances
@@ -158,11 +167,6 @@ trait BitcoinDB {
       session.withTransaction {
 
         // Check that the balances are consistent. Still missing check that all representants are actually representants.
-        val b3 = balances.map(_.balance).sum.run.getOrElse(0)
-        val b4 = closureBalances.map(_.balance).sum.run.getOrElse(0)
-
-        assert(b3 == b4, s"$b3 is not equal $b4. Error updating balances!")
-
         val adsAndBalances: scala.collection.immutable.Map[Hash, Long] = for ((address, change) <- changedAddresses - Hash.zero(0))
                              yield (address,
                                     balances.filter(_.address === Hash.hashToArray(address)).
@@ -188,7 +192,6 @@ trait BitcoinDB {
         for ((representant, _) <- repsAndChanges) {
           val oldReps = changedReps.getOrElse(representant, Set())+representant
           val change = changedAddresses.filter (x => oldReps contains x._1 ).map(_._2).sum
-          println(s"$representant: $change")
           repsAndChanges += (representant -> change)
         }
         ///////////////////////////////////////////////////// 
@@ -200,25 +203,26 @@ trait BitcoinDB {
                    closureBalances.filter(_.address inSetBind oldReps).
                      map(_.balance).sum.run.getOrElse(0L) + change)
 
-        // Check that balances are at least positive. Seems naive but it find several errors
+        // Check that balances are at least positive. Seems naive but it catch lots of errors
         for ((rep, balance) <- repsAndBalances) {
           val oldReps: Set[Hash] =
             if (balance < 0)
               changedReps.getOrElse(rep, Set())+rep
             else
               Set()
-          assert(balance >= 0, s"""$rep hat negative balance $balance
-          Old value: ${closureBalances.filter(_.address inSet oldReps.map(Hash.hashToArray(_))).map(_.balance).sum.run.getOrElse(0L)}
-          Old reps: $oldReps
-          Diffs: ${changedAddresses.map(_._2).sum} should be ${repsAndChanges.map(_._2).sum}
-          Changed: ${repsAndChanges.getOrElse(rep, 0)}
-          New in closure: ${changedAddresses.filter( x => oldReps contains x._1 )}""")
+          assert(balance >= 0, s"""
+            $rep hat negative balance $balance
+              Old value: ${closureBalances.filter(_.address inSet oldReps.map(Hash.hashToArray(_))).map(_.balance).sum.run.getOrElse(0L)}
+              Old reps: ${oldReps.size} elements
+              Addresses changed ${changedAddresses.map(_._2).sum} (${changedAddresses.size}), wallets ${repsAndChanges.map(_._2).sum} (${repsAndChanges.size})
+              Changed: ${repsAndChanges.getOrElse(rep, 0)}
+              Representants/New reps: ${changedReps.map(_._2.size).sum}/${changedReps.size}
+          """)
         }
 
         assert(changedAddresses.map(_._2).sum == repsAndChanges.map(_._2).sum, s"""
-            Addresses changed ${changedAddresses.map(_._2).sum} (${changedAddresses.size}), wallets ${repsAndChanges.map(_._2).sum} (${repsAndChanges.size})
-            Adds: $changedAddresses
-            Reps: $repsAndChanges
+              Addresses changed ${changedAddresses.map(_._2).sum} (${changedAddresses.size}), wallets ${repsAndChanges.map(_._2).sum} (${repsAndChanges.size})
+              Representants/New reps: ${changedReps.map(_._2.size).sum}/${changedReps.size}
         """)
         updateAdsBalancesTable(repsAndBalances, closureBalances)
 
@@ -231,9 +235,11 @@ trait BitcoinDB {
         val b2 = closureBalances.map(_.balance).sum.run.getOrElse(0)
         assert(b1 == b2, s"$b1 is not equal $b2. Error updating balances!")
 
+      
         log.info("%s balances updated in %s s, %s µs per address "
                    format
                    (adsAndBalances.size, (System.currentTimeMillis - clock) / 1000, (System.currentTimeMillis - clock) * 1000 / (adsAndBalances.size + 1)))
+      }
       }
     }
   }
