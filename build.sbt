@@ -92,7 +92,7 @@ scalacOptions ++= Seq(
 //    ,"-Xlog-implicit-conversions"
 )
 
-javaOptions in run += "-Xmx16G"
-javaOptions in run += "-Xms1G"
+javaOptions in run += "-Xmx32G"
+javaOptions in run += "-Xms16"
 
 fork := true

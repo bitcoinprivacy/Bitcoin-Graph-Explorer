@@ -111,7 +111,7 @@ trait BitcoinDB {
       // '\x' is not an address
       Q.updateNA("""insert into balances select address, sum(value) as balance from utxo where address != '\x' group by address;""").execute
 
-     (Q.u + "create index balance on balances(balance)").execute
+      (Q.u + "create index balance on balances(balance)").execute
 
       Q.updateNA("""
          insert into closure_balances
@@ -137,14 +137,14 @@ trait BitcoinDB {
     }
   }
 
-  def updateBalanceTables(changedAddresses: Map[Hash, Long], changedReps: Map[Hash, Set[Hash]]) = {
+  def updateBalanceTables(changedAddresses: scala.collection.immutable.Map[Hash, Long], changedReps: Map[Hash, Set[Hash]]) = {
     var clock = System.currentTimeMillis
     log.info("Updating balances ...")
     currentStat.total_bitcoins_in_addresses += changedAddresses.map { _._2 }.sum
 
     DB withSession { implicit session =>
 
-      def updateAdsBalancesTable[A <: Table[(Array[Byte], Long)] with AddressField](adsAndBalances: Map[Hash, Long], balances: TableQuery[A]): Unit = {
+      def updateAdsBalancesTable[A <: Table[(Array[Byte], Long)] with AddressField](adsAndBalances: scala.collection.immutable.Map[Hash, Long], balances: TableQuery[A]): Unit = {
         for {
           (address, balance) <- adsAndBalances
           addressArray = Hash.hashToArray(address)
@@ -156,49 +156,84 @@ trait BitcoinDB {
       }
       // Hash.zero(0) is not an address
       session.withTransaction {
-        val adsAndBalances = for ((address, change) <- changedAddresses - Hash.zero(0))
+
+        // Check that the balances are consistent. Still missing check that all representants are actually representants.
+        val b3 = balances.map(_.balance).sum.run.getOrElse(0)
+        val b4 = closureBalances.map(_.balance).sum.run.getOrElse(0)
+
+        assert(b3 == b4, s"$b3 is not equal $b4. Error updating balances!")
+
+        val adsAndBalances: scala.collection.immutable.Map[Hash, Long] = for ((address, change) <- changedAddresses - Hash.zero(0))
                              yield (address,
                                     balances.filter(_.address === Hash.hashToArray(address)).
                                       map(_.balance).firstOption.getOrElse(0L) + change)
 
         updateAdsBalancesTable(adsAndBalances, balances)
-
-        val table = LmdbMap.open("closures")
-        val unionFindTable = new ClosureMap(table)
-        val closures = new DisjointSets[Hash](unionFindTable)
-
+        // TODO Dirty method: write if functionally
         val repsAndChanges: collection.mutable.Map[Hash, Long] = collection.mutable.Map()
+        for ((rep,_) <- changedReps) {
+          repsAndChanges += (rep -> 0L)
+        }
+        for ((address, _) <- changedAddresses - Hash.zero(0) ) {
 
-        for ((address, change) <- changedAddresses - Hash.zero(0) ) {
-          val rep = closures.find(address)._1.getOrElse(address)
-          val newBalance = repsAndChanges.getOrElse(rep, 0L) + change
-          repsAndChanges += (rep -> newBalance)
+          val representant = changedReps.filter( x => x._2 contains address).toList match {
+            case Nil =>
+              address
+            case m: List[(Hash, Set[Hash])] =>
+              m.head._1
+          }
+          repsAndChanges += (representant -> 0L)
         }
 
-        // don't forget the new reps that had no balance change!
-        for ((rep,_) <- changedReps)
-          repsAndChanges += (rep -> repsAndChanges.getOrElse(rep, 0L))
-  
-        val repsAndBalances: Map[Hash, Long] =
+        for ((representant, _) <- repsAndChanges) {
+          val oldReps = changedReps.getOrElse(representant, Set())+representant
+          val change = changedAddresses.filter (x => oldReps contains x._1 ).map(_._2).sum
+          println(s"$representant: $change")
+          repsAndChanges += (representant -> change)
+        }
+        ///////////////////////////////////////////////////// 
+        val repsAndBalances: scala.collection.immutable.Map[Hash, Long] =
           for {
-            (rep, change) <- repsAndChanges
+            (rep, change) <- repsAndChanges.toMap
             oldReps = (changedReps.getOrElse(rep, Set()) + rep).map(Hash.hashToArray(_))
           } yield (rep,
                    closureBalances.filter(_.address inSetBind oldReps).
                      map(_.balance).sum.run.getOrElse(0L) + change)
 
+        // Check that balances are at least positive. Seems naive but it find several errors
+        for ((rep, balance) <- repsAndBalances) {
+          val oldReps: Set[Hash] =
+            if (balance < 0)
+              changedReps.getOrElse(rep, Set())+rep
+            else
+              Set()
+          assert(balance >= 0, s"""$rep hat negative balance $balance
+          Old value: ${closureBalances.filter(_.address inSet oldReps.map(Hash.hashToArray(_))).map(_.balance).sum.run.getOrElse(0L)}
+          Old reps: $oldReps
+          Diffs: ${changedAddresses.map(_._2).sum} should be ${repsAndChanges.map(_._2).sum}
+          Changed: ${repsAndChanges.getOrElse(rep, 0)}
+          New in closure: ${changedAddresses.filter( x => oldReps contains x._1 )}""")
+        }
+
+        assert(changedAddresses.map(_._2).sum == repsAndChanges.map(_._2).sum, s"""
+            Addresses changed ${changedAddresses.map(_._2).sum} (${changedAddresses.size}), wallets ${repsAndChanges.map(_._2).sum} (${repsAndChanges.size})
+            Adds: $changedAddresses
+            Reps: $repsAndChanges
+        """)
         updateAdsBalancesTable(repsAndBalances, closureBalances)
 
         // delete all oldReps that have been unified into new ones
         val toDelete = changedReps.values.fold(Set())((a, b) => a ++ b).map(Hash.hashToArray(_))
-        closureBalances.filter(_.address inSet toDelete).delete
+        closureBalances.filter(_.address inSetBind toDelete).delete
 
-        table.close
+        // Check that the balances are consistent. Still missing check that all representants are actually representants.
+        val b1 = balances.map(_.balance).sum.run.getOrElse(0)
+        val b2 = closureBalances.map(_.balance).sum.run.getOrElse(0)
+        assert(b1 == b2, s"$b1 is not equal $b2. Error updating balances!")
 
         log.info("%s balances updated in %s s, %s µs per address "
                    format
                    (adsAndBalances.size, (System.currentTimeMillis - clock) / 1000, (System.currentTimeMillis - clock) * 1000 / (adsAndBalances.size + 1)))
-
       }
     }
   }

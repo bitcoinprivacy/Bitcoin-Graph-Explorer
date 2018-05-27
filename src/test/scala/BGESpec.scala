@@ -3,35 +3,40 @@ import util._
 import org.scalatest._
 
 class BGESpec extends FlatSpec with Matchers {
-  
+
+  // FIXME: Use bitcoin rpc client and docker tools instead 
+
   val BITCOIN = "docker exec --user bitcoin docker_bitcoin_1 bitcoin-cli -regtest -rpcuser=foo -rpcpassword=bar -rpcport=18333"
-  
-  // fixme: to use an script is dirty but we need to access to bitcoincli which lives in a container
-  
+
   def gen(i:Int) = (BITCOIN + " generate " + i.toString) ! ProcessLogger(_ => ())
 
-  def startDocker = "/root/Bitcoin-Graph-Explorer/src/test/docker/start.sh" ! ProcessLogger(_ => ()) 
+  def startDocker = "/root/Bitcoin-Graph-Explorer/src/test/docker/start.sh" ! ProcessLogger(_ => ())
 
   def stopDocker = "/root/Bitcoin-Graph-Explorer/src/test/docker/stop.sh" ! ProcessLogger(_ => ())
 
-  // for some reason starting bge 2 times in same process fails... maybe cause singleton pattern?
+  def addTxs = "/root/Bitcoin-Graph-Explorer/src/test/docker/create.sh" ! ProcessLogger(_ => ())
 
   "Populate" should "save 10 blocks as the blockchain contains 10 blocks" in {
-    startDocker
-    gen(10)
+    startDocker 
+    gen(1)
+    gen(100)
     Explorer.populate
-    Explorer.blockCount should be (11)
-    // stopDocker
-  }
+    Explorer.blockCount should be (102)
+   }
 
   "Resume" should "after add 10 blocks, resume save the 10 blocks" in {
-    // for some reason starting bge 2 times in same process fails... maybe cause we use Objects?
-    // startDocker
-    gen(10)
+    gen(1)
+    gen(1)
     Explorer.resume
-    val result = Explorer.blockCount
-    stopDocker
-    result should be (21)
+    Explorer.blockCount should be (104)
+    gen(100)
+    Explorer.resume
+    addTxs
+    Explorer.resume
+    Explorer.blockCount should be (204)
+    // Test config?
+    //stopDocker // Deactivate it only if you wannt to analize the database
+    true
   }
 }
 

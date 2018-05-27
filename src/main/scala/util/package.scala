@@ -28,6 +28,7 @@ package object util
   lazy val balanceUpdateLimit = conf.getInt("balanceUpdateLimit")
   lazy val blockStoreFile = new java.io.File(conf.getString("levelDBFile"))
   lazy val lockFile = conf.getString("lockFile")
+  lazy val checkUTXOsSize = conf.getInt("checkUTXOsSize")
   lazy val internetAddress = conf.getString("bitcoin.ip") match {
     case "localhost" => 
       InetAddress.getLocalHost()
