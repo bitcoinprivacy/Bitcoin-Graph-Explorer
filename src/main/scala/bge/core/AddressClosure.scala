@@ -18,11 +18,15 @@ abstract class AddressClosure(blockHeights: Vector[Int]) extends db.BitcoinDB
   var addedAds = 0
   var addedReps = 0
 
+  var temp = new ClosureMap(Map.empty)
+  var changedReps = new DisjointSets[Hash](temp)
   def saveTree(tree: DisjointSets[Hash]): Int
 
   def generateTree: DisjointSets[Hash] =
   {
     // TODO: Same problem as with BlockReader, there we used a function "pre" to initialize the values. 
+    temp = new ClosureMap(Map.empty)
+    changedReps = new DisjointSets[Hash](temp)
     addedAds = 0;
     addedReps = 0;
     def addBlocks(startIndex: Int, tree: DisjointSets[Hash]): DisjointSets[Hash] = {

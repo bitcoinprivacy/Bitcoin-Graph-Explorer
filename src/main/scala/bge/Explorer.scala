@@ -115,7 +115,14 @@ object Explorer extends App with db.BitcoinDB {
     val read = new ResumeBlockReader
     val closure = new ResumeClosure(read.processedBlocks)
     log.info("making new stats")
-    resumeStats(read.changedAddresses, closure.changedReps, closure.addedAds, closure.addedReps)
+    val t: Map[Hash, Set[Hash]] = Map.empty
+
+    for {
+      key <- closure.changedReps.elements.keys
+      parent = closure.changedReps.onlyFind(key) 
+    } { t += (parent -> (t.getOrElse(key, Set()) + key))}
+
+    resumeStats(read.changedAddresses, t, closure.addedAds, closure.addedReps)
   }
 
   def rollBackToLastStatIfNecessary: Unit =

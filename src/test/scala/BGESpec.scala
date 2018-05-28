@@ -32,8 +32,11 @@ class BGESpec extends FlatSpec with Matchers {
     gen(100)
     Explorer.resume
     addTxs
+    gen(10)
     Explorer.resume
-    Explorer.blockCount should be (204)
+    gen(25)
+    Explorer.resume
+    Explorer.blockCount should be (239)
     // Test config?
     //stopDocker // Deactivate it only if you want to analize the database after the tests ran
     true

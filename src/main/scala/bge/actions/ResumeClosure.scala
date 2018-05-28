@@ -12,8 +12,7 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
   lazy val table = LmdbMap.open("closures")
   override lazy val unionFindTable = new ClosureMap(table)
 
-  lazy val changedReps = Map[Hash,Set[Hash]]()
-
+  
 
   override def insertInputsIntoTree(addressList: Iterable[Hash], tree: DisjointSets[Hash]): DisjointSets[Hash] =
   {
@@ -36,15 +35,8 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
     var addRepFlag = 1
 
     def recordChangedRep(newRep: Hash, oldRep: Hash) = {
-      // a changed to b, then b changed to c
-      // 1 we insert (b, a) in the map
-      // 2 we receive (c, b) cause b is already new, replace it with (c, {a,b})
-      val oldReps = changedReps.getOrElse(newRep,Set())
-      if (changedReps.contains(oldRep)) {
-        changedReps += (newRep -> (changedReps(oldRep)+ oldRep))
-        changedReps -= oldRep
-      }
-      else changedReps += (newRep -> (oldReps + oldRep) )
+      // we store in a DisjoinSets the partial changes
+      changedReps = changedReps.add(newRep).add(oldRep).union(Iterable(newRep, oldRep))
     }
 
 
@@ -64,10 +56,10 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
           case _ => addRepFlag = 0 // one of the elements had this rep before => don't count a new one
         }
     }
+
     addedReps += addRepFlag
 
     result
-
 
   }
 
