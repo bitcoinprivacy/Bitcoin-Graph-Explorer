@@ -16,7 +16,7 @@ class BGESpec extends FlatSpec with Matchers {
 
   def addTxs = "/root/Bitcoin-Graph-Explorer/src/test/docker/create.sh" ! ProcessLogger(_ => ())
 
-  "Populate" should "save 10 blocks as the blockchain contains 10 blocks" in {
+  "Populate" should "work normally" in {
     startDocker 
     gen(1)
     gen(100)
@@ -24,22 +24,23 @@ class BGESpec extends FlatSpec with Matchers {
     Explorer.blockCount should be (102)
    }
 
-  "Resume" should "after add 10 blocks, resume save the 10 blocks" in {
-    gen(1)
-    gen(1)
+  "Resume" should "work normally" in {
+    gen(102)
     Explorer.resume
-    Explorer.blockCount should be (104)
+    Explorer.blockCount should be (204)
+
+  }
+
+  "Resume" should "work after several txs added" in {
+    addTxs
+    gen(10)
     gen(100)
     Explorer.resume
     addTxs
-    gen(10)
+    gen(1)
     Explorer.resume
-    gen(25)
-    Explorer.resume
-    Explorer.blockCount should be (239)
-    // Test config?
     //stopDocker // Deactivate it only if you want to analize the database after the tests ran
-    true
+    Explorer.blockCount should be (315)
   }
 }
 

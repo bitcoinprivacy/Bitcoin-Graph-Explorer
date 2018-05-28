@@ -150,8 +150,66 @@ trait BitcoinDB {
     }
   }
 
-  def updateBalanceTables(changedAddresses: scala.collection.immutable.Map[Hash, Long], changedReps: Map[Hash, Set[Hash]]) = {
-    var clock = System.currentTimeMillis
+  def assertBalancesChangedCorrectly(repsAndChanges: scala.collection.immutable.Map[Hash, Long], changedAddresses: scala.collection.immutable.Map[Hash, Long], repsAndBalances: scala.collection.immutable.Map[Hash, Long], changedReps: scala.collection.immutable.Map[Hash, Set[Hash]]): Unit =
+    DB withSession { implicit session =>
+      for ((rep, balance) <- repsAndBalances) {
+
+        val oldReps: Set[Hash] = if (balance < 0) changedReps.getOrElse(rep, Set())+rep else Set()
+
+        assert(balance >= 0, s"""
+                Start balance: ${rep.toString.take(8)} ${closureBalances.filter(_.address inSet oldReps.map(Hash.hashToArray(_))).map(_.balance).sum.run.getOrElse(0L)}
+                Change balance: ${repsAndChanges.getOrElse(rep, 0)}
+                Final balance: ${rep.toString.take(8)} $balance
+                ADDRESSES ${changedAddresses.map(_._2).sum} changed ${changedAddresses.size-1}
+                ${if (changedAddresses.size < 21) (changedAddresses - Hash.zero(0)).toList.map(p => p._1.toString.take(8) + ": "+ p._2).mkString("\n                ")}
+                WALLETS ${repsAndChanges.map(_._2).sum} changed ${repsAndChanges.size}
+                ${if (repsAndChanges.size < 20) repsAndChanges.toList.map(p=> p._1.toString.take(8) + ": "+ p._2).mkString("\n                ")}
+                UNIONS (from/to) ${changedReps.map(_._2.size).sum}/${changedReps.size}
+                ${if (changedReps.map(_._2.size).sum < 50) changedReps.map(p => "Representant " +p._1.toString.take(8) +"\n                "+ p._2.map(_.toString.take(8)).mkString("\n                ")).mkString("\n                ") else ""}
+            """)
+      }
+
+      assert(changedAddresses.map(_._2).sum == repsAndChanges.map(_._2).sum, s"""
+                Address changed ${changedAddresses.map(_._2).sum} (${changedAddresses.size})
+                  ${if (changedAddresses.size < 20) changedAddresses.toList.map(p => p._1.toString.take(8) + ": "+ p._2).mkString("\n                ")}
+                Wallets changed ${repsAndChanges.map(_._2).sum} (${repsAndChanges.size})
+                  ${if (repsAndChanges.size < 20) repsAndChanges.toList.map(p=> p._1.toString.take(8) + ": "+ p._2).mkString("\n                ")}
+                Representants/New reps: ${changedReps.map(_._2.size).sum} ${changedReps.size} ${if (changedReps.map(_._2.size).sum < 50) changedReps.map(p => p._1.toString.take(8) + "("+ p._2.size +")").mkString("         \n") else ""}
+      """)
+  }
+
+  def checkBalances(): Boolean = DB withSession { implicit session =>
+    val b3 = balances.map(_.balance).sum.run.getOrElse(0)
+    val b4 = closureBalances.map(_.balance).sum.run.getOrElse(0)
+
+    if (b3 != b4) {
+      log.info("Incomplete or wrong balances from last run")
+      false
+    } else {
+      log.info("Balances seems to be correct")
+      true
+    }
+  }
+
+  def saveBalances(adsAndBalances: scala.collection.immutable.Map[Hash, Long], repsAndBalances: scala.collection.immutable.Map[Hash, Long], changedReps: scala.collection.immutable.Map[Hash, Set[Hash]]): Unit =
+    DB withSession { implicit session =>
+      updateAdsBalancesTable(adsAndBalances, balances)
+      updateAdsBalancesTable(repsAndBalances, closureBalances)
+      // delete merged wallets
+      val toDelete = changedReps.values.fold(Set())((a, b) => a ++ b).map(Hash.hashToArray(_))
+      closureBalances.filter(_.address inSetBind toDelete).delete
+    }
+
+  def getWalletBalance(a: Set[Hash]): Long = DB withSession { implicit session =>
+    closureBalances.filter(_.address inSet a.map(Hash.hashToArray(_))).map(_.balance).sum.run.getOrElse(0L)
+  }
+
+  def getBalance(a: Hash): Long = DB withSession { implicit session =>
+    balances.filter(_.address === Hash.hashToArray(a)).map(_.balance).firstOption.getOrElse(0L)
+  }
+
+  def updateBalanceTables(changedAddresses: scala.collection.immutable.Map[Hash, Long], changedReps: scala.collection.immutable.Map[Hash, Set[Hash]]) = {
+    val clock = System.currentTimeMillis
     log.info("Updating balances ...")
     currentStat.total_bitcoins_in_addresses += changedAddresses.map { _._2 }.sum
 
@@ -159,75 +217,38 @@ trait BitcoinDB {
     lazy val unionFindTable = new ClosureMap(table)
     lazy val closures = new DisjointSets[Hash](unionFindTable)
 
-    DB withSession{ implicit session => 
-      val b3 = balances.map(_.balance).sum.run.getOrElse(0)
-      val b4 = closureBalances.map(_.balance).sum.run.getOrElse(0)
+    if (!checkBalances()) {
+      createBalanceTables
+    }
+    else {
+      DB withSession{ implicit session =>
+        val adsAndBalances: scala.collection.immutable.Map[Hash, Long] =
+          for ((address, change) <- changedAddresses - Hash.zero(0))
+             yield (address, getBalance(address) + change)
 
-      if (b3 != b4) {
-        log.info("Incomplete or wrong balances, generating it from scratch")
-        createBalanceTables
-      }
-      else {
-        session.withTransaction {
-          val adsAndBalances: scala.collection.immutable.Map[Hash, Long] = for ((address, change) <- changedAddresses - Hash.zero(0))
-                             yield (address,
-                                    balances.filter(_.address === Hash.hashToArray(address)).
-                                      map(_.balance).firstOption.getOrElse(0L) + change)
+        val repsAndChanges: collection.immutable.Map[Hash, Long] = (changedReps ++ (changedAddresses - Hash.zero(0))).map(_._1).toList
+          .distinct.map(rep => changedReps.find(_._2 contains rep).map(_._1).getOrElse(rep))
+          .distinct.map(r => {(r, changedAddresses.filter(x => (changedReps.getOrElse(r, Set())+r) contains x._1).map(_._2).sum)})
+          .toMap
 
-          updateAdsBalancesTable(adsAndBalances, balances)
-
-          val repsAndChanges: collection.immutable.Map[Hash, Long] = 
-            (changedReps.map(_._1).toList ++ (changedAddresses - Hash.zero(0)).map(_._1).toList)
-              .distinct
-              .map(rep => changedReps.find(_._2 contains rep).map(_._1).getOrElse(rep))
-              .distinct
-              .map(r => {(r, changedAddresses.filter(x => (changedReps.getOrElse(r, Set())+r) contains x._1).map(_._2).sum)})
-              .toMap
-
-          val repsAndBalances: scala.collection.immutable.Map[Hash, Long] =
+        val repsAndBalances: scala.collection.immutable.Map[Hash, Long] =
             (for {
-              (rep, change) <- repsAndChanges.toMap
-              representant = closures.find(rep)._1.getOrElse(rep)
-              oldies = (changedReps.getOrElse(rep, Set())+rep).map(Hash.hashToArray(_))
-            } yield (
-              representant,
-              closureBalances.filter(_.address inSetBind oldies).map(_.balance).sum.run.getOrElse(0L) + change
-            )).toMap
+               (rep, change) <- repsAndChanges.toList
+               repe = closures.find(rep)._1.getOrElse(rep)
+               oldReps = changedReps.getOrElse(rep, Set())+rep+Hash(repe)
+               balance = getWalletBalance(oldReps)
+             } yield {
+               (repe, balance + change)
+            }).toMap
 
-          for ((rep, balance) <- repsAndBalances) {
-            val oldReps: Set[Hash] =
-              if (balance < 0)
-                changedReps.getOrElse(rep, Set())+rep
-              else
-                Set()
-            assert(balance >= 0, s"""
-              $rep hat negative balance $balance
-                Old value: ${closureBalances.filter(_.address inSet oldReps.map(Hash.hashToArray(_))).map(_.balance).sum.run.getOrElse(0L)}
-                Old reps: ${oldReps.size} elements
-                Addresses changed ${changedAddresses.map(_._2).sum} (${changedAddresses.size}), wallets ${repsAndChanges.map(_._2).sum} (${repsAndChanges.size})
-                Changed: ${repsAndChanges.getOrElse(rep, 0)}
-                Representants/New reps: ${changedReps.map(_._2.size).sum}/${changedReps.size}
-            """)
-          }
+        // check balances - changes
+        assertBalancesChangedCorrectly(repsAndChanges, changedAddresses, repsAndBalances, changedReps)
+          // update database
+        saveBalances(adsAndBalances, repsAndChanges, changedReps)
 
-          assert(changedAddresses.map(_._2).sum == repsAndChanges.map(_._2).sum, s"""
-                Address changed ${changedAddresses.map(_._2).sum} (${changedAddresses.size})
-                  ${if (changedAddresses.size < 20) changedAddresses.toList.map(p => p._1.toString.take(8) + ": "+ p._2).mkString("\n                ")}
-                Wallets changed ${repsAndChanges.map(_._2).sum} (${repsAndChanges.size})
-                  ${if (repsAndChanges.size < 20) repsAndChanges.toList.map(p=> p._1.toString.take(8) + ": "+ p._2).mkString("\n                ")}
-                Representants/New reps: ${changedReps.map(_._2.size).sum} ${changedReps.size}
-          """)
-
-          updateAdsBalancesTable(repsAndBalances, closureBalances)
-
-          // delete all oldReps that have been unified into new ones
-          val toDelete = changedReps.values.fold(Set())((a, b) => a ++ b).map(Hash.hashToArray(_))
-          closureBalances.filter(_.address inSetBind toDelete).delete
-
-          log.info("%s balances updated in %s s, %s µs per address "
-                     format
-                     (adsAndBalances.size, (System.currentTimeMillis - clock) / 1000, (System.currentTimeMillis - clock) * 1000 / (adsAndBalances.size + 1)))
-        }
+        log.info("%s balances updated in %s s, %s µs per address "
+          format
+          (adsAndBalances.size, (System.currentTimeMillis - clock) / 1000, (System.currentTimeMillis - clock) * 1000 / (adsAndBalances.size + 1)))
       }
     }
   }

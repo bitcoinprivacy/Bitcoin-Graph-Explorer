@@ -117,6 +117,7 @@ object Explorer extends App with db.BitcoinDB {
     log.info("making new stats")
     val t: Map[Hash, Set[Hash]] = Map.empty
 
+
     for {
       key <- closure.changedReps.elements.keys
       parent = closure.changedReps.onlyFind(key) 
@@ -179,32 +180,24 @@ object Explorer extends App with db.BitcoinDB {
   }
 
   def resumeStats(changedAddresses: Map[Hash,Long], changedReps: Map[Hash,Set[Hash]], addedAds: Int, addedReps: Int)  = {
-    
+
     log.info(changedAddresses.size + " addresses changed balance")
 
     if (changedAddresses.size < balanceUpdateLimit )
     {
-      updateBalanceTables(changedAddresses.toMap, changedReps)
+      updateBalanceTables(changedAddresses.toMap, changedReps.toMap)
       insertRichestAddresses
       insertRichestClosures
       updateStatistics(changedReps,addedAds, addedReps)
     }
-    else populateStats
-        
+    else
+      populateStats
   }
 
   def populateStats = {
     createBalanceTables
-
-
-
-
-
-
     insertRichestAddresses
     insertRichestClosures
     insertStatistics
   }
-
-
 }
