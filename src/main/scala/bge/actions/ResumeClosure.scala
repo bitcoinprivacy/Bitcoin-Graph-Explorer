@@ -12,8 +12,6 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
   lazy val table = LmdbMap.open("closures")
   override lazy val unionFindTable = new ClosureMap(table)
 
-  
-
   override def insertInputsIntoTree(addressList: Iterable[Hash], tree: DisjointSets[Hash]): DisjointSets[Hash] =
   {
     val (pairList, tree1) = addressList.foldLeft((List[(Hash,Option[Hash])](),tree)){

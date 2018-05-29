@@ -154,18 +154,17 @@ object Explorer extends App with db.BitcoinDB {
   }
 
   def getWrongBlock: Option[Int] = {
-    
+
+    val lch = lastCompletedHeight
+    val bc = blockCount
     val (count,amount) = sumUTXOs
     val (countDB, amountDB) = countUTXOs
-    val bc = blockCount
     val expected = totalExpectedSatoshi(bc)
     val utxosMaxHeight = getUtxosMaxHeight 
-    
-    val lch = lastCompletedHeight
     val sameCount = count == countDB
     val sameValue = amount == amountDB
     val rightValue = amount <= expected
-    val rightBlock = (blockCount - 1 == lch) && utxosMaxHeight == lch
+    val rightBlock = (bc - 1 == lch) && utxosMaxHeight == lch
 
     if (!rightValue)  log.error("we have " + ((amount-expected)/100000000.0) + " too many bitcoins")
     if (!sameCount)   log.error("we lost utxos")
@@ -176,7 +175,7 @@ object Explorer extends App with db.BitcoinDB {
     else if (utxosMaxHeight > bc -1) Some(utxosMaxHeight)
     else if (bc - 1 > lch) Some(bc-1)
     else Some(lch)
-      //throw new Exception("This should not have happened. See logs for details.")
+
   }
 
   def resumeStats(changedAddresses: Map[Hash,Long], changedReps: Map[Hash,Set[Hash]], addedAds: Int, addedReps: Int)  = {
