@@ -73,7 +73,7 @@ trait FastBlockReader extends BlockReader {
   def finishBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long, height:Int) = {
     processedBlocks :+= height
     insertBlock(b, height, txs, btcs, tstamp)
-    log.info("Saved block " + height + " consisting of " + txs + " txs")
+    //log.info("Saved block " + height + " consisting of " + txs + " txs")
   }
 
   def pre  = {

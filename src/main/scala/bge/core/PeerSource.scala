@@ -15,9 +15,9 @@ trait PeerSource extends BlockSource {
 
     for ((blockHash,no) <- truncated.toIterator) yield {
       val future = peer.getBlock(blockHash)
-      log.info("Waiting for node to send us the requested block: " + blockHash)
+//      log.info("Waiting for node to send us the requested block: " + blockHash)
       val block = future.get()
-      log.info("Block received")
+//      log.info("Block received")
       (block,no)
     }
 

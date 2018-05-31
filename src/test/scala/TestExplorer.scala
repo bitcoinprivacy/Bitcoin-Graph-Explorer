@@ -2,7 +2,6 @@ import util.Hash
 import Explorer._
 import sys.process._
 
-
 object TestExplorer {
 
   // BITCOIN-CLI functions
@@ -25,7 +24,11 @@ object TestExplorer {
 
   def stat = currentStat
 
-  def rollBackLast = rollBack(blockCount-1)
+  def saveRollback(i: Int) = {
+    for (_ <- 0 until i)
+      rollBack(blockCount-1)
+    populateStats
+  }
 
   def saveResume = {
     val init = currentStat
@@ -42,9 +45,11 @@ object TestExplorer {
     assertBalancesCreatedCorrectly
   }
 
-  def s: collection.immutable.Map[Hash, Long] = collection.immutable.Map()
+  def success = None
 
-  def x:collection.immutable.Map[Hash, Set[Hash]] = collection.immutable.Map()
+  private def s: collection.immutable.Map[Hash, Long] = collection.immutable.Map()
+
+  private def x:collection.immutable.Map[Hash, Set[Hash]] = collection.immutable.Map()
 
   def assertBalancesCreatedCorrectly =
     assertBalancesUpdatedCorrectly(s,s,s,s,s,x,0,0)
@@ -58,55 +63,55 @@ object TestExplorer {
     changedReps: collection.immutable.Map[Hash, Set[Hash]],
     addedAdds: Int,
     addedReps: Int): Option[String] = {
-
+    
     lazy val ca = changedAddresses - Hash.zero(0)
     lazy val s1 = ca.map(_._2).sum
     lazy val s2 = repsAndChanges.map(_._2).sum
     lazy val b3 = getSumBalance
     lazy val b4 = getSumWalletsBalance
-    lazy val message2 = s"""
-      WALLETSs and CHANGES ${str1(repsAndChanges)}
-      ADDRESSs and CHANGES ${str1(ca)}
-      ADDED REPS ${str1(repsAndBalances)}
-      REPS TABLE  ${str2(getClosures())}
-      ADDs BALANCES ${str1(getAllBalances())}
-      REPS BALANCES ${str1(getAllWalletBalances())}
-      WALLETS CHANGED MORE THAN ADDRESSES ###
-        ${nr(s2-s1)} btcs
-      WALLETs TABLES MORE THAN ADDRESSES ###
-        ${nr(b4-b3)} btcs
-      UTXO / ADDRESS / WALLET
-        ${nr(getUTXOSBalance())} / ${nr(b3)} / ${nr(b4)}
-      ${changedReps.map(p=> p._1.toString.drop(2).take(4)+" -> " + p._2.map(_.toString.drop(2).take(4)))}
-"""
-    lazy val message = ""
+    lazy val ut = getUTXOSBalance()
+    lazy val ar = addedReps
+      - (changedReps.values.foldLeft(Set[Hash]())((s,p) => s++p)--changedReps.keys).size
+      + changedReps.keys.size
 
-    // test updateBalances
-    if (adsAndBalances.exists(r => r._2 < 0))
-      Some(message + "  NEGATIVE ADDRESS - updateBalances")
-    else if(repsAndBalances.exists(r => r._2 < 0))
-      Some(message + "  NEGATIVE WALLET - updateBalances")
-    else if (repsAndBalances.exists(r => r._1 != getRepresentant(r._1)))
-      Some(message + "  WRONG UPDATE - updateBalances")
+    lazy val negativeAddressOption = adsAndBalances.filter(_._2 < 0).map(p => (pri(p._1), nr(p._2))).headOption
+    lazy val negativeWalletOption = repsAndBalances.filter(_._2 < 0).headOption
+    lazy val balanceResults = s"UTXOs ${nr(ut)} ADDs ${nr(b3)} WALLETs ${nr(b4)}"
+    lazy val t1 = negativeWalletOption.get
+    lazy val negativeWalletString = s"REP: ${pri(getRepresentant(t1._1))}  WALL: ${pri(t1._1)}  BTC ${nr(t1._2)} ${getWallet(t1._1)}"
+
+    // test updateStatistics && test updateBalances
+    if (repsAndBalances.exists(r => r._1 != getRepresentant(r._1)))
+      Some(s"___ WRONG UPDATE ___")
     else if (s1 != s2)
-      Some(message + "  WRONG CHANGED VALUES - updateBalances")
-    else if (b3 != b4)
-      Some(message  +"  WRONG CHANGED BALANCE - updateBalances")
-    // test updateStatistics
-    else if (addedReps <= changedReps.values.map(_.size).sum)
-      Some(message + "  LOST WALLETS - updateStatistics")
+      Some(s"___ WRONG CHANGED VALUES ___")
     else if (addedAdds < 0)
-      Some(message + "  LOST ADDRESSES - updateStatistics")
+      Some(s"___ LOST ADDRESSES ___")
+    else if (negativeAddressOption != None)
+      Some(s"___ NEGATIVE ADDRESS ___")
+    else if (b3 != b4)
+      Some(s"___ WRONG WALLET BALANCE ___")
+    else if (ut != b4)
+      Some(s"___ WRONG ADDRESS BALANCE ___")
+    else if (ar < 0)
+      Some(s"___ LOST $ar REPRESENTANTS ___ ")
+    else if (negativeWalletOption != None)
+      Some(s"___ NEGATIVE WALLET ___ $negativeWalletString")
     else
       None
-
   }
 
   // Some help formatter
-  def nr(b: Long): String = ((b/10000)/10000.0).toString
+  private def nr(b: Long): String = ((b/10000)/10000.0).toString
 
-  def str1(n: collection.immutable.Map[Hash, Long]): String = if (n.size> 0 && n.size < 25) "#: " + n.size + "  total: " + nr(n.map(_._2).sum) +"\n    " + n.toSeq.sortBy(_._1.toString.drop(2).take(4)).map(m=>m._1.toString.drop(2).take(4)+": "+(nr(m._2))).mkString("\n    ") else n.size.toString
+  private def sx = "\n      "
 
-  def str2(n: collection.immutable.Map[Hash, Hash]): String = if (n.size > 0 && n.size < 25) "(" + n.size + ")\n    " + n.toSeq.sortBy(_._1.toString.drop(2).take(4)).map(m=>m._1.toString.drop(2).take(4)+" => "+(m._2.toString.drop(2).take(4))).mkString("\n    ") else n.size.toString
+  private def pri(a: Hash) = a.toString.drop(2).take(4)
+
+  private def str1(n: collection.immutable.Map[Hash, Long]): String = "#: " + n.size + "  total: " + nr(n.map(_._2).sum) + sx + n.toSeq.sortBy(p=>pri(p._1)).map(m=>pri(m._1)+": "+(nr(m._2))).mkString(sx)
+
+  private def str2(n: collection.immutable.Map[Hash, Hash]): String = "(" + n.size + ")" + sx + n.toSeq.sortBy(p=>pri(p._1)).map(m=>pri(m._1) +" => "+(pri(m._2))).mkString(sx)
+
+  private def str3(n: collection.immutable.Map[Hash, Set[Hash]]): String = "(" + n.size + ")" + sx + n.toSeq.sortBy(p=>pri(p._1)).map(m=>pri(m._1) + " => "+ m._2.map((pri(_))).mkString(" - ")).mkString(sx)
 
 }

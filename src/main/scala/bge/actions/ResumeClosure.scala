@@ -51,6 +51,7 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
             val updateQuery = for(p <- addresses if p.representant === hashToArray(oldRep)) yield p.representant
             updateQuery.update(newRep) // TODO: compile query
             recordChangedRep(newRep, oldRep)
+ 
           case _ => addRepFlag = 0 // one of the elements had this rep before => don't count a new one
         }
     }

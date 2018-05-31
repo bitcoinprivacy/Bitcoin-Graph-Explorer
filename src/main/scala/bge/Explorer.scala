@@ -113,40 +113,45 @@ object Explorer extends App with db.BitcoinDB {
     val bc = blockCount
     val read = new ResumeBlockReader
 
-      val closure = new ResumeClosure(read.processedBlocks)
-      log.info("making new stats")
-      // move me maybe when we are sure or have better tests
-      assertBalancesConsistency()
+    val closure = new ResumeClosure(read.processedBlocks)
+    // move me maybe when we are sure or have better tests
+    val checkBalances =  getSumBalance == getSumWalletsBalance
 
-      if (read.changedAddresses.size < balanceUpdateLimit) {
-        val (repsAndAvailable, adsAndBalances,repsAndChanges,  repsAndBalances) = resumeStats(read.changedAddresses, convertToMap(closure.changedReps), closure.addedAds, closure.addedReps)
-        Some(
-          (repsAndAvailable, adsAndBalances,repsAndChanges,  read.changedAddresses.toMap, repsAndBalances, convertToMap(closure.changedReps).toMap, closure.addedAds, closure.addedReps)
-        )
-      }
-      else {
-        populateStats
-        None
-      }
+    if (!checkBalances)
+      log.info("Error updating balances .... create it again")
+
+    if (read.changedAddresses.size < balanceUpdateLimit && checkBalances) {
+      val (repsAndAvailable, adsAndBalances,repsAndChanges,  repsAndBalances) = resumeStats(read.changedAddresses, convertToMap(closure.changedReps), closure.addedAds, closure.addedReps)
+      Some(
+        (repsAndAvailable, adsAndBalances,repsAndChanges,  read.changedAddresses.toMap, repsAndBalances, convertToMap(closure.changedReps).toMap, closure.addedAds, closure.addedReps)
+      )
+    }
+    else {
+      populateStats
+      None
+    }
   }
 
-  def rollBackToLastStatIfNecessary: Unit =
-    for (block <- getWrongBlock){
-      rollBack(block)
-      rollBackToLastStatIfNecessary
+  def rollBackToLastStatIfNecessary: Boolean =
+    getWrongBlock match {
+      case None =>
+        false
+      case Some(block: Int) => 
+        rollBack(block)
+        rollBackToLastStatIfNecessary
+        true
     }
 
   def iterateResume(newstats: Boolean = false) = {
 
-    if (!peerGroup.isRunning) startBitcoinJ
+    if (!peerGroup.isRunning)
+      startBitcoinJ
 
-    rollBackToLastStatIfNecessary
-    if (newstats) populateStats
+    if (rollBackToLastStatIfNecessary || newstats)
+      populateStats
 
-    while (new java.io.File(lockFile).exists)
-    {
-      if (blockCount > chain.getBestChainHeight)
-      {
+    while (new java.io.File(lockFile).exists) {
+      if (blockCount > chain.getBestChainHeight) {
         log.info("waiting for new blocks")
         waitForBitcoinJBlock(blockCount) //wait until the chain overtakes our DB
       }

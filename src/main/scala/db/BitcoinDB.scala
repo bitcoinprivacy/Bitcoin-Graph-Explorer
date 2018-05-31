@@ -158,9 +158,6 @@ trait BitcoinDB {
     }
   }
 
-  def assertBalancesConsistency(): Unit =
-    assert(getSumBalance == getSumWalletsBalance, "WTF The balances are boken again!")
-
   def getSumBalance: Long = DB withSession { implicit session =>
     balances.map(_.balance).sum.run.getOrElse(0)
   }
@@ -174,41 +171,22 @@ trait BitcoinDB {
   }
 
   def saveBalances(adsAndBalances: scala.collection.immutable.Map[Hash, Long], repsAndBalances: scala.collection.immutable.Map[Hash, Long], changedReps: scala.collection.immutable.Map[Hash, Set[Hash]]): Unit = {
-    def a(changedReps: scala.collection.immutable.Map[Hash, Set[Hash]], repsAndBalances: scala.collection.immutable.Map[Hash, Long]) =
-      changedReps.values.fold(Set())((a, b) => a ++ b) ++ repsAndBalances.keys ++ changedReps.keys ++ adsAndBalances.keys
 
     DB withSession { implicit session =>
       // delete merged wallets
-      val toDelete = a(changedReps, repsAndBalances).map(Hash.hashToArray)
+      val toDelete = (changedReps.values.fold(Set())((a, b) => a ++ b) ++ repsAndBalances.keys ++ changedReps.keys).map(Hash.hashToArray)
       closureBalances.filter(_.address inSetBind toDelete).delete
     }
     updateAdsBalancesTable(adsAndBalances, balances)
     updateAdsBalancesTable(repsAndBalances, closureBalances)
   }
 
-  def getWalletBalances(a: collection.immutable.Set[Hash]): Long = DB withSession { implicit session =>
-    closureBalances.filter(_.address inSetBind a.map(Hash.hashToArray(_))).map(_.balance).sum.run.getOrElse(0L)
-  }
-
-  def getBalance(a: Hash): Long = DB withSession { implicit session =>
-    balances.filter(_.address === Hash.hashToArray(a)).map(_.balance).firstOption.getOrElse(0L)
-  }
-
-  def getAllBalances(): collection.immutable.Map[Hash, Long] = DB withSession { implicit session =>
-    balances.sortBy(_.address).map(p=>(p.address, p.balance)).run.map(p=>(Hash(p._1),p._2)).toMap
-  }
-
-  def getClosures(): collection.immutable.Map[Hash, Hash] = DB withSession { implicit session =>
-    addresses.sortBy(_.hash).map(p=>(p.hash, p.representant)).run.map(p=>(Hash(p._1),Hash(p._2))).toMap
-  }
-
-  def getAllWalletBalances(): collection.immutable.Map[Hash, Long] = DB withSession { implicit session =>
-    closureBalances.sortBy(_.address).map(p=>(p.address, p.balance)).run.map(p=>(Hash(p._1),p._2)).toMap
-  }
-
+  // Unsave functions, use only for testing
+  // end of unsave functions block
   def getRepresentant(a: Hash): Hash = DB withSession { implicit session =>
     addresses.filter(_.hash === Hash.hashToArray(a)).map(_.representant).run.map(Hash(_)).headOption.getOrElse(a)
   }
+
 
 def updateBalanceTables(changedAddresses: collection.immutable.Map[Hash, Long], changedReps: collection.immutable.Map[Hash, Set[Hash]]):
     (collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long], collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long]) = {
@@ -233,18 +211,16 @@ def updateBalanceTables(changedAddresses: collection.immutable.Map[Hash, Long], 
       .sortBy(_._1)
       .toMap
 
-    val e: collection.immutable.Set[Hash] = collection.immutable.Set()
     val repsAndAvailable: scala.collection.immutable.Map[Hash, Long] = (changedReps ++ (changedAddresses - Hash.zero(0))).map(_._1).toList
       .distinct
       .map(p => (p,
              if (changedReps contains p) (changedReps(p)+p) else collection.immutable.Set(getRepresentant(p))))
       .groupBy(p=>getRepresentant(p._1))
       .map(p=> (p._1,
-             getWalletBalances(p._2.foldLeft(e)((s,t) => s++t._2) + p._1)))
+             getWalletBalances(p._2.foldLeft(Set(Hash.zero(0)))((s,t) => s++t._2) + p._1)))
       .toSeq
       .sortBy(_._1)
       .toMap
-
 
   // FIXME it should never happen
     val repsAndBalances: collection.immutable.Map[Hash, Long] = (repsAndAvailable zip repsAndChanges)
@@ -294,6 +270,7 @@ def updateBalanceTables(changedAddresses: collection.immutable.Map[Hash, Long], 
     }
   }
 
+
   def insertStatistics = {
 
     val (nonDustAddresses, addressGini) = getGini(balances)
@@ -334,6 +311,9 @@ def updateBalanceTables(changedAddresses: collection.immutable.Map[Hash, Long], 
     val time = System.currentTimeMillis
     val (nonDustAddresses, addressGini) = getGini(balances)
     val (nonDustClosures, closureGini) = getGini(closureBalances)
+    val addedClosures = addedReps
+      - (changedReps.values.foldLeft(Set[Hash]())((s,p) => s++p)--changedReps.keys).size
+      + changedReps.keys.size
 
     DB withSession { implicit session =>
       val stat = currentStat
@@ -348,7 +328,7 @@ def updateBalanceTables(changedAddresses: collection.immutable.Map[Hash, Long], 
       stat.total_transactions = blockDB.map(_.txs).filter(_ > 0).sum.run.getOrElse(0).toLong
       stat.total_bitcoins_in_addresses = balances.map(_.balance).sum.run.getOrElse(0L) / 100000000
       stat.total_addresses += addedAds
-      stat.total_closures += addedReps - changedReps.values.map(_.size).sum
+      stat.total_closures += addedClosures
       saveStat(stat)
       log.info("Updated in " + (System.currentTimeMillis - time) / 1000 + " seconds")
     }
@@ -402,14 +382,10 @@ def updateBalanceTables(changedAddresses: collection.immutable.Map[Hash, Long], 
 
     DB withSession { implicit session =>
 
-      // MOVEMENTS
-      // get outputs from address
       for (
         query <- List(
           "create index address on movements (address);",
           """create unique index tx_idx  on movements (transaction_hash, "index");""",
-          //  "create index  spent_in_transaction_hash2 on movements (spent_in_transaction_hash, address);",
-          // not needed for closure
           "create index spent_in on movements(spent_in_transaction_hash)", // for api/Movements
           "create index height_in on movements (height_in);", // for closure
           "create index height_out_in on movements (height_out, height_in);",
@@ -422,8 +398,7 @@ def updateBalanceTables(changedAddresses: collection.immutable.Map[Hash, Long], 
         Q.updateNA(query).execute
         log.info("Finished" + query)
       }
-
-    }
+   }
 
     log.info("Indexes created in %s s" format (System.currentTimeMillis - time) / 1000)
 
@@ -438,8 +413,18 @@ def updateBalanceTables(changedAddresses: collection.immutable.Map[Hash, Long], 
     stats.insert(Stat.unapply(stat).get)
   }
 
-  case class Stat(var block_height: Int, var total_bitcoins_in_addresses: Long, var total_transactions: Long, var total_addresses: Long, var total_closures: Long, var total_addresses_with_balance: Long, var total_closures_with_balance: Long, var total_addresses_no_dust: Long, var total_closures_no_dust: Long, var gini_closure: Double, var gini_address: Double, var tstamp: Long){
-    override def equals(that: Any): Boolean = {
+  case class Stat(var block_height: Int,
+                  var total_bitcoins_in_addresses: Long,
+                  var total_transactions: Long,
+                  var total_addresses: Long,
+                  var total_closures: Long,
+                  var total_addresses_with_balance: Long,
+                  var total_closures_with_balance: Long,
+                  var total_addresses_no_dust: Long,
+                  var total_closures_no_dust: Long,
+                  var gini_closure: Double,
+                  var gini_address: Double,
+                  var tstamp: Long) { override def equals(that: Any): Boolean = {
       def getCCParams(cc: AnyRef) =
         (Map[String, Any]() /: cc.getClass.getDeclaredFields) {(a, f) =>
           f.setAccessible(true)
@@ -480,12 +465,40 @@ def updateBalanceTables(changedAddresses: collection.immutable.Map[Hash, Long], 
     val utxoRows = movementQuery.filter(_.height_in =!= blockHeight).map(p => (p.transaction_hash, p.address, p.index, p.value, p.height_in)).run
     for ((tx, ad, idx, v, h) <- utxoRows)
       utxoTable += ((Hash(tx) -> idx) -> (Hash(ad), v, h))
+
     utxo.insertAll(utxoRows: _*)
     movementQuery.delete
-
     blockDB.filter(_.block_height === blockHeight).delete
-
     table.close
 
   }
+
+  def getWalletBalances(a: collection.immutable.Set[Hash]): Long = DB withSession { implicit session =>
+    closureBalances.filter(_.address inSetBind a.map(Hash.hashToArray(_))).map(_.balance).sum.run.getOrElse(0L)
+  }
+
+  def getBalance(a: Hash): Long = DB withSession { implicit session =>
+    balances.filter(_.address === Hash.hashToArray(a)).map(_.balance).firstOption.getOrElse(0L)
+  }
+
+  def getAllBalances(): collection.immutable.Map[Hash, Long] = DB withSession { implicit session =>
+    balances.sortBy(_.address).map(p=>(p.address, p.balance)).run.map(p=>(Hash(p._1),p._2)).toMap
+  }
+
+  def getClosures(): collection.immutable.Map[Hash, Hash] = DB withSession { implicit session =>
+    addresses.sortBy(_.hash).map(p=>(p.hash, p.representant)).run.map(p=>(Hash(p._1),Hash(p._2))).toMap
+  }
+
+  def countClosures(): Int = DB withSession { implicit session =>
+    addresses.groupBy(_.representant).length.run
+  }
+
+  def getWallet(a: Hash): collection.immutable.Set[Hash] = DB withSession { implicit session =>
+    addresses.filter(_.representant === Hash.hashToArray(a)).map(_.hash).run.map(Hash(_)).toSet
+  }
+
+  def getAllWalletBalances(): collection.immutable.Map[Hash, Long] = DB withSession { implicit session =>
+    closureBalances.sortBy(_.address).map(p=>(p.address, p.balance)).run.map(p=>(Hash(p._1),p._2)).toMap
+  }
+
 }
