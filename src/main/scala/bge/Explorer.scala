@@ -100,30 +100,34 @@ object Explorer extends App with db.BitcoinDB {
     insertStatistics
 
     if (!peerGroup.isRunning) startBitcoinJ
- 
+
     PopulateBlockReader
-  
+
     createIndexes
     new PopulateClosure(PopulateBlockReader.processedBlocks)
-    createAddressIndexes    
+    createAddressIndexes
     populateStats
-//    testValues
-
   }
 
   def resume = {
+    val bc = blockCount
     val read = new ResumeBlockReader
-    val closure = new ResumeClosure(read.processedBlocks)
-    log.info("making new stats")
-    val t: Map[Hash, Set[Hash]] = Map.empty
 
+      val closure = new ResumeClosure(read.processedBlocks)
+      log.info("making new stats")
+      // move me maybe when we are sure or have better tests
+      assertBalancesConsistency()
 
-    for {
-      key <- closure.changedReps.elements.keys
-      parent = closure.changedReps.onlyFind(key) 
-    } { t += (parent -> (t.getOrElse(key, Set()) + key))}
-
-    resumeStats(read.changedAddresses, t, closure.addedAds, closure.addedReps)
+      if (read.changedAddresses.size < balanceUpdateLimit) {
+        val (repsAndAvailable, adsAndBalances,repsAndChanges,  repsAndBalances) = resumeStats(read.changedAddresses, convertToMap(closure.changedReps), closure.addedAds, closure.addedReps)
+        Some(
+          (repsAndAvailable, adsAndBalances,repsAndChanges,  read.changedAddresses.toMap, repsAndBalances, convertToMap(closure.changedReps).toMap)
+        )
+      }
+      else {
+        populateStats
+        None
+      }
   }
 
   def rollBackToLastStatIfNecessary: Unit =
@@ -133,19 +137,18 @@ object Explorer extends App with db.BitcoinDB {
     }
 
   def iterateResume(newstats: Boolean = false) = {
-    // Seq("bitcoind","-daemon").run
-    
+
     if (!peerGroup.isRunning) startBitcoinJ
 
     rollBackToLastStatIfNecessary
     if (newstats) populateStats
-          
+
     while (new java.io.File(lockFile).exists)
     {
       if (blockCount > chain.getBestChainHeight)
       {
         log.info("waiting for new blocks")
-        chain.getHeightFuture(blockCount).get //wait until the chain overtakes our DB
+        waitForBitcoinJBlock(blockCount) //wait until the chain overtakes our DB
       }
       resume
     }
@@ -160,7 +163,7 @@ object Explorer extends App with db.BitcoinDB {
     val (count,amount) = sumUTXOs
     val (countDB, amountDB) = countUTXOs
     val expected = totalExpectedSatoshi(bc)
-    val utxosMaxHeight = getUtxosMaxHeight 
+    val utxosMaxHeight = getUtxosMaxHeight
     val sameCount = count == countDB
     val sameValue = amount == amountDB
     val rightValue = amount <= expected
@@ -178,19 +181,17 @@ object Explorer extends App with db.BitcoinDB {
 
   }
 
-  def resumeStats(changedAddresses: Map[Hash,Long], changedReps: Map[Hash,Set[Hash]], addedAds: Int, addedReps: Int)  = {
+  def resumeStats(changedAddresses: Map[Hash,Long], changedReps: Map[Hash,Set[Hash]], addedAds: Int, addedReps: Int):
+      (collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long]) = {
 
     log.info(changedAddresses.size + " addresses changed balance")
 
-    if (changedAddresses.size < balanceUpdateLimit )
-    {
-      updateBalanceTables(changedAddresses.toMap, changedReps.toMap)
-      insertRichestAddresses
-      insertRichestClosures
-      updateStatistics(changedReps,addedAds, addedReps)
-    }
-    else
-      populateStats
+    val (repsAndAvailable, adsAndBalances,repsAndChanges,  repsAndBalances) = updateBalanceTables(changedAddresses.toMap, changedReps.toMap)
+    insertRichestAddresses
+    insertRichestClosures
+    updateStatistics(changedReps,addedAds, addedReps)
+
+    (repsAndAvailable, adsAndBalances,repsAndChanges,  repsAndBalances)
   }
 
   def populateStats = {
@@ -198,5 +199,10 @@ object Explorer extends App with db.BitcoinDB {
     insertRichestAddresses
     insertRichestClosures
     insertStatistics
+  }
+
+  
+  def waitForBitcoinJBlock(b: Int) = {
+    chain.getHeightFuture(b).get
   }
 }

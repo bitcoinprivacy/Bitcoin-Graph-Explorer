@@ -99,6 +99,15 @@ package object util
     }
   }
 
+
   
+  def convertToMap(a: DisjointSets[Hash]): collection.mutable.Map[Hash, Set[Hash]] = {
+    val t: collection.mutable.Map[Hash, Set[Hash]] = collection.mutable.Map.empty
+    for {
+      key <- a.elements.keys
+      parent = a.onlyFind(key)
+    } { t += (parent -> (t.getOrElse(key, Set()) + key))}
+    t
+  }
 }
 
