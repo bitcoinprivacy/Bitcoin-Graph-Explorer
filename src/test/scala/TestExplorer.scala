@@ -1,9 +1,11 @@
-package tools
-
-import Explorer._
 import util.Hash
+import Explorer._
+import sys.process._
 
-object Tools {
+
+object TestExplorer {
+
+  // BITCOIN-CLI functions
 
   val BITCOIN = "docker exec --user bitcoin docker_bitcoin_1 bitcoin-cli -regtest -rpcuser=foo -rpcpassword=bar -rpcport=18333"
 
@@ -15,19 +17,24 @@ object Tools {
 
   def addTx(n: Long) = ("/root/Bitcoin-Graph-Explorer/src/test/docker/create.sh " + n.toString) ! ProcessLogger(_ => ())
 
-  def count: Int = ((BITCOIN + " getblockcount") !!).trim.toInt
+  def bitcoinCount: Int = ((BITCOIN + " getblockcount") !!).trim.toInt+1
+
+  // EXPLORER functions
+
+  def bgeCount = blockCount
+
+  def stat = currentStat
+
+  def rollBackLast = rollBack(blockCount-1)
 
   def saveResume = {
     val init = currentStat
     resume match {
-      case Some((a,b,c,d,e,f)) =>
-        assertBalancesUpdatedCorrectly(a,b,c,d,e,f)
+      case Some((a,b,c,d,e,f,x,y)) =>
+        assertBalancesUpdatedCorrectly(a,b,c,d,e,f,x,y)
       case None =>
         assertBalancesCreatedCorrectly
     }
-
-    currentStat.total_closures >= init.total_closures should be (true)
-    currentStat.total_addresses >= init.total_addresses should be (true)
   }
 
   def savePopulate = {
@@ -40,7 +47,7 @@ object Tools {
   def x:collection.immutable.Map[Hash, Set[Hash]] = collection.immutable.Map()
 
   def assertBalancesCreatedCorrectly =
-    assertBalancesUpdatedCorrectly(s,s,s,s,s,x)
+    assertBalancesUpdatedCorrectly(s,s,s,s,s,x,0,0)
 
   def assertBalancesUpdatedCorrectly(
     repsAndAvailable: collection.immutable.Map[Hash, Long],
@@ -48,38 +55,51 @@ object Tools {
     repsAndChanges: collection.immutable.Map[Hash, Long],
     changedAddresses: collection.immutable.Map[Hash, Long],
     repsAndBalances: collection.immutable.Map[Hash, Long],
-    changedReps: collection.immutable.Map[Hash, Set[Hash]] ): Unit = {
+    changedReps: collection.immutable.Map[Hash, Set[Hash]],
+    addedAdds: Int,
+    addedReps: Int): Option[String] = {
+
     lazy val ca = changedAddresses - Hash.zero(0)
     lazy val s1 = ca.map(_._2).sum
     lazy val s2 = repsAndChanges.map(_._2).sum
     lazy val b3 = getSumBalance
     lazy val b4 = getSumWalletsBalance
-    lazy val message = s"""
-  WALLETSs and CHANGES ${str1(repsAndChanges)}
-  ADDRESSs and CHANGES ${str1(ca)}
-  ADDED REPS ${str1(repsAndBalances)}
-  REPS TABLE  ${str2(getClosures())}
-  ADDs BALANCES ${str1(getAllBalances())}
-  REPS BALANCES ${str1(getAllWalletBalances())}
-  WALLETS CHANGED MORE THAN ADDRESSES ###
-    ${nr(s2-s1)} btcs
-  WALLETs TABLES MORE THAN ADDRESSES ###
-    ${nr(b4-b3)} btcs
-  UTXO / ADDRESS / WALLET
-    ${nr(getUTXOSBalance())} / ${nr(b3)} / ${nr(b4)}
-  ${changedReps.map(p=> p._1.toString.drop(2).take(4)+" -> " + p._2.map(_.toString.drop(2).take(4)))}
+    lazy val message2 = s"""
+      WALLETSs and CHANGES ${str1(repsAndChanges)}
+      ADDRESSs and CHANGES ${str1(ca)}
+      ADDED REPS ${str1(repsAndBalances)}
+      REPS TABLE  ${str2(getClosures())}
+      ADDs BALANCES ${str1(getAllBalances())}
+      REPS BALANCES ${str1(getAllWalletBalances())}
+      WALLETS CHANGED MORE THAN ADDRESSES ###
+        ${nr(s2-s1)} btcs
+      WALLETs TABLES MORE THAN ADDRESSES ###
+        ${nr(b4-b3)} btcs
+      UTXO / ADDRESS / WALLET
+        ${nr(getUTXOSBalance())} / ${nr(b3)} / ${nr(b4)}
+      ${changedReps.map(p=> p._1.toString.drop(2).take(4)+" -> " + p._2.map(_.toString.drop(2).take(4)))}
 """
+    lazy val message = ""
 
-    for ((rep, balance) <- repsAndBalances)
-      if (balance < 0)
-        throw new Error(message + "  NEGATIVE VALUE!!!")
-      else if (rep != getRepresentant(rep))
-        throw new Error(message + "  WTH")
-
-    if (s1 != s2)
-      throw new Error(message + "WALLETs CHANGED MORE THAN ADDRESSES!!!")
+    // test updateBalances
+    if (adsAndBalances.exists(r => r._2 < 0))
+      Some(message + "  NEGATIVE ADDRESS - updateBalances")
+    else if(repsAndBalances.exists(r => r._2 < 0))
+      Some(message + "  NEGATIVE WALLET - updateBalances")
+    else if (repsAndBalances.exists(r => r._1 != getRepresentant(r._1)))
+      Some(message + "  WRONG UPDATE - updateBalances")
+    else if (s1 != s2)
+      Some(message + "  WRONG CHANGED VALUES - updateBalances")
     else if (b3 != b4)
-      throw new Error(message  +"  WALLETs TABLE HAS MORE THAN ADDRESSES!!!")
+      Some(message  +"  WRONG CHANGED BALANCE - updateBalances")
+    // test updateStatistics
+    else if (addedReps <= changedReps.values.map(_.size).sum)
+      Some(message + "  LOST WALLETS - updateStatistics")
+    else if (addedAdds < 0)
+      Some(message + "  LOST ADDRESSES - updateStatistics")
+    else
+      None
+
   }
 
   // Some help formatter

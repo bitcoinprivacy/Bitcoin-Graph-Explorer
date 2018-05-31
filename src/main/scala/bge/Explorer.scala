@@ -121,7 +121,7 @@ object Explorer extends App with db.BitcoinDB {
       if (read.changedAddresses.size < balanceUpdateLimit) {
         val (repsAndAvailable, adsAndBalances,repsAndChanges,  repsAndBalances) = resumeStats(read.changedAddresses, convertToMap(closure.changedReps), closure.addedAds, closure.addedReps)
         Some(
-          (repsAndAvailable, adsAndBalances,repsAndChanges,  read.changedAddresses.toMap, repsAndBalances, convertToMap(closure.changedReps).toMap)
+          (repsAndAvailable, adsAndBalances,repsAndChanges,  read.changedAddresses.toMap, repsAndBalances, convertToMap(closure.changedReps).toMap, closure.addedAds, closure.addedReps)
         )
       }
       else {

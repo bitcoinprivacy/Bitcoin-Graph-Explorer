@@ -304,7 +304,6 @@ def updateBalanceTables(changedAddresses: collection.immutable.Map[Hash, Long], 
     val startTime = System.currentTimeMillis
     DB withSession { implicit session =>
 
-      
       val query = """
        delete from stats where block_height = (select coalesce(max(block_height),0) from blocks);
        insert
@@ -335,9 +334,7 @@ def updateBalanceTables(changedAddresses: collection.immutable.Map[Hash, Long], 
     val time = System.currentTimeMillis
     val (nonDustAddresses, addressGini) = getGini(balances)
     val (nonDustClosures, closureGini) = getGini(closureBalances)
-    var a = changedReps.values.map(_.size).sum
-    // FIXME: addReps and changedRes are wrong!
-    // assert(addedReps - a >= 0, s"we lost the count of wallets $addedReps > $a => $changedReps")
+
     DB withSession { implicit session =>
       val stat = currentStat
       stat.total_addresses_with_balance = balances.length.run

@@ -1,7 +1,6 @@
-import sys.process._
+
+import TestExplorer._
 import org.scalatest._
-import util.Hash
-import tools.Tool
 
 class ExplorerIntegrationTests extends FlatSpec with Matchers {
 
@@ -19,27 +18,25 @@ class ExplorerIntegrationTests extends FlatSpec with Matchers {
 
   "explorer" should "throw postgres exception if there are no blocks" in {
     a [org.postgresql.util.PSQLException] should be thrownBy {
-      blockCount should be (0)
+      bgeCount should be (0)
     }
   }
 
   it should "populate blocks" in {
     savePopulate
-    blockCount should be (count+1)
+    bgeCount should be (bitcoinCount)
   }
 
   it should "have same stats using create or update" in {
-    val initialStat = currentStat
     gen(1) should be (0)
-    saveResume
-    currentStat.total_closures >= initialStat.total_closures should be (true)
-    blockCount should be (count+1)
+    saveResume should be (None)
+    bgeCount should be (bitcoinCount)
     gen(1) should be (0)
   }
 
   it should "add correclty blocks" in {
-    saveResume
-    blockCount should be (count+1)
+    saveResume should be (None)
+    bgeCount should be (bitcoinCount)
   }
 
   it should "add blocks and txs" in {
@@ -48,22 +45,22 @@ class ExplorerIntegrationTests extends FlatSpec with Matchers {
     gen(1) should be (0)
     addTx(7) should be (0)
     gen(1) should be (0)
-    saveResume
-    blockCount should be (count+1)
+    addTx(7) should be (0)
+    gen(1) should be (0)
+    saveResume should be (None)
+    bgeCount should be (bitcoinCount)
   }
 
-  for (i <- 1 to 10) {
-    it should "work after several rollbacks"+i in {
-      val initialStat = currentStat
-      rollBack(blockCount-1)
-      saveResume
-      blockCount should be (count+1)
-      currentStat should be (initialStat)
-      addTx(8)
-      addTx(8)
-      gen(2) should be (0)
-      saveResume
-      blockCount should be (count+1)
-    }
+  it should "work after several rollbacks" in {
+    val initialStat = stat
+    rollBackLast
+    saveResume should be (None)
+    bgeCount should be (bitcoinCount)
+    stat should be (initialStat)
+    addTx(8)
+    addTx(8)
+    gen(2) should be (0)
+    saveResume should be (None)
+    bgeCount should be (bitcoinCount)
   }
 }
