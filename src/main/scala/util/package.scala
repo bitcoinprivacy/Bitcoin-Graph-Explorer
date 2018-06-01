@@ -7,7 +7,6 @@ import java.net.InetAddress
 import org.bitcoinj.core._
 import org.bitcoinj.params._
 import org.bitcoinj.store._
-import org.bitcoinj.utils.BlockFileLoader
 import scala.collection.mutable.ArrayBuffer
 import com.typesafe.scalalogging._
 import org.slf4j.LoggerFactory;
@@ -50,21 +49,11 @@ package object util
   lazy val blockStore = new LevelDBBlockStore(new Context(params), blockStoreFile) //, factory)
   lazy val chain = new BlockChain(params, blockStore)
   lazy val peerGroup = new PeerGroup(params, chain)
-  lazy val loader = {
-    if (networkMode == "main")
-      new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)
-    else if (networkMode == "testnet")
-      new TestNetBlockFileLoader(params,TestNetBlockFileLoader.getReferenceClientBlockFileList)
-    else if (networkMode == "regtest")
-      new RegTestBlockFileLoader(params,RegTestBlockFileLoader.getReferenceClientBlockFileList)
-    else
-      throw new Exception(s"Not implemented FileLoader for $networkMode")
-  }
   lazy val addr = new PeerAddress(params, internetAddress, params.getPort());
-   
+
   def startBitcoinJ: Unit = {
     log.info("starting peergroup")
-    
+
     peerGroup.start
     peerGroup.addAddress(addr)
     peerGroup.waitForPeers(1).get();
@@ -115,4 +104,3 @@ package object util
     t
   }
 }
-
