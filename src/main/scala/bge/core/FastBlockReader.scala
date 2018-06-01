@@ -73,7 +73,7 @@ trait FastBlockReader extends BlockReader {
   def finishBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long, height:Int) = {
     processedBlocks :+= height
     insertBlock(b, height, txs, btcs, tstamp)
-    //log.info("Saved block " + height + " consisting of " + txs + " txs")
+    log.info(s"Saved block $height consisting of $txs txs")
   }
 
   def pre  = {
@@ -102,9 +102,8 @@ trait FastBlockReader extends BlockReader {
   def saveDataToDB: Unit =
   {
     val amount = vectorBlocks.length + vectorMovements.length
-    log.info("Saving blocks/movements (" + amount + ")  into database ...")
-
     val convertedVectorBlocks = vectorBlocks map { case (a,b,c,d,e) => (a.array.toArray,b,c,d,e) }
+
     DB.withSession(blockDB.insertAll(convertedVectorBlocks:_*)(_))
 
     def ohc(e:Option[Hash]):Array[Byte] = e.getOrElse(Hash.zero(0)).array.toArray
@@ -120,11 +119,8 @@ trait FastBlockReader extends BlockReader {
         throw e.getNextException
     }
 
-
     vectorMovements = Vector()
     vectorBlocks = Vector()
-
-    //log.info("Data inserted")
   }
 
   // block
@@ -179,6 +175,4 @@ trait FastBlockReader extends BlockReader {
   def removeUTXO(outpointTransactionHash: util.Hash, outpointIndex: Int): UTXOs = {
     outputMap -= (outpointTransactionHash -> outpointIndex)
   }
-
-
 }

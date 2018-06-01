@@ -82,9 +82,6 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
   }
 
   def saveAddresses = {
-
-    log.info("Inserting Addresses into SQL database ...")
-
     val convertedVector = addressBuffer map (p => (hashToArray(p._1), hashToArray(p._2)))
 
     try{
@@ -97,9 +94,6 @@ class ResumeClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHeigh
     addedAds += addressBuffer.size
 
     addressBuffer.clear
-
-    log.info("Data inserted")
-
   }
 }
 

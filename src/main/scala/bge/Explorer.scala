@@ -118,7 +118,7 @@ object Explorer extends App with db.BitcoinDB {
     val checkBalances =  getSumBalance == getSumWalletsBalance
 
     if (!checkBalances)
-      log.info("Error updating balances .... create it again")
+      log.info("Error during update of balances or stats .... creating balances and stats")
 
     if (read.changedAddresses.size < balanceUpdateLimit && checkBalances) {
       val (repsAndAvailable, adsAndBalances,repsAndChanges,  repsAndBalances) = resumeStats(read.changedAddresses, convertToMap(closure.changedReps), closure.addedAds, closure.addedReps)
@@ -153,12 +153,12 @@ object Explorer extends App with db.BitcoinDB {
     while (new java.io.File(lockFile).exists) {
       if (blockCount > chain.getBestChainHeight) {
         log.info("waiting for new blocks")
-        waitForBitcoinJBlock(blockCount) //wait until the chain overtakes our DB
+        waitForBitcoinJBlock(blockCount) // wait until the chain overtakes our DB
       }
       resume
     }
 
-    log.info("process stopped")
+    log.info("Look file deleted. BGE shut down correctly!")
   }
 
   def getWrongBlock: Option[Int] = {
@@ -188,8 +188,6 @@ object Explorer extends App with db.BitcoinDB {
 
   def resumeStats(changedAddresses: Map[Hash,Long], changedReps: Map[Hash,Set[Hash]], addedAds: Int, addedReps: Int):
       (collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long]) = {
-
-    log.info(changedAddresses.size + " addresses changed balance")
 
     val (repsAndAvailable, adsAndBalances,repsAndChanges,  repsAndBalances) = updateBalanceTables(changedAddresses.toMap, changedReps.toMap)
     insertRichestAddresses

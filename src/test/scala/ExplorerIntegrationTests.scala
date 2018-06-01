@@ -4,15 +4,17 @@ import org.scalatest._
 
 class ExplorerIntegrationTests extends FlatSpec with Matchers {
 
+  val RUNS = 2
+
   "docker" should "start correctly" in {
     startDocker should be (0)
   }
 
-  it should "create 103 blocks and 6 txs with bitcoin" in {
+  it should "create the first 103 blocks and 1 txs with bitcoin" in {
+    gen(1) should be (0)
+    gen(1) should be (0)   
     gen(100) should be (0)
-    gen(1) should be (0)
-    gen(1) should be (0)
-    addTx(6) should be (0)
+    addTx(95) should be (0)
     gen(1) should be (0)
   }
 
@@ -35,39 +37,37 @@ class ExplorerIntegrationTests extends FlatSpec with Matchers {
     }
   }
 
-  it should "populate blocks" in {
+  it should s"populate $bitcoinCount blocks" in {
     savePopulate should be (success)
     bitcoinCount should be (bgeCount)
   }
 
-  it should "resume blocks" in {
+  it should "resume 1 more block with 0 txs" in {
     gen(1) should be (0)
     saveResume should be (success)
     bitcoinCount should be (bgeCount)
   }
 
-  it should "resume more blocks" in {
-    gen(1) should be (0)
+  it should "resume 1 block with 1 tx " in {
+    addTx(77) should be (0)
     gen(1) should be (0)
     saveResume should be (success)
     bitcoinCount should be (bgeCount)
   }
 
-  val MAX = 10
+  for (i <- 1 to RUNS) {
 
-  for (i <- 1 to MAX) {
+    val TITLE = (if (RUNS == 1) "" else s" ($i/$RUNS)")
 
-    val TITLE = s"($i/$MAX)"
-
-    it should s"resume blocks and txs $TITLE" in {
-      addTx(16) should be (0)
-      addTx(8) should be (0)
-      gen(2) should be (0)
+    it should s"resume 1 block with 2 txs$TITLE" in {
+      addTx(84) should be (0)
+      addTx(71) should be (0)
+      gen(1) should be (0)
       saveResume should be (success)
       bitcoinCount should be (bgeCount)
     }
 
-    it should s"rollback blocks $TITLE" in {
+    it should s"stat are the same after rollback 5 blocks and resuming it again$TITLE" in {
       val initialStat = stat
       saveRollback(5)
       saveResume should be (success)
@@ -75,13 +75,17 @@ class ExplorerIntegrationTests extends FlatSpec with Matchers {
       bitcoinCount should be (bgeCount)
     }
 
-    it should s"resume more blocks and txs $TITLE" in {
-      addTx(6) should be (0)
+    it should s"resume 2 blocks with 4 and 5 txs$TITLE" in {
+      addTx(51) should be (0)
+      addTx(68) should be (0)
+      addTx(83) should be (0)
+      addTx(71) should be (0)
       gen(1) should be (0)
-      gen(1) should be (0)
-      addTx(7) should be (0)
-      gen(1) should be (0)
-      addTx(7) should be (0)
+      addTx(61) should be (0)
+      addTx(37) should be (0)
+      addTx(59) should be (0)
+      addTx(83) should be (0)
+      addTx(27) should be (0)
       gen(1) should be (0)
       saveResume should be (success)
       bitcoinCount should be (bgeCount)

@@ -96,3 +96,5 @@ javaOptions in run += "-Xmx32G"
 javaOptions in run += "-Xms16"
 
 fork := true
+
+testOptions in Test += Tests.Argument("-oD")

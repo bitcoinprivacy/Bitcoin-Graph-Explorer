@@ -92,7 +92,7 @@ class ResumeBlockReader extends FastBlockReader with PeerSource {
   }
 
   override def post = {
-    log.info("finishing ...")
+    //log.info("finishing ...")
     super.post
     table.close
   }
@@ -108,7 +108,6 @@ class ResumeBlockReader extends FastBlockReader with PeerSource {
     }
 
   def saveUTXOs = {
-    log.info("Inserting UTXOs into SQL database ...")
 
     def vectorUTXOConverter[A, B, C](v: Map[(Hash, A), (Hash, B, C)]) = v map {
       case ((a, b), (c, d, e)) => (hashToArray(a), hashToArray(c), b, d, e)
@@ -119,8 +118,6 @@ class ResumeBlockReader extends FastBlockReader with PeerSource {
     DB.withSession(utxo.insertAll(convertedVectorUTXOs: _*)(_))
 
     newUtxos.clear
-
-    log.info("Data inserted")
 
   }
 }

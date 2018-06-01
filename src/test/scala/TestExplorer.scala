@@ -70,6 +70,7 @@ object TestExplorer {
     lazy val b3 = getSumBalance
     lazy val b4 = getSumWalletsBalance
     lazy val ut = getUTXOSBalance()
+    lazy val wb = getAllWalletBalances.filter(p=>getWallet(t1._1) contains p._1)
     lazy val ar = addedReps
       - (changedReps.values.foldLeft(Set[Hash]())((s,p) => s++p)--changedReps.keys).size
       + changedReps.keys.size
@@ -78,7 +79,7 @@ object TestExplorer {
     lazy val negativeWalletOption = repsAndBalances.filter(_._2 < 0).headOption
     lazy val balanceResults = s"UTXOs ${nr(ut)} ADDs ${nr(b3)} WALLETs ${nr(b4)}"
     lazy val t1 = negativeWalletOption.get
-    lazy val negativeWalletString = s"REP: ${pri(getRepresentant(t1._1))}  WALL: ${pri(t1._1)}  BTC ${nr(t1._2)} ${getWallet(t1._1)}"
+    lazy val negativeWalletString = s"\nWALLET BALANCE: ${str1(wb)} \nCHANGED REPS: ${str3(changedReps)} \nREPS AND BALANCES ${str1(repsAndBalances.filter(p=>getWallet(t1._1) contains p._1))}\n"
 
     // test updateStatistics && test updateBalances
     if (repsAndBalances.exists(r => r._1 != getRepresentant(r._1)))
@@ -106,9 +107,11 @@ object TestExplorer {
 
   private def sx = "\n      "
 
+  private def sp = " "
+
   private def pri(a: Hash) = a.toString.drop(2).take(4)
 
-  private def str1(n: collection.immutable.Map[Hash, Long]): String = "#: " + n.size + "  total: " + nr(n.map(_._2).sum) + sx + n.toSeq.sortBy(p=>pri(p._1)).map(m=>pri(m._1)+": "+(nr(m._2))).mkString(sx)
+  private def str1(n: collection.immutable.Map[Hash, Long]): String = "(" + n.size + ") total: " + nr(n.map(_._2).sum) + sx + n.toSeq.sortBy(p=>pri(p._1)).map(m=>pri(m._1)+": "+(nr(m._2))).mkString(sx)
 
   private def str2(n: collection.immutable.Map[Hash, Hash]): String = "(" + n.size + ")" + sx + n.toSeq.sortBy(p=>pri(p._1)).map(m=>pri(m._1) +" => "+(pri(m._2))).mkString(sx)
 

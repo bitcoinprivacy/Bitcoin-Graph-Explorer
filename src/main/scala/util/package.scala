@@ -99,8 +99,13 @@ package object util
     }
   }
 
+  // convert case class to map.
+  def getCCParams(cc: AnyRef) =
+    (Map[String, Any]() /: cc.getClass.getDeclaredFields) {(a, f) =>
+      f.setAccessible(true)
+      a + (f.getName -> f.get(cc))
+    }
 
-  
   def convertToMap(a: DisjointSets[Hash]): collection.mutable.Map[Hash, Set[Hash]] = {
     val t: collection.mutable.Map[Hash, Set[Hash]] = collection.mutable.Map.empty
     for {

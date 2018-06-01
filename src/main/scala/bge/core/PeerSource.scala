@@ -11,7 +11,7 @@ trait PeerSource extends BlockSource {
   {
     val peer = peerGroup.getConnectedPeers().get(0);
     for ((_,end) <- truncated.lastOption)
-      log.info("reading blocks from " + blockCount + " to " + end)
+      log.info("Reading blocks from " + blockCount + " to " + end)
 
     for ((blockHash,no) <- truncated.toIterator) yield {
       val future = peer.getBlock(blockHash)
