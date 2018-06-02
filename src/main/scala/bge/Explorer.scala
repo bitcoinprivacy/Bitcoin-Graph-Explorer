@@ -13,11 +13,13 @@ import collection.mutable.Map
 object Explorer extends App with db.BitcoinDB {
   args.toList match{
     case "start"::rest =>
-      
+
       if (!statsDone || rest.headOption == Some("--force"))
         populate
+
       Seq("touch",lockFile).!
-      iterateResume()
+
+      iterateResume(false)
 
     case "populate"::rest             =>
 
@@ -26,6 +28,7 @@ object Explorer extends App with db.BitcoinDB {
     case "resume"::rest =>
 
       Seq("touch",lockFile).!
+
       iterateResume(rest.headOption==Some("--newstats"))
 
     case "stop"::rest =>
@@ -142,23 +145,23 @@ object Explorer extends App with db.BitcoinDB {
         true
     }
 
-  def iterateResume(newstats: Boolean = false) = {
+  def iterateResume(newStats: Boolean) = {
 
     if (!peerGroup.isRunning)
       startBitcoinJ
 
     log.info("Checking for wrong blocks")
 
-    if (rollBackToLastStatIfNecessary || newstats) {
-      println("Creating stats after a rollback is neccessary")
+    rollBackToLastStatIfNecessary
+
+    if (newStats)
       populateStats
-    }
 
     while (new java.io.File(lockFile).exists) {
-
       if (blockCount > chain.getBestChainHeight) {
         log.info("Waiting for new blocks")
-        waitForBitcoinJBlock(blockCount) // wait until the chain overtakes our DB
+        // wait until the chain overtakes our DB
+        waitForBitcoinJBlock(blockCount)
       }
 
       resume
@@ -211,7 +214,6 @@ object Explorer extends App with db.BitcoinDB {
     insertStatistics
   }
 
-  
   def waitForBitcoinJBlock(b: Int) = {
     chain.getHeightFuture(b).get
   }

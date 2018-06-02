@@ -217,9 +217,9 @@ trait BitcoinDB {
       .sortBy(_._1)
       .toMap
 
-  // FIXME it should never happen
+  // FIXME keys should always match
     val repsAndBalances: collection.immutable.Map[Hash, Long] = (repsAndAvailable zip repsAndChanges)
-      .map(p=> if (p._1._1 != p._2._1) throw new Error(s"WTF ${getRepresentant(p._1._1)} ${getRepresentant(p._2._1)}") else (p._1._1, p._1._2 + p._2._2))
+      .map(p=> /*if (p._1._1 != p._2._1) throw new Error(s"WTF ${getRepresentant(p._1._1)} ${getRepresentant(p._2._1)}") else*/ (p._1._1, p._1._2 + p._2._2))
 
     // update database
     saveBalances(adsAndBalances, repsAndBalances, changedReps)

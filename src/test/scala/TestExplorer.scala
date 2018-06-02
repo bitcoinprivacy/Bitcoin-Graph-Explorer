@@ -64,7 +64,10 @@ object TestExplorer {
   def saveRollback(i: Int) = {
     for (_ <- 0 until i)
       rollBack(blockCount-1)
-    populateStats
+    if (blockCount != currentStat.block_height)
+      populateStats
+  
+ 
     assertBalancesCreatedCorrectly
   }
 
@@ -118,7 +121,7 @@ object TestExplorer {
     lazy val x1 = getAllWalletBalances.toSeq.sortBy(_._1).toMap
     lazy val x2 = getAllBalances.groupBy(p => getRepresentant(p._1)).map(p => (p._1, p._2.map(_._2).sum)).toSeq.sortBy(_._1).toMap
     lazy val errors = for {k <- x2.keys; if x2(k) != 0 && x2(k) != x1(k)} yield (k, nr(x2(k)) + " " + nr(x1(k)))
-    lazy val wrongWalletTableString = s"\nWRONG ${str4(errors.toMap)} DIFF: ${b4 - b3}"
+    lazy val wrongWalletTableString = s"${sx}WRONG ${str4(errors.toMap)}${sx}DIFF: ${b4 - b3}"
 
     lazy val shouldBeClosures = countClosures
     lazy val shouldBeAddresses = countAddresses
