@@ -9,9 +9,9 @@ class ExplorerIntegrationTests extends FlatSpec with Matchers {
   }
 
   it should "add 103 blocks and 1 txs to bitcoin" in {
-    addBlocks(102)
-    addTxs(1)
-    addBlocks(1)
+    addBlocks(102) should be (0)
+    addTxs(1) should be (0)
+    addBlocks(1) should be (0)
   }
 
   it should "read 0 blocks from postgres" in {
@@ -25,7 +25,6 @@ class ExplorerIntegrationTests extends FlatSpec with Matchers {
   it should "fail sending 5000 bitcoins" in {
     pay(5000) should be (6)
   }
-
 
   "explorer" should s"populate $bitcoinCount blocks" in {
     savePopulate should be (None)
@@ -42,21 +41,17 @@ class ExplorerIntegrationTests extends FlatSpec with Matchers {
     saveResume should be (None)
   }
 
-  for (i <- 1 to RUNS) {
+  it should "resume 5 blocks with several txs each" in {
+    (1 to 5).foreach(i => {
+      addTxs(5+i) should be (0)
+      addBlocks(1) should be (0)
+    })
+    saveResume should be (None)
+  }
 
-    val TITLE = (if (RUNS == 1) "" else s" ($i/$RUNS)")
-
-    it should s"resume 5 blocks with several txs each$TITLE" in {
-      (1 to 5).foreach(i => {
-        addTxs(5+i) should be (0)
-        addBlocks(1) should be (0)})
-      saveResume should be (None)
-    }
-
-    it should s"rollback 8 blocks and resume it again$TITLE" in {
-      saveRollback(8)
-      saveResume should be (None)
-    }
+  it should "rollback 8 blocks and resume it again" in {
+    saveRollback(8) should be (0)
+    saveResume should be (None)
   }
 
   it should s"have saved $bgeCount blocks" in {
