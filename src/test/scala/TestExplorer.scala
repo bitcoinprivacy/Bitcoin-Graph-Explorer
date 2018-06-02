@@ -107,22 +107,13 @@ object TestExplorer {
     lazy val b3 = getSumBalance
     lazy val b4 = getSumWalletsBalance
     lazy val ut = getUTXOSBalance()
-    lazy val wb = getAllWalletBalances.filter(p=>getWallet(t1._1) contains p._1)
-    lazy val ar = addedReps
-      - (changedReps.values.foldLeft(Set[Hash]())((s,p) => s++p)--changedReps.keys).size
-      + changedReps.keys.size
-    lazy val negativeAddressOption = adsAndBalances.filter(_._2 < 0).map(p => (pri(p._1), nr(p._2))).headOption
-    lazy val negativeWalletOption = repsAndBalances.filter(_._2 < 0).headOption
-    lazy val balanceResults = s"UTXOs ${nr(ut)} ADDs ${nr(b3)} WALLETs ${nr(b4)}"
-    lazy val t1 = negativeWalletOption.getOrElse((Hash.zero(10), 0L))
-
-    // strings to print
-    lazy val negativeWalletString = s"\nWALLET BALANCE: ${str1(wb)} \nCHANGED REPS: ${str3(changedReps)} \nREPS AND BALANCES ${str1(repsAndBalances.filter(p=>getWallet(t1._1) contains p._1))}\n"
     lazy val x1 = getAllWalletBalances.toSeq.sortBy(_._1).toMap
     lazy val x2 = getAllBalances.groupBy(p => getRepresentant(p._1)).map(p => (p._1, p._2.map(_._2).sum)).toSeq.sortBy(_._1).toMap
-    lazy val errors = for {k <- x2.keys; if x2(k) != 0 && x2(k) != x1(k)} yield (k, nr(x2(k)) + " " + nr(x1(k)))
-    lazy val wrongWalletTableString = s"${sx}WRONG ${str4(errors.toMap)}${sx}DIFF: ${b4 - b3}"
 
+    // strings to print
+
+    lazy val errors = for {k <- x2.keys; if x2(k) != 0 && x2(k) != x1(k)} yield (k, nr(x2(k)) + " " + nr(x1(k)))
+    lazy val wrongWalletTableString = s"${sx}WRONG ${str4(errors.toMap)}${sx}DIFF: ${nr(b4 - b3)}${sx}CHANGED${str1(changedAddresses)}"
     lazy val shouldBeClosures = countClosures
     lazy val shouldBeAddresses = countAddresses
 
@@ -131,15 +122,11 @@ object TestExplorer {
       Some(s"___ WRONG UPDATE ___")
     else if (s1 != s2)
       Some(s"___ WRONG CHANGED VALUES ___")
-    else if (negativeAddressOption != None)
-      Some(s"___ NEGATIVE ADDRESS ___")
     else if (ut != b3)
       Some(s"___ WRONG ADDRESS TABLE ___")
     else if (b3 != b4)
       Some(s"___ WRONG WALLET TABLE ___ $wrongWalletTableString")
-    else if (negativeWalletOption != None)
-      Some(s"___ NEGATIVE WALLET ___ $negativeWalletString")
-    else if (!errors.isEmpty) 
+    else if (!errors.isEmpty)
       Some(s"--- WRONG WALLET TABLE --- $wrongWalletTableString")
     else if (shouldBeAddresses != currentStat.total_addresses)
       Some(s"--- WRONG TOTAL ADDRESSES")

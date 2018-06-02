@@ -41,8 +41,14 @@ class ExplorerIntegrationTests extends FlatSpec with Matchers {
     saveResume should be (None)
   }
 
-  it should "resume 5 blocks with several txs each" in {
-    (1 to 5).foreach(i => {
+  it should "resume a block with 2 tx" in {
+    addTxs(2) should be (0)
+    addBlocks(1) should be (0)
+    saveResume should be (None)
+  }
+
+  it should "resume 10 blocks with several txs each" in {
+    (1 to 10).foreach(i => {
       addTxs(5+i) should be (0)
       addBlocks(1) should be (0)
     })
@@ -51,6 +57,12 @@ class ExplorerIntegrationTests extends FlatSpec with Matchers {
 
   it should "rollback 8 blocks and resume it again" in {
     saveRollback(8) should be (None)
+    saveResume should be (None)
+  }
+
+  it should "resume a block with 3 tx" in {
+    addTxs(3) should be (0)
+    addBlocks(1) should be (0)
     saveResume should be (None)
   }
 
