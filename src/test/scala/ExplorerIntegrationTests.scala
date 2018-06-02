@@ -50,7 +50,7 @@ class ExplorerIntegrationTests extends FlatSpec with Matchers {
   }
 
   it should "rollback 8 blocks and resume it again" in {
-    saveRollback(8) should be (0)
+    saveRollback(8) should be (None)
     saveResume should be (None)
   }
 
