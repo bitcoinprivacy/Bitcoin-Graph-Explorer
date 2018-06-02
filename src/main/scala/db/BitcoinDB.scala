@@ -483,7 +483,11 @@ trait BitcoinDB {
   }
 
   def countClosures(): Int = DB withSession { implicit session =>
-    addresses.groupBy(_.representant).length.run
+    addresses.groupBy(_.representant).map(p => p._1).length.run
+  }
+
+  def countAddresses(): Int = DB withSession { implicit session =>
+    addresses.length.run
   }
 
   def getWallet(a: Hash): collection.immutable.Set[Hash] = DB withSession { implicit session =>

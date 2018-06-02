@@ -1,6 +1,7 @@
 import util.Hash
 import Explorer._
 import sys.process._
+import scala.util.Random
 
 object TestExplorer {
 
@@ -13,7 +14,7 @@ object TestExplorer {
   val RUNS = 5
 
   // SOME HELPERS
-  
+
   private def s: collection.immutable.Map[Hash, Long] = collection.immutable.Map()
 
   private def x:collection.immutable.Map[Hash, Set[Hash]] = collection.immutable.Map()
@@ -38,17 +39,25 @@ object TestExplorer {
 
   def gen(i:Int): Int = (BITCOIN + "generate" + " " + i.toString) ! ProcessLogger(_ => ())
 
+  def addBlocks(n: Int): Int = (1 to n).map(_ => gen(1)).sum
+
   def startDocker = (SCRIPTS + "start.sh") ! ProcessLogger(_ => ())
 
   def stopDocker = (SCRIPTS) + "stop.sh" ! ProcessLogger(_ => ())
 
-  def addTx(n: Long) = (SCRIPTS + "create.sh" + " " + n.toString) ! ProcessLogger(_ => ())
+  def pay(n: Long) = (SCRIPTS + "create.sh" + " " + n.toString) ! ProcessLogger(_ => ())
+
+  def addTxs(n: Int) = (1 to n).map(_ => pay(Random.nextInt(49)+50)).sum
 
   def bitcoinCount: Int = ((BITCOIN + "getblockcount") !!).trim.toInt+1
 
   // EXPLORER functions
 
   def bgeCount = blockCount
+
+  def totalAddresses = countAddresses
+
+  def totalClosures = countClosures
 
   def stat = currentStat
 
@@ -110,26 +119,28 @@ object TestExplorer {
     lazy val errors = for {k <- x2.keys; if x2(k) != 0 && x2(k) != x1(k)} yield (k, nr(x2(k)) + " " + nr(x1(k)))
     lazy val wrongWalletTableString = s"\nWRONG ${str4(errors.toMap)} DIFF: ${b4 - b3}"
 
+    lazy val shouldBeClosures = countClosures
+    lazy val shouldBeAddresses = countAddresses
+
     // test updateStatistics && test updateBalances
     if (repsAndBalances.exists(r => r._1 != getRepresentant(r._1)))
       Some(s"___ WRONG UPDATE ___")
     else if (s1 != s2)
       Some(s"___ WRONG CHANGED VALUES ___")
-    else if (addedAdds < 0)
-      Some(s"___ LOST ADDRESSES ___")
     else if (negativeAddressOption != None)
       Some(s"___ NEGATIVE ADDRESS ___")
     else if (ut != b3)
       Some(s"___ WRONG ADDRESS TABLE ___")
-    else if (ar < 0)
-      Some(s"___ LOST $ar REPRESENTANTS ___ ")
     else if (b3 != b4)
       Some(s"___ WRONG WALLET TABLE ___ $wrongWalletTableString")
     else if (negativeWalletOption != None)
       Some(s"___ NEGATIVE WALLET ___ $negativeWalletString")
-    else if (!errors.isEmpty) {
+    else if (!errors.isEmpty) 
       Some(s"--- WRONG WALLET TABLE --- $wrongWalletTableString")
-    }
+    else if (shouldBeAddresses != currentStat.total_addresses)
+      Some(s"--- WRONG TOTAL ADDRESSES")
+    else if (shouldBeClosures != currentStat.total_closures)
+      Some(s"--- WRONG TOTAL WALLETS")
       None
   }
 }

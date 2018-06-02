@@ -9,11 +9,9 @@ class ExplorerIntegrationTests extends FlatSpec with Matchers {
   }
 
   it should "add 103 blocks and 1 txs to bitcoin" in {
-    gen(1) should be (0)
-    gen(1) should be (0)
-    gen(100) should be (0)
-    addTx(95) should be (0)
-    gen(1) should be (0)
+    addBlocks(102)
+    addTxs(1)
+    addBlocks(1)
   }
 
   it should "read 0 blocks from postgres" in {
@@ -25,69 +23,51 @@ class ExplorerIntegrationTests extends FlatSpec with Matchers {
   }
 
   it should "fail sending 5000 bitcoins" in {
-    addTx(5000) should be (6)
-    bitcoinCount should be (104)
+    pay(5000) should be (6)
   }
 
 
   "explorer" should s"populate $bitcoinCount blocks" in {
     savePopulate should be (None)
-    bitcoinCount should be (bgeCount)
   }
 
-  it should "resume 1 more block with 0 txs" in {
-    gen(1) should be (0)
+  it should "resume an empty block" in {
+    addBlocks(1) should be (0)
     saveResume should be (None)
-    bitcoinCount should be (bgeCount)
   }
 
-  it should "resume 1 block with 1 tx " in {
-    addTx(77) should be (0)
-    gen(1) should be (0)
+  it should "resume a block with 1 tx" in {
+    addTxs(1) should be (0)
+    addBlocks(1) should be (0)
     saveResume should be (None)
-    bitcoinCount should be (bgeCount)
   }
 
   for (i <- 1 to RUNS) {
 
     val TITLE = (if (RUNS == 1) "" else s" ($i/$RUNS)")
 
-    it should s"resume 1 block with 4 txs$TITLE" in {
-      addTx(84) should be (0)
-      addTx(71) should be (0)
-      addTx(71) should be (0)
-      addTx(71) should be (0)
-      gen(1) should be (0)
+    it should s"resume 5 blocks with several txs each$TITLE" in {
+      (1 to 5).foreach(i => {
+        addTxs(5+i) should be (0)
+        addBlocks(1) should be (0)})
       saveResume should be (None)
-      bitcoinCount should be (bgeCount)
     }
 
-    it should s"stat are the same after rollback 5 blocks and resuming it again$TITLE" in {
-      val initialStat = stat
-      saveRollback(5)
+    it should s"rollback 8 blocks and resume it again$TITLE" in {
+      saveRollback(8)
       saveResume should be (None)
-      stat should be (initialStat)
-      bitcoinCount should be (bgeCount)
-    }
-
-    it should s"resume 2 blocks with 4 and 5 txs$TITLE" in {
-      addTx(51) should be (0)
-      addTx(68) should be (0)
-      addTx(83) should be (0)
-      addTx(51) should be (0)
-      gen(1) should be (0)
-      addTx(61) should be (0)
-      addTx(37) should be (0)
-      addTx(59) should be (0)
-      addTx(83) should be (0)
-      addTx(27) should be (0)
-      gen(1) should be (0)
-      saveResume should be (None)
-      bitcoinCount should be (bgeCount)
     }
   }
 
-  it should s"have generated $bgeCount blocks in the database" in {
+  it should s"have saved $bgeCount blocks" in {
+    bitcoinCount should be (bgeCount)
+  }
+
+  it should s"have saved $totalClosures closures" in {
+    bitcoinCount should be (bgeCount)
+  }
+
+  it should s"have saved $totalAddresses addresses" in {
     bitcoinCount should be (bgeCount)
   }
 }
