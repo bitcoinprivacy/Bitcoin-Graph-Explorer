@@ -46,7 +46,12 @@ trait BitcoinDB {
     }
 
   def blockCount: Int = DB withSession { implicit session =>
-    blockDB.length.run
+    try {
+      blockDB.length.run
+    }
+    catch { case e: Exception =>
+      0
+    }
   }
 
   def existsOutput(transactionHash: Hash, index: Int): Boolean =
@@ -104,7 +109,7 @@ trait BitcoinDB {
   def createBalanceTables = {
     var clock = System.currentTimeMillis
     DB withSession { implicit session =>
-      //log.info("Creating balances")
+
       deleteIfExists(balances, closureBalances)
       balances.ddl.create
       closureBalances.ddl.create
@@ -160,8 +165,8 @@ trait BitcoinDB {
   def saveBalances(adsAndBalances: scala.collection.immutable.Map[Hash, Long], repsAndBalances: scala.collection.immutable.Map[Hash, Long], changedReps: scala.collection.immutable.Map[Hash, Set[Hash]]): Unit = {
     DB withTransaction { implicit session =>
       // delete merged wallets
-      val toDelete = (changedReps.values.fold(Set())((a, b) => a ++ b) ++ repsAndBalances.keys ++ changedReps.keys).map(Hash.hashToArray)
-      closureBalances.filter(_.address inSetBind toDelete).delete
+      val toDelete = (changedReps.values.fold(Set())((a, b) => a ++ b) ++ changedReps.keys ++ adsAndBalances.keys).map(Hash.hashToArray)
+      closureBalances.filter(_.address inSet toDelete).delete
       for {
         (balances, table) <- Set((adsAndBalances, balances), (repsAndBalances, closureBalances))
         (address, balance) <- balances
@@ -181,7 +186,6 @@ trait BitcoinDB {
   def updateBalanceTables(changedAddresses: collection.immutable.Map[Hash, Long], changedReps: collection.immutable.Map[Hash, Set[Hash]]):
     (collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long], collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long]) = {
     val clock = System.currentTimeMillis
-    //log.info(s"Updating ${changedAddresses.size} balances ...")
     currentStat.total_bitcoins_in_addresses += changedAddresses.map { _._2 }.sum
 
     val adsAndBalances: scala.collection.immutable.Map[Hash, Long] =
@@ -228,7 +232,7 @@ trait BitcoinDB {
   }
 
   def insertRichestClosures = {
-    //log.info("Calculating richest closure list...")
+
     var startTime = System.currentTimeMillis
     DB withSession { implicit session =>
       val bh = blockCount - 1
@@ -240,7 +244,7 @@ trait BitcoinDB {
   }
 
   def insertRichestAddresses = {
-//    log.info("Calculating richest address list...")
+
     var startTime = System.currentTimeMillis
     DB withSession { implicit session =>
       Q.updateNA("""
@@ -264,12 +268,10 @@ trait BitcoinDB {
 
   def insertStatistics = {
 
+    val startTime = System.currentTimeMillis
     val (nonDustAddresses, addressGini) = getGini(balances)
     val (nonDustClosures, closureGini) = getGini(closureBalances)
 
-//    log.info("Calculating stats...")
-
-    val startTime = System.currentTimeMillis
     DB withSession { implicit session =>
 
       val query = """
@@ -296,8 +298,6 @@ trait BitcoinDB {
   }
 
   def updateStatistics(changedReps: Map[Hash, Set[Hash]], addedAds: Int, addedReps: Int) = {
-
-  //  log.info("Updating stats")
 
     val time = System.currentTimeMillis
     val (nonDustAddresses, addressGini) = getGini(balances)
@@ -326,8 +326,6 @@ trait BitcoinDB {
   }
 
   def getGini[A <: Table[_] with BalanceField](balanceTable: TableQuery[A]): (Long, Double) = {
-    //log.info("calculating Gini: " + balanceTable)
-    val time = System.currentTimeMillis
 
     val balanceVector = DB withSession { implicit session =>
       balanceTable.map(_.balance).filter(_ > dustLimit).sorted.run.toVector
@@ -340,7 +338,7 @@ trait BitcoinDB {
     val summe = balances.sum
     val mainSum = balances.zipWithIndex.map(p => p._1 * (p._2 + 1.0) / n).sum
     val gini: Double = if (n == 0) 0.0 else 2.0 * mainSum / (summe) - (n + 1.0) / n
-    //log.info("Gini calculated in " + (System.currentTimeMillis - time) / 1000 + "s")
+
     (n, gini)
   }
 

@@ -77,7 +77,7 @@ object Explorer extends App with db.BitcoinDB {
     val values = for ( (_,(_,value,_)) <- outputMap.view) yield value //makes it a lazy collection
     val tuple = values.grouped(checkUTXOsSize).foldLeft((0,0L)){
       case ((count,sum),group) =>
-        log.info(count + " elements read at ")
+        //log.info(count + " elements read at ")
         val seq = group.toSeq
         (count+seq.size,sum+seq.sum)
     }
@@ -147,15 +147,22 @@ object Explorer extends App with db.BitcoinDB {
     if (!peerGroup.isRunning)
       startBitcoinJ
 
-    if (rollBackToLastStatIfNecessary || newstats)
+    log.info("Checking for wrong blocks")
+
+    if (rollBackToLastStatIfNecessary || newstats) {
+      println("Creating stats after a rollback is neccessary")
       populateStats
+    }
 
     while (new java.io.File(lockFile).exists) {
+
       if (blockCount > chain.getBestChainHeight) {
-        log.info("waiting for new blocks")
+        log.info("Waiting for new blocks")
         waitForBitcoinJBlock(blockCount) // wait until the chain overtakes our DB
       }
+
       resume
+
     }
 
     log.info("Look file deleted. BGE shut down correctly!")
