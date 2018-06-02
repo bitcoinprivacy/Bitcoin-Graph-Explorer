@@ -65,6 +65,7 @@ object TestExplorer {
     for (_ <- 0 until i)
       rollBack(blockCount-1)
     populateStats
+    assertBalancesCreatedCorrectly
   }
 
   def saveResume = {
@@ -141,6 +142,7 @@ object TestExplorer {
       Some(s"--- WRONG TOTAL ADDRESSES")
     else if (shouldBeClosures != currentStat.total_closures)
       Some(s"--- WRONG TOTAL WALLETS")
+    else
       None
   }
 }
