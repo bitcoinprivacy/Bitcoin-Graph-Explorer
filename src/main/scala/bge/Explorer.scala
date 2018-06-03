@@ -113,20 +113,22 @@ object Explorer extends App with db.BitcoinDB {
   }
 
   def resume = {
-    val bc = blockCount
-    val read = new ResumeBlockReader
 
+    val read = new ResumeBlockReader
     val closure = new ResumeClosure(read.processedBlocks)
-    // move me maybe when we are sure or have better tests
+
+    // FIXME
+    // That check is neccessary due to a bug in updateBalances
+    // Delete checkBalances condition when it is fixed
     val checkBalances =  getSumBalance == getSumWalletsBalance
 
     if (!checkBalances)
       log.info("Error during update of balances or stats .... creating balances and stats")
 
     if (read.changedAddresses.size < balanceUpdateLimit && checkBalances) {
-      val (repsAndAvailable, adsAndBalances,repsAndChanges,  repsAndBalances) = resumeStats(read.changedAddresses, convertToMap(closure.changedReps), closure.addedAds, closure.addedReps)
+      val (adsAndBalances,repsAndChanges,  repsAndBalances) = resumeStats(read.changedAddresses, convertToMap(closure.changedReps), closure.addedAds, closure.addedReps)
       Some(
-        (repsAndAvailable, adsAndBalances,repsAndChanges,  read.changedAddresses.toMap, repsAndBalances, convertToMap(closure.changedReps).toMap, closure.addedAds, closure.addedReps)
+        (adsAndBalances,repsAndChanges,  read.changedAddresses.toMap, repsAndBalances, convertToMap(closure.changedReps).toMap, closure.addedAds, closure.addedReps)
       )
     }
     else {
@@ -168,7 +170,7 @@ object Explorer extends App with db.BitcoinDB {
 
     }
 
-    log.info("Look file deleted. BGE shut down correctly!")
+    log.info("Lock file deleted. BGE shut down correctly!")
   }
 
   def getWrongBlock: Option[Int] = {
@@ -197,20 +199,27 @@ object Explorer extends App with db.BitcoinDB {
   }
 
   def resumeStats(changedAddresses: Map[Hash,Long], changedReps: Map[Hash,Set[Hash]], addedAds: Int, addedReps: Int):
-      (collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long]) = {
+      (collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long]) = {
 
-    val (repsAndAvailable, adsAndBalances,repsAndChanges,  repsAndBalances) = updateBalanceTables(changedAddresses.toMap, changedReps.toMap)
-    insertRichestAddresses
-    insertRichestClosures
+    val (adsAndBalances,repsAndChanges,  repsAndBalances) = updateBalanceTables(changedAddresses.toMap, changedReps.toMap)
+
+    createRichestLists
+
     updateStatistics(changedReps,addedAds, addedReps)
 
-    (repsAndAvailable, adsAndBalances,repsAndChanges,  repsAndBalances)
+    (adsAndBalances,repsAndChanges,  repsAndBalances)
+  }
+
+  def createRichestLists = {
+    var startTime = System.currentTimeMillis
+    insertRichestAddresses
+    insertRichestClosures
+    log.info("Richest list created in " + (System.currentTimeMillis - startTime) / 1000 + "s")
   }
 
   def populateStats = {
     createBalanceTables
-    insertRichestAddresses
-    insertRichestClosures
+    createRichestLists
     insertStatistics
   }
 

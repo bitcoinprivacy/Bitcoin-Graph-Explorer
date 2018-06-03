@@ -25,9 +25,9 @@ object TestExplorer {
 
   private def sp = " "
 
-  private def pri(a: Hash) = a.toString.drop(2).take(4)
+  private def pri(a: Hash) = a.toString//.drop(2).take(4)
 
-  private def str1(n: collection.immutable.Map[Hash, Long]): String = "(" + n.size + ") total: " + nr(n.map(_._2).sum) + sx + n.toSeq.sortBy(p=>pri(p._1)).map(m=>pri(m._1)+": "+(nr(m._2))).mkString(sx)
+  private def str1(n: collection.immutable.Map[Hash, Long]): String = "(" + n.size + ")" + sx + n.toSeq.sortBy(p=>pri(p._1)).map(m=>pri(m._1)+": "+(nr(m._2))).mkString(sx)
 
   private def str2(n: collection.immutable.Map[Hash, Hash]): String = "(" + n.size + ")" + sx + n.toSeq.sortBy(p=>pri(p._1)).map(m=>pri(m._1) +" => "+(pri(m._2))).mkString(sx)
 
@@ -55,30 +55,31 @@ object TestExplorer {
 
   def bgeCount = blockCount
 
-  def totalAddresses = countAddresses
+  def totalAddresses: Int = countAddresses
 
-  def totalClosures = countClosures
+  def totalClosures: Int = countClosures
 
   def stat = currentStat
 
   def saveRollback(i: Int) = {
+
     for (_ <- 0 until i)
       rollBack(blockCount-1)
-    if (blockCount != currentStat.block_height)
-      populateStats
-  
- 
+
+    populateStats
+
     assertBalancesCreatedCorrectly
   }
 
   def saveResume = {
-    val init = currentStat
+
     resume match {
-      case Some((a,b,c,d,e,f,x,y)) =>
-        assertBalancesUpdatedCorrectly(a,b,c,d,e,f,x,y)
+      case Some((a,b,c,d,e,f,x)) =>
+        assertBalancesUpdatedCorrectly(a,b,c,d,e,f,x)
       case None =>
         assertBalancesCreatedCorrectly
     }
+
   }
 
   def savePopulate = {
@@ -86,11 +87,12 @@ object TestExplorer {
     assertBalancesCreatedCorrectly
   }
 
+  var errors = 0
+
   def assertBalancesCreatedCorrectly =
-    assertBalancesUpdatedCorrectly(s,s,s,s,s,x,0,0)
+    assertBalancesUpdatedCorrectly(s,s,s,s,x,0,0)
 
   def assertBalancesUpdatedCorrectly(
-    repsAndAvailable: collection.immutable.Map[Hash, Long],
     adsAndBalances: collection.immutable.Map[Hash, Long],
     repsAndChanges: collection.immutable.Map[Hash, Long],
     changedAddresses: collection.immutable.Map[Hash, Long],
@@ -98,6 +100,10 @@ object TestExplorer {
     changedReps: collection.immutable.Map[Hash, Set[Hash]],
     addedAdds: Int,
     addedReps: Int): Option[String] = {
+
+    // skip further tests after an error
+
+    if (errors > 0) return Some("___SKIP___")
 
     // values to check
 
@@ -107,32 +113,37 @@ object TestExplorer {
     lazy val b3 = getSumBalance
     lazy val b4 = getSumWalletsBalance
     lazy val ut = getUTXOSBalance()
-    lazy val x1 = getAllWalletBalances.toSeq.sortBy(_._1).toMap
-    lazy val x2 = getAllBalances.groupBy(p => getRepresentant(p._1)).map(p => (p._1, p._2.map(_._2).sum)).toSeq.sortBy(_._1).toMap
+    lazy val x1 = getAllWalletBalances.toSeq.sortBy(_._1).filter(_._2>0).toMap
+    lazy val x2 = getAllBalances.groupBy(p => getRepresentant(p._1)).map(p => (p._1, p._2.map(_._2).sum)).toSeq.sortBy(_._1).filter(_._2>0).toMap
 
     // strings to print
 
-    lazy val errors = for {k <- x2.keys; if x2(k) != 0 && x2(k) != x1(k)} yield (k, nr(x2(k)) + " " + nr(x1(k)))
-    lazy val wrongWalletTableString = s"${sx}WRONG ${str4(errors.toMap)}${sx}DIFF: ${nr(b4 - b3)}${sx}CHANGED${str1(changedAddresses)}"
-    lazy val shouldBeClosures = countClosures
-    lazy val shouldBeAddresses = countAddresses
+    lazy val wrongClosures = for {k <- x1.keys; if None == x2.get(k) || x2(k) != x1(k)} yield (k, nr(x1(k)))
+
+    lazy val toDelete = (changedReps.values.fold(Set())((a, b) => a ++ b) ++ changedReps.keys ++ repsAndBalances.keys ++ adsAndBalances.keys - Hash.zero(0)).map(x=>(x,"OUT")).toMap
+
+    lazy val wrongWalletTableString = s"""${sx}DIFF${sx}${nr(b4-b3)}${sx}WRONG ${str4(wrongClosures.toMap)}${sx}CHANGED ${str1(repsAndChanges-Hash.zero(0))}${sx}ADDED ${str1(repsAndBalances-Hash.zero(0))}${sx}DELETED ${str4(toDelete)}"""
 
     // test updateStatistics && test updateBalances
-    if (repsAndBalances.exists(r => r._1 != getRepresentant(r._1)))
-      Some(s"___ WRONG UPDATE ___")
-    else if (s1 != s2)
-      Some(s"___ WRONG CHANGED VALUES ___")
-    else if (ut != b3)
-      Some(s"___ WRONG ADDRESS TABLE ___")
-    else if (b3 != b4)
-      Some(s"___ WRONG WALLET TABLE ___ $wrongWalletTableString")
-    else if (!errors.isEmpty)
-      Some(s"--- WRONG WALLET TABLE --- $wrongWalletTableString")
-    else if (shouldBeAddresses != currentStat.total_addresses)
-      Some(s"--- WRONG TOTAL ADDRESSES")
-    else if (shouldBeClosures != currentStat.total_closures)
-      Some(s"--- WRONG TOTAL WALLETS")
-    else
-      None
+
+    lazy val errorOption =
+      if (x1.exists(r => r._1 != getRepresentant(r._1)))
+        Some(s"___WRONG_CLOSURE_IN_TABLE___$wrongWalletTableString")
+      else if (s1 != s2)
+        Some(s"___WRONG_CHANGED_VALUES___$wrongWalletTableString")
+      else if (ut != b3)
+        Some(s"___WRONG_ADDRESS_TABLE ___$wrongWalletTableString")
+      else if (b3 != b4 || !wrongClosures.isEmpty)
+        Some(s"___WRONG_WALLET_TABLE___$wrongWalletTableString")
+      else if (countAddresses != currentStat.total_addresses)
+        Some(s"___WRONG_TOTAL_ADDRESSES___$wrongWalletTableString")
+      else if (countClosures != currentStat.total_closures)
+        Some(s"___WRONG_TOTAL_WALLETS___$wrongWalletTableString")
+      else
+        None
+
+    errors += (if (errorOption != None) 1 else 0)
+
+    errorOption
   }
 }

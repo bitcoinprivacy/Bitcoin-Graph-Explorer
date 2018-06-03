@@ -37,13 +37,11 @@ abstract class AddressClosure(blockHeights: Vector[Int]) extends db.BitcoinDB
       val hashList = addressesPerTxMap.values map (_ map (p=>Hash(p._2)))
       val nonTrivials = hashList filter (_.length > 1)
       val result = nonTrivials.foldLeft (tree) ((t,l) => insertInputsIntoTree(l,t))
-      log.info("reading " + blocks.length + " blocks from " + blockNo)
+      log.info("Closured " + blocks.length + " blocks from " + blockNo)
       result
     }
 
-    val result = (0 until blockHeights.length by closureReadSize).foldRight(new DisjointSets[Hash](unionFindTable))(addBlocks)
-    log.info("finished generation")
-    result
+    (0 until blockHeights.length by closureReadSize).foldRight(new DisjointSets[Hash](unionFindTable))(addBlocks)
   }
 
   def insertInputsIntoTree(addresses: Iterable[Hash], tree: DisjointSets[Hash]): DisjointSets[Hash] =
@@ -52,11 +50,9 @@ abstract class AddressClosure(blockHeights: Vector[Int]) extends db.BitcoinDB
     addedTree.union(addresses)
   }
 
-  log.info("applying closure ")
   val timeStart = System.currentTimeMillis
   val startTableSize = unionFindTable.size
   val countSave = saveTree(generateTree)
-
   val totalTime = System.currentTimeMillis - timeStart
 
   log.info("Total of %s addresses added to closures in %s s, %s µs per address" format

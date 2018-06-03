@@ -165,15 +165,15 @@ trait BitcoinDB {
   def saveBalances(adsAndBalances: scala.collection.immutable.Map[Hash, Long], repsAndBalances: scala.collection.immutable.Map[Hash, Long], changedReps: scala.collection.immutable.Map[Hash, Set[Hash]]): Unit = {
     DB withTransaction { implicit session =>
       // delete merged wallets
-      val toDelete = (changedReps.values.fold(Set())((a, b) => a ++ b) ++ changedReps.keys ++ adsAndBalances.keys).map(Hash.hashToArray)
+      val toDelete = (changedReps.values.fold(Set())((a, b) => a ++ b) ++ changedReps.keys ++ repsAndBalances.keys ++ adsAndBalances.keys).map(Hash.hashToArray)
       closureBalances.filter(_.address inSet toDelete).delete
       for {
         (balances, table) <- Set((adsAndBalances, balances), (repsAndBalances, closureBalances))
         (address, balance) <- balances
       } {
-        if (balance != 0L)
-          table.insertOrUpdate(Hash.hashToArray(address), balance)
-        else
+        if (balance > 0L)
+          table.insertOrUpdate(Hash.hashToArray(address), balance) 
+        else if (balance == 0)
           table.filter(_.address === Hash.hashToArray(address)).delete
       }
     }
@@ -184,7 +184,7 @@ trait BitcoinDB {
   }
 
   def updateBalanceTables(changedAddresses: collection.immutable.Map[Hash, Long], changedReps: collection.immutable.Map[Hash, Set[Hash]]):
-    (collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long], collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long]) = {
+    (collection.immutable.Map[Hash, Long], collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long]) = {
     val clock = System.currentTimeMillis
     currentStat.total_bitcoins_in_addresses += changedAddresses.map { _._2 }.sum
 
@@ -192,60 +192,61 @@ trait BitcoinDB {
       for ((address, change) <- changedAddresses - Hash.zero(0))
          yield (address, getBalance(address) + change)
 
-    // FIXME it produces negative balances and split closures
-    val repsAndChanges: collection.immutable.Map[Hash, Long] = (changedReps ++ (changedAddresses - Hash.zero(0))).map(_._1).toList
-      .distinct
-      .map(rep => changedReps.find(_._2 contains rep).map(_._1).getOrElse(rep))
-      .distinct
-      .map(r => (r,
-             changedAddresses.filter(x => (changedReps.getOrElse(r, Set())+r) contains x._1).map(_._2).sum))
-      .groupBy(p=>getRepresentant(p._1))
-      .map(p=> (p._1, p._2.map(_._2).sum))
+    def wallet(address: Hash, changedReps: collection.immutable.Map[Hash, Set[Hash]]) = changedReps.filter(_._2 contains address).map(_._1).headOption.getOrElse(address)
+
+    // group balances by rep
+    lazy val repsAndChanges = changedAddresses
+      .groupBy(o => wallet(o._1, changedReps))
+      .map(p => (p._1, p._2.map(q => q._2).sum))
       .toSeq
       .sortBy(_._1)
       .toMap
 
-  // FIXME both maps are wrong
-    val repsAndAvailable: scala.collection.immutable.Map[Hash, Long] = (changedReps ++ (changedAddresses - Hash.zero(0))).map(_._1).toList
-      .distinct
-      .map(p => (p,
-             if (changedReps contains p) (changedReps(p)+p) else collection.immutable.Set(getRepresentant(p))))
-      .groupBy(p=>getRepresentant(p._1))
-      .map(p=> (p._1,
-             getWalletBalances(p._2.foldLeft(Set(Hash.zero(0)))((s,t) => s++t._2) + p._1)))
+    // get current balances from DB with a single query
+    lazy val balances = getClosureBalances(repsAndChanges.keys)
+    // get current representants from DB with a single query
+    val representants = getSomeClosures(repsAndChanges.keys)
+    def representant(a: Hash): Hash = representants.getOrElse(a, a)
+    // get sum from old closure balances
+    def available(s: collection.immutable.Set[Hash]): Long = balances.filter(s contains _._1).map(_._2).sum
+  
+
+    def converted(address: Hash, changedReps: collection.immutable.Map[Hash, Set[Hash]]): collection.immutable.Set[Hash] = changedReps.getOrElse(address, collection.immutable.Set())+address+representant(address)
+
+    val repsAndBalances = repsAndChanges
+      .map(w => (representant(w._1), w._1, w._2))
+      .groupBy(_._1)
+      .map(p=> (p._1, available(p._2.foldLeft(Set(Hash.zero(0)))( (s, n) => s ++ converted(n._1, changedReps)))+p._2.map(_._3).sum))
       .toSeq
       .sortBy(_._1)
       .toMap
 
-  // FIXME keys should always match
-    val repsAndBalances: collection.immutable.Map[Hash, Long] = (repsAndAvailable zip repsAndChanges)
-      .map(p=> /*if (p._1._1 != p._2._1) throw new Error(s"WTF ${getRepresentant(p._1._1)} ${getRepresentant(p._2._1)}") else*/ (p._1._1, p._1._2 + p._2._2))
-
-    // update database
     saveBalances(adsAndBalances, repsAndBalances, changedReps)
 
-    log.info("%s balances updated in %s s, %s µs per address "
+    log.info("Balances updated in %s s, %s addresses, %s µs per address "
       format
-               (adsAndBalances.size, (System.currentTimeMillis - clock) / 1000, (System.currentTimeMillis - clock) * 1000 / (adsAndBalances.size + 1)))
+        ((System.currentTimeMillis - clock) / 1000, adsAndBalances.size, (System.currentTimeMillis - clock) * 1000 / (adsAndBalances.size + 1)))
 
-       (repsAndAvailable, adsAndBalances,repsAndChanges, repsAndBalances)
+    (adsAndBalances,repsAndChanges, repsAndBalances)
+
   }
 
   def insertRichestClosures = {
 
-    var startTime = System.currentTimeMillis
     DB withSession { implicit session =>
+
       val bh = blockCount - 1
       val topClosures = closureBalances.sortBy(_.balance.desc).take(richlistSize).run.toVector
       val topClosuresWithBh = for ((rep, bal) <- topClosures) yield (bh, rep, bal)
+
       richestClosures.insertAll(topClosuresWithBh: _*)
-      log.info("Richest wallets calculated in " + (System.currentTimeMillis - startTime) / 1000 + "s")
+
     }
   }
 
   def insertRichestAddresses = {
 
-    var startTime = System.currentTimeMillis
+    
     DB withSession { implicit session =>
       Q.updateNA("""
        insert
@@ -261,7 +262,7 @@ trait BitcoinDB {
         balance desc
       limit """ + richlistSize + """
     ;""").execute
-      log.info("Richest addresses calculated in " + (System.currentTimeMillis - startTime) / 1000 + "s")
+
     }
   }
 
@@ -466,6 +467,12 @@ trait BitcoinDB {
 
   }
 
+
+
+  def getClosureBalances(a: Iterable[Hash]): collection.immutable.Map[Hash, Long] = DB withSession { implicit session =>
+    closureBalances.filter(_.address inSetBind a.map(Hash.hashToArray(_))).map(a => (a.address, a.balance)).run.map(p=> (Hash(p._1), p._2)).toMap
+  }
+
   def getWalletBalances(a: collection.immutable.Set[Hash]): Long = DB withSession { implicit session =>
     closureBalances.filter(_.address inSetBind a.map(Hash.hashToArray(_))).map(_.balance).sum.run.getOrElse(0L)
   }
@@ -480,6 +487,10 @@ trait BitcoinDB {
 
   def getClosures(): collection.immutable.Map[Hash, Hash] = DB withSession { implicit session =>
     addresses.sortBy(_.hash).map(p=>(p.hash, p.representant)).run.map(p=>(Hash(p._1),Hash(p._2))).toMap
+  }
+
+  def getSomeClosures(a: Iterable[Hash]): collection.immutable.Map[Hash, Hash] = DB withSession { implicit session =>
+    addresses.filter(_.hash inSetBind a.map(Hash.hashToArray)).map(p=>(p.hash, p.representant)).run.map(p=>(Hash(p._1),Hash(p._2))).toMap
   }
 
   def countClosures(): Int = DB withSession { implicit session =>
