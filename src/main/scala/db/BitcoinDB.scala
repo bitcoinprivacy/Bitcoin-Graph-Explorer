@@ -275,10 +275,9 @@ trait BitcoinDB {
 
     DB withSession { implicit session =>
 
-      val query = """
-       delete from stats where block_height = (select coalesce(max(block_height),0) from blocks);
-       insert
-       into stats select
+      List("""delete from stats where block_height = (select coalesce(max(block_height),0) from blocks);""",
+           """
+       insert into stats select
        (select coalesce(max(block_height),0) from blocks),
        (select coalesce(sum(balance)/100000000,0) from balances),
        (select coalesce(sum(txs),0) from blocks),
@@ -290,10 +289,9 @@ trait BitcoinDB {
        """ + nonDustClosures + """,
        """ + closureGini + """,
        """ + addressGini + """,
-       """ + (System.currentTimeMillis / 1000).toString + """;"""
+       """ + (System.currentTimeMillis / 1000).toString + """;""").foreach( q => (Q.u + q).execute )
 
-      (Q.u + query).execute
-      log.info("Stat calculated in " + (System.currentTimeMillis - startTime) / 1000 + "s");
+      log.info("Stat created in " + (System.currentTimeMillis - startTime) / 1000 + "s");
 
     }
   }
@@ -320,8 +318,9 @@ trait BitcoinDB {
       stat.total_transactions = blockDB.map(_.txs).filter(_ > 0).sum.run.getOrElse(0).toLong
       stat.total_bitcoins_in_addresses = balances.map(_.balance).sum.run.getOrElse(0L) / 100000000
       stat.total_addresses += addedAds
-      stat.total_closures += addedClosures // FIXME after a rollback it seems to be wrong.
+      stat.total_closures += addedClosures
       saveStat(stat)
+
       log.info("Stat updated in " + (System.currentTimeMillis - time) / 1000 + " seconds")
     }
   }
