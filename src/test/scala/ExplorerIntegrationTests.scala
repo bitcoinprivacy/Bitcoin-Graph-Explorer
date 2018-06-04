@@ -1,6 +1,38 @@
 import TestExplorer._
 import org.scalatest._
 
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// The functions "safeRollback", "safePopulate" and "safeResume" are just a wrapper for the original
+// Explorer functions, but adding an exhaustive analysis of all the generated data (in case of
+// updateStatistis - updateBalances).
+//
+// Definitions can be found in TestExplorer.
+//
+// After each operation, several data will be checked:
+//
+// UPDATE
+//
+// consistency of repsAndBalances
+// consistency of repsAndChanges
+// consistency of addedReps
+// consistency of addedAdds
+// consistency of changedAddresses
+// consistency of adsAndBalances
+// consistency of changedReps
+// total balances of wallets against addresses and utxos
+// total_closures and total_addresses are the same as with createStatistics
+//
+// CREATE // ROLLBACK
+//
+// total balances of wallets against addresses and utxos
+//
+// NOTE: atm there is a bug leading the balances to be different than the "closureBalances".
+// In order to fix the code we need first a test to cover this issue. I could not yet
+// reproduce the error.
+//
+//////////////////////////////////////////////////////////////////////////////////////////////
+
 class ExplorerIntegrationTests extends FlatSpec with Matchers {
 
   "docker" should "start bitcoin and postgres" in {
@@ -9,7 +41,11 @@ class ExplorerIntegrationTests extends FlatSpec with Matchers {
 
   it should "create 103 blocks and 5 txs" in {
     addBlocks(102) should be (0)
-    addTxs(5) should be (0)
+    pay(8) should be (0)
+    pay(7) should be (0)
+    pay(6) should be (0)
+    pay(5) should be (0)
+    pay(4) should be (0)
     addBlocks(1) should be (0)
   }
 
@@ -26,29 +62,36 @@ class ExplorerIntegrationTests extends FlatSpec with Matchers {
   }
 
   "explorer" should "populate 104 blocks" in {
-    savePopulate should be (None)
+    safePopulate should be (None)
   }
 
-  it should "resume an empty block" in {
+  it should "resume a block with 5 txs" in {
+    pay(19)
+    pay(17)
+    pay(8)
+    pay(14)
+    pay(100)
     addBlocks(1) should be (0)
-    saveResume should be (None)
+    safeResume should be (None)
   }
 
   it should "resume a block with 1 tx" in {
     addTxs(1) should be (0)
     addBlocks(1) should be (0)
-    saveResume should be (None)
+    safeResume should be (None)
   }
 
   it should "resume a block with 7 txs" in {
     addTxs(2) should be (0)
     addBlocks(1) should be (0)
-    saveResume should be (None)
+    safeResume should be (None)
   }
 
   it should "rollback 3 blocks and resume it again" in {
-    saveRollback(8) should be (None)
-    saveResume should be (None)
+    val init = stat
+    safeRollback(8) should be (None)
+    safeResume should be (None)
+    init should be (stat)
   }
 
   List((3, 6), (4, 3)).foreach{ case (blocks: Int, txs: Int) => {
@@ -60,24 +103,27 @@ class ExplorerIntegrationTests extends FlatSpec with Matchers {
         addBlocks(1) should be (0)
       })
 
-      saveResume should be (None)
+      safeResume should be (None)
 
     }
 
   }}
 
   it should "rollback 4 blocks and resume it again" in {
-    saveRollback(8) should be (None)
-    saveResume should be (None)
+    val init = stat
+    safeRollback(8) should be (None)
+    safeResume should be (None)
+    stat should be (init)
   }
 
   it should "resume a block with 8 txs" in {
     addTxs(2) should be (0)
     addBlocks(1) should be (0)
-    saveResume should be (None)
+    safeResume should be (None)
   }
 
   it should s"finish" in {
     println(s"Created postgres DB with $bgeCount blocks, $totalAddresses addresses and $totalClosures wallets")
   }
+
 }

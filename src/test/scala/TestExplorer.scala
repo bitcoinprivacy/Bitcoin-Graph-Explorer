@@ -61,7 +61,7 @@ object TestExplorer {
 
   def stat = currentStat
 
-  def saveRollback(i: Int) = {
+  def safeRollback(i: Int) = {
 
     for (_ <- 0 until i)
       rollBack(blockCount-1)
@@ -71,7 +71,7 @@ object TestExplorer {
     assertBalancesCreatedCorrectly
   }
 
-  def saveResume = {
+  def safeResume = {
 
     resume match {
       case Some((a,b,c,d,e,f,x)) =>
@@ -82,7 +82,7 @@ object TestExplorer {
 
   }
 
-  def savePopulate = {
+  def safePopulate = {
     populate
     assertBalancesCreatedCorrectly
   }
