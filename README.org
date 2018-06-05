@@ -145,4 +145,6 @@ GET /wallet/:ad/:from/:until
 GET /wallet/:ad/summary
 #+END_SRC
 
+For more usage examples, please take a look [[https://blog.bitcoinprivacy.net/2016/11/charts-with-the-bge-api-and-dimplejs/][here]]
+
 
