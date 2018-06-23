@@ -33,7 +33,7 @@ import org.scalatest._
 //
 //////////////////////////////////////////////////////////////////////////////////////////////
 
-class ExplorerIntegrationTests extends FlatSpec with Matchers {
+class ExplorerIntegrationTests extends FlatSpec with Matchers with CancelGloballyAfterFailure{
 
   "docker" should "start bitcoin and postgres" in {
     startDocker should be (0)
@@ -82,19 +82,33 @@ class ExplorerIntegrationTests extends FlatSpec with Matchers {
   }
 
   it should "resume a block with 7 txs" in {
-    addTxs(2) should be (0)
+    addTxs(7) should be (0)
     addBlocks(1) should be (0)
     safeResume should be (None)
   }
 
-  it should "rollback 3 blocks and resume it again" in {
+  it should "rollback once and resume it again" in {
     val init = stat
-    safeRollback(8) should be (None)
+    safeRollback() should be (None)
+    safeResume should be (None)
+    init should be (stat)
+  }
+ 
+  it should "resume 2 mores block with 6 and 0 txs" in {
+    addTxs(6) should be (0)
+    addBlocks(2) should be (0)
+    safeResume should be (None)
+  }
+
+  it should "rollback again and resume it again" in {
+    val init = stat
+    safeRollback() should be (None)
     safeResume should be (None)
     init should be (stat)
   }
 
-  List((3, 6), (4, 3)).foreach{ case (blocks: Int, txs: Int) => {
+  List((50, 2), (1, 90
+       )).foreach{ case (blocks: Int, txs: Int) => {
 
     it should s"resume $blocks blocks with $txs txs each" in {
 
@@ -109,15 +123,16 @@ class ExplorerIntegrationTests extends FlatSpec with Matchers {
 
   }}
 
-  it should "rollback 4 blocks and resume it again" in {
+  it should "rollback 8 blocks and resume it again" in {
     val init = stat
-    safeRollback(8) should be (None)
+    println(init)
+    safeRollback() should be (None)
     safeResume should be (None)
     stat should be (init)
   }
 
   it should "resume a block with 8 txs" in {
-    addTxs(2) should be (0)
+    addTxs(8) should be (0)
     addBlocks(1) should be (0)
     safeResume should be (None)
   }

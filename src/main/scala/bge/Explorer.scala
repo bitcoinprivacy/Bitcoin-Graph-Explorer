@@ -1,7 +1,7 @@
 import actions._
 import util._
 import sys.process._
-import collection.mutable.Map
+
 
 /**
  * Created with IntelliJ IDEA.
@@ -115,7 +115,7 @@ object Explorer extends App with db.BitcoinDB {
   def resume = {
 
     val read = new ResumeBlockReader
-    val closure = new ResumeClosure(read.processedBlocks)
+    val closure = new ResumeClosure(read.processedBlocks, read.changedAddresses.toMap)
 
     // FIXME
     // That check is neccessary due to a bug in updateBalances
@@ -126,9 +126,10 @@ object Explorer extends App with db.BitcoinDB {
       log.info("Error during update of balances or stats .... creating balances and stats")
 
     if (read.changedAddresses.size < balanceUpdateLimit && checkBalances) {
-      val (adsAndBalances,repsAndChanges,  repsAndBalances) = resumeStats(read.changedAddresses, convertToMap(closure.changedReps), closure.addedAds, closure.addedReps)
+      val (adsAndBalances,repsAndChanges,  repsAndBalances) =
+        resumeStats(read.changedAddresses.toMap, closure.touchedReps, closure.changedReps, closure.addedAds, closure.addedClosures)
       Some(
-        (adsAndBalances,repsAndChanges,  read.changedAddresses.toMap, repsAndBalances, convertToMap(closure.changedReps).toMap, closure.addedAds, closure.addedReps)
+        (adsAndBalances,repsAndChanges,  read.changedAddresses.toMap, repsAndBalances, closure.touchedReps, closure.changedReps, closure.addedAds, closure.addedClosures)
       )
     }
     else {
@@ -198,14 +199,14 @@ object Explorer extends App with db.BitcoinDB {
 
   }
 
-  def resumeStats(changedAddresses: Map[Hash,Long], changedReps: Map[Hash,Set[Hash]], addedAds: Int, addedReps: Int):
-      (collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long]) = {
+  def resumeStats(changedAddresses: Map[Hash,Long], touchedReps: Map[Hash,Set[Hash]], changedReps: Map[Hash,Set[Hash]], addedAds: Int, addedClosures: Int):
+      (Map[Hash, Long],Map[Hash, Long],Map[Hash, Long]) = {
 
-    val (adsAndBalances,repsAndChanges,  repsAndBalances) = updateBalanceTables(changedAddresses.toMap, changedReps.toMap)
+    val (adsAndBalances,repsAndChanges,  repsAndBalances) = updateBalanceTables(changedAddresses, touchedReps, changedReps)
 
     createRichestLists
 
-    updateStatistics(changedReps,addedAds, addedReps)
+    updateStatistics(addedAds, addedClosures)
 
     (adsAndBalances,repsAndChanges,  repsAndBalances)
   }

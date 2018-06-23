@@ -2,22 +2,23 @@ import util.Hash
 import Explorer._
 import sys.process._
 import scala.util.Random
+import org.scalatest._
 
-object TestExplorer {
+object TestExplorer extends db.BitcoinDB {
 
   // CONSTANTS
 
   val BITCOIN = "docker exec --user bitcoin docker_bitcoin_1 bitcoin-cli -regtest -rpcuser=foo -rpcpassword=bar -rpcport=18333 "
 
   val SCRIPTS = "/root/Bitcoin-Graph-Explorer/src/test/docker/"
-
+ 
   val RUNS = 5
 
   // SOME HELPERS
 
-  private def s: collection.immutable.Map[Hash, Long] = collection.immutable.Map()
+  private def s: Map[Hash, Long] = Map()
 
-  private def x:collection.immutable.Map[Hash, Set[Hash]] = collection.immutable.Map()
+  private def x:Map[Hash, Set[Hash]] = Map()
 
   private def nr(b: Long): String = ((b/10000)/10000.0).toString
 
@@ -25,15 +26,15 @@ object TestExplorer {
 
   private def sp = " "
 
-  private def pri(a: Hash) = a.toString//.drop(2).take(4)
+  private def pri(a: Hash) = a.toString.drop(2).take(4)
 
-  private def str1(n: collection.immutable.Map[Hash, Long]): String = "(" + n.size + ")" + sx + n.toSeq.sortBy(p=>pri(p._1)).map(m=>pri(m._1)+": "+(nr(m._2))).mkString(sx)
+  private def str1(n: Map[Hash, Long]): String = "(" + nr(n.map(_._2).sum) + ")" + sx + n.toSeq.sortBy(p=>pri(p._1)).map(m=>pri(m._1)+": "+(nr(m._2))).mkString(sx)
 
-  private def str2(n: collection.immutable.Map[Hash, Hash]): String = "(" + n.size + ")" + sx + n.toSeq.sortBy(p=>pri(p._1)).map(m=>pri(m._1) +" => "+(pri(m._2))).mkString(sx)
+  private def str2(n: Map[Hash, Hash]): String = "(" + n.size + ")" + sx + n.toSeq.sortBy(p=>pri(p._1)).map(m=>pri(m._1) +" => "+(pri(m._2))).mkString(sx)
 
-  private def str3(n: collection.immutable.Map[Hash, Set[Hash]]): String = "(" + n.size + ")" + sx + n.toSeq.sortBy(p=>pri(p._1)).map(m=>pri(m._1) + " => "+ m._2.map((pri(_))).mkString(" - ")).mkString(sx)
+  private def str3(n: Map[Hash, Set[Hash]]): String = "(" + n.size + ")" + sx + n.toSeq.sortBy(p=>pri(p._1)).map(m=>pri(m._1) + " => "+ m._2.map((pri(_))).mkString(" - ")).mkString(sx)
 
-  private def str4(n: collection.immutable.Map[Hash, String]): String = "(" + n.size + ")" + sx + n.toSeq.sortBy(p=>pri(p._1)).map(m=>pri(m._1)+": "+m._2).mkString(sx)
+  private def str4(n: Map[Hash, String]): String = "(" + n.size + ")" + sx + n.toSeq.sortBy(p=>pri(p._1)).map(m=>pri(m._1)+": "+m._2).mkString(sx)
 
   // BITCOIN-CLI functions
 
@@ -51,6 +52,10 @@ object TestExplorer {
 
   def bitcoinCount: Int = ((BITCOIN + "getblockcount") !!).trim.toInt+1
 
+  def bitcoinTotal: Double = ((BITCOIN + "getbalance") !!).trim.toDouble * 100000000
+
+  def bgeTotal: Long = getSumBalance
+
   // EXPLORER functions
 
   def bgeCount = blockCount
@@ -61,25 +66,22 @@ object TestExplorer {
 
   def stat = currentStat
 
-  def safeRollback(i: Int) = {
+  def safeRollback() = {
 
-    for (_ <- 0 until i)
-      rollBack(blockCount-1)
-
-    populateStats
-
+    //    deleteLastStats
+    // rollback esta roto
+    rollBackToLastStatIfNecessary
     assertBalancesCreatedCorrectly
   }
 
   def safeResume = {
 
     resume match {
-      case Some((a,b,c,d,e,f,x)) =>
-        assertBalancesUpdatedCorrectly(a,b,c,d,e,f,x)
+      case Some((a,b,c,d,e,y,f,x)) =>
+        assertBalancesUpdatedCorrectly(a,b,c,d,e,y,f,x)
       case None =>
         assertBalancesCreatedCorrectly
     }
-
   }
 
   def safePopulate = {
@@ -87,54 +89,63 @@ object TestExplorer {
     assertBalancesCreatedCorrectly
   }
 
-  var errors = 0
-
   def assertBalancesCreatedCorrectly =
-    assertBalancesUpdatedCorrectly(s,s,s,s,x,0,0)
+    assertBalancesUpdatedCorrectly(s,s,s,s,x,x,0,0)
 
   def assertBalancesUpdatedCorrectly(
-    adsAndBalances: collection.immutable.Map[Hash, Long],
-    repsAndChanges: collection.immutable.Map[Hash, Long],
-    changedAddresses: collection.immutable.Map[Hash, Long],
-    repsAndBalances: collection.immutable.Map[Hash, Long],
-    changedReps: collection.immutable.Map[Hash, Set[Hash]],
+    adsAndBalances: Map[Hash, Long],
+    repsAndChanges: Map[Hash, Long],
+    changedAddresses: Map[Hash, Long],
+    repsAndBalances: Map[Hash, Long],
+    touchedReps: Map[Hash, Set[Hash]],
+    changedReps: Map[Hash, Set[Hash]],
     addedAdds: Int,
     addedReps: Int): Option[String] = {
 
-    // skip further tests after an error
-
-    if (errors > 0) return Some("___SKIP___")
-
     // values to check
-
     lazy val ca = changedAddresses - Hash.zero(0)
     lazy val s1 = ca.map(_._2).sum
     lazy val s2 = repsAndChanges.map(_._2).sum
     lazy val b3 = getSumBalance
     lazy val b4 = getSumWalletsBalance
     lazy val ut = getUTXOSBalance()
-    lazy val x1 = getAllWalletBalances.toSeq.sortBy(_._1).filter(_._2>0).toMap
-    lazy val x2 = getAllBalances.groupBy(p => getRepresentant(p._1)).map(p => (p._1, p._2.map(_._2).sum)).toSeq.sortBy(_._1).filter(_._2>0).toMap
+    lazy val x1 = getAllWalletBalances//.filter(_._2>0)
+    lazy val x2 = getAllBalances.groupBy(p => getRepresentant(p._1)).map(p => (p._1, p._2.map(_._2).sum))//.filter(_._2>0)
+    lazy val allClosures = getClosures.groupBy(_._2).map(p => (p._1, p._2.keySet))
+    lazy val emptyUtxos = getEmptyUTXOs()
 
     // strings to print
+    lazy val wrongClosures = for {k <- x1.keys; if None == x2.get(k) || x2(k) != x1(k)} yield (k, x1(k))
+    lazy val wrongWalletTableString = /*s"""
+        ${sx}TOUCHED REPS${str3(touchedReps)}
+        ${sx}WRONG reps${str1(wrongClosures.toMap)}
+        ${sx}CHANGED ADDs${str1(ca)}
+        ${sx}CHANGED REPRESENTANTS ${str3(changedReps)}
+        ${sx}REPS AND BALANCES${str1(repsAndBalances)}
+        ${sx}COUNT WALLETS CREATE, UPDATE ${countClosures()} ${currentStat.total_closures}
+        ${sx}WALLETS ${str3(allClosures)}
+        ${sx}EMPTY UTXOS ${sx}(${emptyUtxos.size})${sx}${emptyUtxos.map(pri(_))}
+                                       */
+      s"""
+        ${sx}BALANCES ADD - REP - UTXOs${sx}${nr(b3)} ${nr(b4)} ${nr(ut)}
+        ${sx}Stats ${sx}${currentStat}
+        ${sx}UTXOs ${sx}${getAllUTXOs.filter(_._2 == currentStat.block_height).map(p=>pri(p._1)+": "+p._2)}
+"""
 
-    lazy val wrongClosures = for {k <- x1.keys; if None == x2.get(k) || x2(k) != x1(k)} yield (k, nr(x1(k)))
-
-    lazy val toDelete = (changedReps.values.fold(Set())((a, b) => a ++ b) ++ changedReps.keys ++ repsAndBalances.keys ++ adsAndBalances.keys - Hash.zero(0)).map(x=>(x,"OUT")).toMap
-
-    lazy val wrongWalletTableString = s"""${sx}DIFF${sx}${nr(b4-b3)}${sx}WRONG ${str4(wrongClosures.toMap)}${sx}CHANGED ${str1(repsAndChanges-Hash.zero(0))}${sx}ADDED ${str1(repsAndBalances-Hash.zero(0))}${sx}DELETED ${str4(toDelete)}"""
+    lazy val countsDiffBitcoinToBge = bitcoinTotal - b3
 
     // test updateStatistics && test updateBalances
-
     lazy val errorOption =
-      if (x1.exists(r => r._1 != getRepresentant(r._1)))
+      if (false && emptyUtxos.size > 0)
+        Some(s"___EMPTY UTXOs___$wrongWalletTableString")
+      else if (b3 != b4 || !wrongClosures.isEmpty)
+        Some(s"___WRONG_WALLET_TABLE___$wrongWalletTableString")
+      else if (x1.exists(r => r._1 != getRepresentant(r._1)))
         Some(s"___WRONG_CLOSURE_IN_TABLE___$wrongWalletTableString")
       else if (s1 != s2)
         Some(s"___WRONG_CHANGED_VALUES___$wrongWalletTableString")
       else if (ut != b3)
         Some(s"___WRONG_ADDRESS_TABLE ___$wrongWalletTableString")
-      else if (b3 != b4 || !wrongClosures.isEmpty)
-        Some(s"___WRONG_WALLET_TABLE___$wrongWalletTableString")
       else if (countAddresses != currentStat.total_addresses)
         Some(s"___WRONG_TOTAL_ADDRESSES___$wrongWalletTableString")
       else if (countClosures != currentStat.total_closures)
@@ -142,8 +153,28 @@ object TestExplorer {
       else
         None
 
-    errors += (if (errorOption != None) 1 else 0)
-
     errorOption
   }
+}
+
+object CancelGloballyAfterFailure {
+  @volatile var cancelRemaining = false
+}
+
+trait CancelGloballyAfterFailure extends TestSuiteMixin { this: TestSuite =>
+  import CancelGloballyAfterFailure._
+
+  abstract override def withFixture(test: NoArgTest): Outcome = {
+    if (cancelRemaining)
+      Canceled("Canceled by CancelGloballyAfterFailure because a test failed previously")
+    else
+      super.withFixture(test) match {
+        case failed: Failed =>
+          cancelRemaining = true
+          failed
+        case outcome => outcome
+      }
+  }
+
+  final def newInstance: Suite with OneInstancePerTest = throw new UnsupportedOperationException
 }

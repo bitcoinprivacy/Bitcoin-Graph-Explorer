@@ -42,7 +42,7 @@ trait FastBlockReader extends BlockReader {
     for (output <- outputsInTransaction(trans)) {
       val addressOption: Option[Hash] = getAddressFromOutput(output: TransactionOutput) match {
          case Some(value) => Some(Hash(value))
-          case None => None
+         case None => None
         }
 
       val value = output.getValue.value

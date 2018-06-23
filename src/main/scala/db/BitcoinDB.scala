@@ -1,13 +1,11 @@
 // this has all the database stuff.
-
 package db
 
 import slick.driver.PostgresDriver.simple._
-import slick.jdbc.{StaticQuery => Q}
-import slick.jdbc.meta.MTable
-
+import scala.slick.jdbc.{StaticQuery => Q}
+import scala.slick.jdbc.meta.MTable
 import util._
-import collection.mutable.Map
+import Hash._
 
 trait BitcoinDB {
   def blockDB = TableQuery[Blocks]
@@ -65,7 +63,7 @@ trait BitcoinDB {
   def getLastBlock = DB withSession { implicit session => blockDB.sortBy(_.block_height.desc).map(a => (a.hash, a.block_height)).take(1).run.head }
 
   def txListQuery(blocks: Seq[Int]) = {
-    val emptyArray = Hash.zero(0).array.toArray
+    val emptyArray = hashToArray(zero(0))
     DB withSession { implicit session =>
       val q = for (q <- movements.filter(_.height_out inSet blocks).filter(_.address =!= emptyArray))
         yield (q.spent_in_transaction_hash, q.address)
@@ -106,9 +104,10 @@ trait BitcoinDB {
     }
   }
 
+  
   def createBalanceTables = {
     var clock = System.currentTimeMillis
-    DB withSession { implicit session =>
+    DB withTransaction { implicit session =>
 
       deleteIfExists(balances, closureBalances)
       balances.ddl.create
@@ -123,14 +122,13 @@ trait BitcoinDB {
               select address, sum(balance) from
                 ((select a.representant as address, b.balance as balance from balances b, addresses a where b.address = a.hash and b.address != '\x')
                  UNION ALL
-                (select a.address as address, a.balance as balance from balances a left outer join  addresses b on a.address = b.hash where a.address != '\x' and b.representant is null)) table2
-         group by address;
-      """).execute
+                (select a.address as address, a.balance as balance from balances a left outer join  addresses b on a.address = b.hash where a.address != '\x' and b.representant is null)) table2         group by address;
+      """).execute // TODO: this second  part can be left out when the addresses table contains all addresses
 
        (Q.u + "create index balance_2 on closure_balances(balance)").execute
 
-      Q.updateNA("""delete from balances where balance = 0;""").execute
-      Q.updateNA("""delete from closure_balances where balance = 0;""").execute
+       Q.updateNA("""delete from balances where balance = 0;""").execute // premature optimization
+       Q.updateNA("""delete from closure_balances where balance = 0;""").execute
 
       val b3 = balances.map(_.balance).sum.run.getOrElse(0)
       val b4 = closureBalances.map(_.balance).sum.run.getOrElse(0)
@@ -150,6 +148,11 @@ trait BitcoinDB {
     }
   }
 
+  def syncAddressesWithUTXOs =  DB withSession { implicit session =>
+    val ads = addresses.map(_.hash)
+    addresses.insert(utxo.groupBy(_.address).map(_._1).filterNot(_ in ads).map(p => (p,p)))
+  }
+
   def getSumBalance: Long = DB withSession { implicit session =>
     balances.map(_.balance).sum.run.getOrElse(0)
   }
@@ -162,66 +165,75 @@ trait BitcoinDB {
     utxo.map(_.value).sum.run.getOrElse(0L)
   }
 
-  def saveBalances(adsAndBalances: scala.collection.immutable.Map[Hash, Long], repsAndBalances: scala.collection.immutable.Map[Hash, Long], changedReps: scala.collection.immutable.Map[Hash, Set[Hash]]): Unit = {
+  def saveBalances(adsAndBalances: Map[Hash, Long], repsAndBalances: Map[Hash, Long], oldReps: Iterable[Hash]): Unit = {
     DB withTransaction { implicit session =>
       // delete merged wallets
-      val toDelete = (changedReps.values.fold(Set())((a, b) => a ++ b) ++ changedReps.keys ++ repsAndBalances.keys ++ adsAndBalances.keys).map(Hash.hashToArray)
+      val toDelete = oldReps.map(hashToArray)
       closureBalances.filter(_.address inSet toDelete).delete
       for {
         (balances, table) <- Set((adsAndBalances, balances), (repsAndBalances, closureBalances))
         (address, balance) <- balances
       } {
-        if (balance > 0L)
-          table.insertOrUpdate(Hash.hashToArray(address), balance) 
+        if (balance > 0L)         //  premature optimization
+          table.insertOrUpdate(hashToArray(address), balance)
         else if (balance == 0)
-          table.filter(_.address === Hash.hashToArray(address)).delete
+          table.filter(_.address === hashToArray(address)).delete
       }
     }
   }
 
   def getRepresentant(a: Hash): Hash = DB withSession { implicit session =>
-    addresses.filter(_.hash === Hash.hashToArray(a)).map(_.representant).run.map(Hash(_)).headOption.getOrElse(a)
+    addresses.filter(_.hash === hashToArray(a)).map(_.representant).run.map(Hash(_)).headOption.getOrElse(a)
   }
 
-  def updateBalanceTables(changedAddresses: collection.immutable.Map[Hash, Long], changedReps: collection.immutable.Map[Hash, Set[Hash]]):
-    (collection.immutable.Map[Hash, Long], collection.immutable.Map[Hash, Long],collection.immutable.Map[Hash, Long]) = {
+  def updateAddressDB(changedReps: Map[Hash, Set[Hash]]) = DB withTransaction { implicit session =>
+    for {(rep,oldReps) <- changedReps
+         if oldReps-rep != Set() // (premature?) optimization
+    }
+    {
+      val updateQuery = for(p <- addresses if p.representant inSet (oldReps-rep).map(hashToArray _)) yield p.representant
+      updateQuery.update(hashToArray(rep)) // TODO: compile query
+    }
+  }
+    
+
+  def saveAddresses(news: Seq[(Hash, Hash)]) = {
+    
+    try{
+      DB withSession {
+        val converted = news.map(p => (hashToArray(p._1),hashToArray(p._2)))
+        addresses.insertAll(converted:_*)(_)}
+    }
+    catch {
+      case e: java.sql.BatchUpdateException => throw e.getNextException
+    }
+    
+  }
+   
+  def updateBalanceTables(changedAddresses: Map[Hash, Long], touchedReps: Map[Hash, Set[Hash]], changedReps: Map[Hash, Set[Hash]]):
+    (Map[Hash, Long], Map[Hash, Long],Map[Hash, Long]) = {
     val clock = System.currentTimeMillis
-    currentStat.total_bitcoins_in_addresses += changedAddresses.map { _._2 }.sum
 
-    val adsAndBalances: scala.collection.immutable.Map[Hash, Long] =
-      for ((address, change) <- changedAddresses - Hash.zero(0))
-         yield (address, getBalance(address) + change)
+    val adsAndBalances: Map[Hash, Long] =
+      for ((address, change) <- changedAddresses - zero(0))
+      yield (address, getBalance(address) + change)
+ 
+    lazy val repsAndChanges = for ((rep,ads) <- touchedReps)
+                              yield (rep,ads.toSeq.map(changedAddresses(_)).sum) // the toSeq is necessary, because otherwise equal values get swallowed in the set
+       
+    lazy val oldReps = changedReps.values.flatten
+    lazy val newReps = repsAndChanges.keys
+    // get old closure balances from DB with a single query
+    lazy val oldClosureBalances = getClosureBalances(oldReps++newReps)
 
-    def wallet(address: Hash, changedReps: collection.immutable.Map[Hash, Set[Hash]]) = changedReps.filter(_._2 contains address).map(_._1).headOption.getOrElse(address)
+    def oldSum(s: Set[Hash]): Long = s.toSeq.map(a => oldClosureBalances.getOrElse(a, getBalance(a))).sum
 
-    // group balances by rep
-    lazy val repsAndChanges = changedAddresses
-      .groupBy(o => wallet(o._1, changedReps))
-      .map(p => (p._1, p._2.map(q => q._2).sum))
-      .toSeq
-      .sortBy(_._1)
-      .toMap
+    def total(rep: Hash) = oldSum(changedReps.getOrElse(rep, Set()))
 
-    // get current balances from DB with a single query
-    lazy val balances = getClosureBalances(repsAndChanges.keys)
-    // get current representants from DB with a single query
-    val representants = getSomeClosures(repsAndChanges.keys)
-    def representant(a: Hash): Hash = representants.getOrElse(a, a)
-    // get sum from old closure balances
-    def available(s: collection.immutable.Set[Hash]): Long = balances.filter(s contains _._1).map(_._2).sum
-  
+    val repsAndBalances = for ((rep,change) <- repsAndChanges)
+                          yield (rep, total(rep)+change)
 
-    def converted(address: Hash, changedReps: collection.immutable.Map[Hash, Set[Hash]]): collection.immutable.Set[Hash] = changedReps.getOrElse(address, collection.immutable.Set())+address+representant(address)
-
-    val repsAndBalances = repsAndChanges
-      .map(w => (representant(w._1), w._1, w._2))
-      .groupBy(_._1)
-      .map(p=> (p._1, available(p._2.foldLeft(Set(Hash.zero(0)))( (s, n) => s ++ converted(n._1, changedReps)))+p._2.map(_._3).sum))
-      .toSeq
-      .sortBy(_._1)
-      .toMap
-
-    saveBalances(adsAndBalances, repsAndBalances, changedReps)
+    saveBalances(adsAndBalances, repsAndBalances, oldReps)
 
     log.info("Balances updated in %s s, %s addresses, %s µs per address "
       format
@@ -292,19 +304,15 @@ trait BitcoinDB {
        """ + (System.currentTimeMillis / 1000).toString + """;""").foreach( q => (Q.u + q).execute )
 
       log.info("Stat created in " + (System.currentTimeMillis - startTime) / 1000 + "s");
-
     }
   }
 
-  def updateStatistics(changedReps: Map[Hash, Set[Hash]], addedAds: Int, addedReps: Int) = {
+  def updateStatistics(addedAds: Int, addedClosures: Int) = {
 
     val time = System.currentTimeMillis
     val (nonDustAddresses, addressGini) = getGini(balances)
     val (nonDustClosures, closureGini) = getGini(closureBalances)
-    val addedClosures = addedReps
-      - (changedReps.values.foldLeft(Set[Hash]())((s,p) => s++p)--changedReps.keys).size
-      + changedReps.keys.size
-
+    
     DB withSession { implicit session =>
       val stat = currentStat
       stat.total_addresses_with_balance = balances.length.run
@@ -445,51 +453,60 @@ trait BitcoinDB {
     stats.filter(_.block_height === blockHeight).delete
     richestAddresses.filter(_.block_height === blockHeight).delete
     richestClosures.filter(_.block_height === blockHeight).delete
+
     val table = LmdbMap.open("utxos")
     val utxoTable = new UTXOs(table)
-
     val utxoQuery = utxo.filter(_.block_height === blockHeight)
 
     for ((tx, idx) <- utxoQuery.map(p => (p.transaction_hash, p.index)).run)
       utxoTable -= Hash(tx) -> idx
     utxoQuery.delete
-
-    val movementQuery = movements.filter(_.height_out === blockHeight)
-    val utxoRows = movementQuery.filter(_.height_in =!= blockHeight).map(p => (p.transaction_hash, p.address, p.index, p.value, p.height_in)).run
+    // It seems to be a problem here...
+    //val movementQuery = //movements.filter(_.height_out === blockHeight)
+    val movementsToDelete = movements.filter(x => x.height_out === blockHeight || x.height_in === blockHeight)
+    val utxoRows = movements.filter(x => x.height_in === blockHeight || x.height_out===blockHeight).map(p => (p.transaction_hash, p.address, p.index, p.value, p.height_in)).run
+    println(movementsToDelete.map(x => (x.height_out, x.height_in, x.value)).run.map(p=> (p._1,p._2)))
+    println(utxoRows.map(_._5))
     for ((tx, ad, idx, v, h) <- utxoRows)
       utxoTable += ((Hash(tx) -> idx) -> (Hash(ad), v, h))
 
     utxo.insertAll(utxoRows: _*)
-    movementQuery.delete
+    movementsToDelete.delete
     blockDB.filter(_.block_height === blockHeight).delete
     table.close
 
   }
 
-
-
-  def getClosureBalances(a: Iterable[Hash]): collection.immutable.Map[Hash, Long] = DB withSession { implicit session =>
-    closureBalances.filter(_.address inSetBind a.map(Hash.hashToArray(_))).map(a => (a.address, a.balance)).run.map(p=> (Hash(p._1), p._2)).toMap
+  def getAddressReps(a: Iterable[Hash]): Map[Hash, Hash] = DB withSession {implicit session =>
+    addresses.filter(_.hash inSet (a.map(hashToArray _)) ).map(p => (p.hash,p.representant)).run.map(p=>(Hash(p._1),Hash(p._2))).toMap
   }
 
-  def getWalletBalances(a: collection.immutable.Set[Hash]): Long = DB withSession { implicit session =>
-    closureBalances.filter(_.address inSetBind a.map(Hash.hashToArray(_))).map(_.balance).sum.run.getOrElse(0L)
+  def getClosureBalances(a: Iterable[Hash]): Map[Hash, Long] = DB withSession { implicit session =>
+    closureBalances.filter(_.address inSet a.map(hashToArray(_))).map(a => (a.address, a.balance)).run.map(p=> (Hash(p._1), p._2)).toMap
+  }
+
+  def getWalletBalances(a: Set[Hash]): Long = DB withSession { implicit session =>
+    closureBalances.filter(_.address inSet a.map(hashToArray(_))).map(_.balance).sum.run.getOrElse(0L)
   }
 
   def getBalance(a: Hash): Long = DB withSession { implicit session =>
-    balances.filter(_.address === Hash.hashToArray(a)).map(_.balance).firstOption.getOrElse(0L)
+    balances.filter(_.address === hashToArray(a)).map(_.balance).firstOption.getOrElse(0L)
   }
 
-  def getAllBalances(): collection.immutable.Map[Hash, Long] = DB withSession { implicit session =>
+  def getAllBalances(): Map[Hash, Long] = DB withSession { implicit session =>
     balances.sortBy(_.address).map(p=>(p.address, p.balance)).run.map(p=>(Hash(p._1),p._2)).toMap
   }
 
-  def getClosures(): collection.immutable.Map[Hash, Hash] = DB withSession { implicit session =>
+  def getClosures(): Map[Hash, Hash] = DB withSession { implicit session =>
     addresses.sortBy(_.hash).map(p=>(p.hash, p.representant)).run.map(p=>(Hash(p._1),Hash(p._2))).toMap
   }
 
-  def getSomeClosures(a: Iterable[Hash]): collection.immutable.Map[Hash, Hash] = DB withSession { implicit session =>
-    addresses.filter(_.hash inSetBind a.map(Hash.hashToArray)).map(p=>(p.hash, p.representant)).run.map(p=>(Hash(p._1),Hash(p._2))).toMap
+  def getEmptyUTXOs(): Iterable[(Hash)] = DB withSession { implicit session =>
+    utxo.filter(_.value === 0L).map(_.address).run.map(Hash(_))
+  }
+
+  def getAllUTXOs(): Iterable[(Hash, Int)] = DB withSession { implicit session =>
+    utxo.map(p =>(p.address, p.block_height)).run.map(p => (Hash(p._1), p._2))
   }
 
   def countClosures(): Int = DB withSession { implicit session =>
@@ -500,11 +517,15 @@ trait BitcoinDB {
     addresses.length.run
   }
 
-  def getWallet(a: Hash): collection.immutable.Set[Hash] = DB withSession { implicit session =>
-    addresses.filter(_.representant === Hash.hashToArray(a)).map(_.hash).run.map(Hash(_)).toSet
+  def getWallet(a: Hash): Set[Hash] = DB withSession { implicit session =>
+    addresses.filter(_.representant === hashToArray(a)).map(_.hash).run.map(Hash(_)).toSet
   }
 
-  def getAllWalletBalances(): collection.immutable.Map[Hash, Long] = DB withSession { implicit session =>
+  def getAllWalletBalances(): Map[Hash, Long] = DB withSession { implicit session =>
     closureBalances.sortBy(_.address).map(p=>(p.address, p.balance)).run.map(p=>(Hash(p._1),p._2)).toMap
+  }
+
+  def deleteLastStats = DB withSession { implicit session =>
+    stats.filter(_.block_height === blockCount - 1).delete
   }
 }
