@@ -178,6 +178,12 @@ object Explorer extends App with db.BitcoinDB {
 
     val lch = lastCompletedHeight
     val bc = blockCount
+    if (bc-1 > lastCompletedHeight){
+      log.error("Incomplete process, missing stats and maybe more data. Rollback required.")
+      return Some(lch)
+    }
+      
+
     val (count,amount) = sumUTXOs
     val (countDB, amountDB) = countUTXOs
     val expected = totalExpectedSatoshi(bc)
