@@ -68,9 +68,10 @@ object TestExplorer extends db.BitcoinDB {
 
   def safeRollback() = {
 
-    //    deleteLastStats
-    // rollback esta roto
+    deleteLastStats
+    // rollback do not reconstruct stats, it just delete them and create it again
     rollBackToLastStatIfNecessary
+    populateStats
     assertBalancesCreatedCorrectly
   }
 

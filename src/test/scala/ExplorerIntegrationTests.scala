@@ -125,7 +125,6 @@ class ExplorerIntegrationTests extends FlatSpec with Matchers with CancelGloball
 
   it should "rollback 8 blocks and resume it again" in {
     val init = stat
-    println(init)
     safeRollback() should be (None)
     safeResume should be (None)
     stat should be (init)

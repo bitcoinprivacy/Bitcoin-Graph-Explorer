@@ -155,9 +155,9 @@ object Explorer extends App with db.BitcoinDB {
 
     log.info("Checking for wrong blocks")
 
-    rollBackToLastStatIfNecessary
+    val rollbacked = rollBackToLastStatIfNecessary
 
-    if (newStats)
+    if (rollbacked || newStats )
       populateStats
 
     while (new java.io.File(lockFile).exists) {

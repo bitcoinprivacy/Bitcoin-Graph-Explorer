@@ -446,6 +446,8 @@ trait BitcoinDB {
 
   def getUtxosMaxHeight = DB withSession { implicit session => utxo.map(_.block_height).max.run.getOrElse(0) }
 
+  // FIXME: rollback do not reconstruct stats, it just delete them and create it again.
+  // It could be added but it does not hurt to create it again (60 minutes at the moment)
   def rollBack(blockHeight: Int) = DB withSession { implicit session =>
 
     log.info("rolling back block " + blockHeight)
@@ -461,12 +463,13 @@ trait BitcoinDB {
     for ((tx, idx) <- utxoQuery.map(p => (p.transaction_hash, p.index)).run)
       utxoTable -= Hash(tx) -> idx
     utxoQuery.delete
-    // It seems to be a problem here...
-    //val movementQuery = //movements.filter(_.height_out === blockHeight)
+    
     val movementsToDelete = movements.filter(x => x.height_out === blockHeight || x.height_in === blockHeight)
-    val utxoRows = movements.filter(x => x.height_in === blockHeight || x.height_out===blockHeight).map(p => (p.transaction_hash, p.address, p.index, p.value, p.height_in)).run
-    println(movementsToDelete.map(x => (x.height_out, x.height_in, x.value)).run.map(p=> (p._1,p._2)))
-    println(utxoRows.map(_._5))
+    val utxoRows = movements
+      .filter(x => x.height_in === blockHeight || x.height_out===blockHeight)
+      .map(p => (p.transaction_hash, p.address, p.index, p.value, p.height_in))
+      .run
+
     for ((tx, ad, idx, v, h) <- utxoRows)
       utxoTable += ((Hash(tx) -> idx) -> (Hash(ad), v, h))
 
@@ -474,7 +477,6 @@ trait BitcoinDB {
     movementsToDelete.delete
     blockDB.filter(_.block_height === blockHeight).delete
     table.close
-
   }
 
   def getAddressReps(a: Iterable[Hash]): Map[Hash, Hash] = DB withSession {implicit session =>
