@@ -147,10 +147,20 @@ trait BitcoinDB {
       (values.size, values.sum)
     }
   }
-
+  
   def syncAddressesWithUTXOs =  DB withSession { implicit session =>
-    val ads = addresses.map(_.hash)
-    addresses.insert(utxo.groupBy(_.address).map(_._1).filterNot(_ in ads).map(p => (p,p)))
+    // Add addresses that have not yet been spent
+    for {
+      (u,i) <- utxo.map(_.address).run.toVector zipWithIndex } {
+      try {
+        if (i%1000 == 0)
+          log.debug(s"Inserting $i ...")
+        addresses.insert((u,u))
+      }
+      catch {
+        case e: Throwable =>
+      }
+    }
   }
 
   def getSumBalance: Long = DB withSession { implicit session =>
@@ -463,7 +473,7 @@ trait BitcoinDB {
     for ((tx, idx) <- utxoQuery.map(p => (p.transaction_hash, p.index)).run)
       utxoTable -= Hash(tx) -> idx
     utxoQuery.delete
-    
+
     val movementsToDelete = movements.filter(x => x.height_out === blockHeight || x.height_in === blockHeight)
     val utxoRows = movements
       .filter(x => x.height_in === blockHeight || x.height_out===blockHeight)
@@ -480,11 +490,11 @@ trait BitcoinDB {
   }
 
   def getAddressReps(a: Iterable[Hash]): Map[Hash, Hash] = DB withSession {implicit session =>
-    addresses.filter(_.hash inSet (a.map(hashToArray _)) ).map(p => (p.hash,p.representant)).run.map(p=>(Hash(p._1),Hash(p._2))).toMap
+    addresses.filter(_.hash inSetBind (a.map(hashToArray _)) ).map(p => (p.hash,p.representant)).run.map(p=>(Hash(p._1),Hash(p._2))).toMap
   }
 
   def getClosureBalances(a: Iterable[Hash]): Map[Hash, Long] = DB withSession { implicit session =>
-    closureBalances.filter(_.address inSet a.map(hashToArray(_))).map(a => (a.address, a.balance)).run.map(p=> (Hash(p._1), p._2)).toMap
+    closureBalances.filter(_.address inSetBind a.map(hashToArray(_))).map(a => (a.address, a.balance)).run.map(p=> (Hash(p._1), p._2)).toMap
   }
 
   def getWalletBalances(a: Set[Hash]): Long = DB withSession { implicit session =>

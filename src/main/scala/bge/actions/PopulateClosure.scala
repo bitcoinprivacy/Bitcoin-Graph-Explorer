@@ -47,7 +47,6 @@ class PopulateClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHei
     log.info("Saved to DB until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/(counterTotal+1)))
 
     saveElementsToDatabase(queries, counter)
-    syncAddressesWithUTXOs
 
     table.close
 

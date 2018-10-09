@@ -11,7 +11,8 @@ class ResumeClosure(blockHeights: Vector[Int], changedAds: Map[Hash,Long]) exten
   override lazy val unionFindTable = new ClosureMap(table)
 
   lazy val changedAddresses = changedAds.keys.toSet - Hash.zero(0)
-  lazy val oldReps = getAddressReps(changedAddresses) // only read from addresses once
+  //lazy val oldReps = getAddressReps(changedAddresses) // only read from addresses once is dangerous ...
+  lazy val oldReps  = changedAddresses map (add => (add, getRepresentant(add))) toMap
 
   lazy val (finalTree, touchedReps) = // a map of new reps to sets of their addresses that have been touched
     changedAddresses.foldLeft((generatedTree,Map[Hash,Set[Hash]]())){

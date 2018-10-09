@@ -62,6 +62,7 @@ case x if Assembly.isConfigFile(x) =>
     MergeStrategy.rename
   case PathList("META-INF", xs @ _*) =>
     (xs map {_.toLowerCase}) match {
+
       case ("manifest.mf" :: Nil) | ("index.list" :: Nil) | ("dependencies" :: Nil) =>
         MergeStrategy.discard
       case ps @ (x :: xs) if ps.last.endsWith(".sf") || ps.last.endsWith(".dsa") =>
@@ -92,8 +93,8 @@ scalacOptions ++= Seq(
 //    ,"-Xlog-implicit-conversions"
 )
 
-javaOptions in run += "-Xmx32G"
-javaOptions in run += "-Xms16"
+javaOptions in run += "-Xmx16G"
+javaOptions in run += "-Xms1G"
 
 fork := true
 

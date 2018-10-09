@@ -34,19 +34,19 @@ abstract class AddressClosure(blockHeights: Vector[Int]) extends db.BitcoinDB
 
   lazy val generatedTree: DisjointSets[Hash] =
   {
-    def addBlocks(startIndex: Int, tree: DisjointSets[Hash]): DisjointSets[Hash] = {
+    def addBlocks(tree: DisjointSets[Hash], startIndex: Int): DisjointSets[Hash] = {
       val blocks = blockHeights.slice(startIndex,startIndex+closureReadSize)
       val blockNo = blocks.head
       val txAndAddressList = txListQuery(blocks)
       val addressesPerTxMap = txAndAddressList.groupBy(p=>Hash(p._1))
       val hashList = addressesPerTxMap.values map (_ map (p=>Hash(p._2)))
-      // val nonTrivials = hashList filter (_.length > 1) // premature optimization
-      val result = hashList.foldRight (tree)(insertInputsIntoTree)
+      // val nonTrivials = hashList filter (_.length > 1) // premature optimization?
+      val result = hashList.foldLeft (tree) ((t,l) => insertInputsIntoTree(l,t))
       log.info("Closured " + blocks.length + " blocks from " + blockNo)
       result
     }
 
-    (0 until blockHeights.length by closureReadSize).foldRight(new DisjointSets[Hash](unionFindTable))(addBlocks)
+    (0 until blockHeights.length by closureReadSize).foldLeft(new DisjointSets[Hash](unionFindTable))(addBlocks)
   }
 
   def saveTree: Int

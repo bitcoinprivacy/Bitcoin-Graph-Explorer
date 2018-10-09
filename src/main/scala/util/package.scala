@@ -53,10 +53,10 @@ package object util
 
   def startBitcoinJ: Unit = {
     log.info("starting peergroup")
-
     peerGroup.start
     peerGroup.addAddress(addr)
-    peerGroup.waitForPeers(1).get();
+    peerGroup.waitForPeers(1).get()
+    peerGroup.getDownloadPeer.setDownloadParameters(Long.MaxValue, false) // only download headers
     peerGroup.downloadBlockChain
   }
 
