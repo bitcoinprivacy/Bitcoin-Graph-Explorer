@@ -13,7 +13,7 @@ class DisjointSets[A](val elements: Map[A,(Int,A)] = Map[A,(Int,A)]()) extends D
   }
 
   def asSet: Set[Set[A]] = {
-    val setOfMaps = elements.groupBy(_._2._2).values.toSet
+    val setOfMaps = elements.groupBy(p => onlyFind(p._2._2)).values.toSet
     val setOfSets = setOfMaps map (_.keys.toSet)
     setOfSets
   }

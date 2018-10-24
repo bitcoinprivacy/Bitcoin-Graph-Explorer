@@ -5,9 +5,8 @@
 import com.typesafe.config.ConfigFactory
 import java.net.InetAddress
 import org.bitcoinj.core._
-import org.bitcoinj.params.MainNetParams
+import org.bitcoinj.params._
 import org.bitcoinj.store._
-import org.bitcoinj.utils.BlockFileLoader
 import scala.collection.mutable.ArrayBuffer
 import com.typesafe.scalalogging._
 import org.slf4j.LoggerFactory;
@@ -15,7 +14,7 @@ import org.slf4j.LoggerFactory;
 package object util 
 {
   lazy val conf = ConfigFactory.load()
-  
+  lazy val networkMode = conf.getString("network")  
   lazy val closureTransactionSize = conf.getInt("closureTransactionSize")
   lazy val closureReadSize = conf.getInt("closureReadSize")
   lazy val populateTransactionSize = conf.getInt("populateTransactionSize")
@@ -24,29 +23,40 @@ package object util
   lazy val dustLimit = conf.getLong("dustLimit")
   lazy val dataDir = conf.getString( "dataDir")
   lazy val richlistSize = conf.getInt("richlistSize")
-
+  lazy val resumeBlockSize = conf.getInt("resumeBlockSize")
+  lazy val balanceUpdateLimit = conf.getInt("balanceUpdateLimit")
   lazy val blockStoreFile = new java.io.File(conf.getString("levelDBFile"))
   lazy val lockFile = conf.getString("lockFile")
+  lazy val checkUTXOsSize = conf.getInt("checkUTXOsSize")
+  lazy val internetAddress = conf.getString("bitcoin.ip") match {
+    case "localhost" => 
+      InetAddress.getLocalHost()
+    case e: String =>
+      InetAddress.getByName(e)
+  }
+  lazy val maxPopulate = conf.getInt("bitcoin.maxPopulate")
 
-  def params = MainNetParams.get
+  def params = 
+    if (networkMode == "main")
+      MainNetParams.get
+    else if (networkMode == "testnet")
+      TestNet3Params.get
+    else
+      RegTestParams.get
 
   val log = Logger(LoggerFactory.getLogger("bge"))
-
-
 
   lazy val blockStore = new LevelDBBlockStore(new Context(params), blockStoreFile) //, factory)
   lazy val chain = new BlockChain(params, blockStore)
   lazy val peerGroup = new PeerGroup(params, chain)
-  lazy val loader = {
-    new BlockFileLoader(params,BlockFileLoader.getReferenceClientBlockFileList)
-  }
-  lazy val addr = new PeerAddress(InetAddress.getLocalHost(), params.getPort());
-   
+  lazy val addr = new PeerAddress(params, internetAddress, params.getPort());
+
   def startBitcoinJ: Unit = {
     log.info("starting peergroup")
     peerGroup.start
     peerGroup.addAddress(addr)
-    peerGroup.waitForPeers(1).get();
+    peerGroup.waitForPeers(1).get()
+    peerGroup.getDownloadPeer.setDownloadParameters(Long.MaxValue, false) // only download headers
     peerGroup.downloadBlockChain
   }
 
@@ -78,6 +88,11 @@ package object util
     }
   }
 
-  
-}
+  // convert case class to map.
+  def getCCParams(cc: AnyRef) =
+    (Map[String, Any]() /: cc.getClass.getDeclaredFields) {(a, f) =>
+      f.setAccessible(true)
+      a + (f.getName -> f.get(cc))
+    }
 
+}

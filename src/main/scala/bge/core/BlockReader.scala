@@ -44,26 +44,21 @@ trait BlockReader extends BlockSource {
   }
 
   def process: Unit = {
-    for ((block, height) <- filteredBlockSource)
-    {
-      for (transaction <- transactionsInBlock(block)) {
-        saveTransaction(transaction, height)
-        transactionCounter +=1
+      for ((block, height) <- filteredBlockSource) {
+        for (transaction <- transactionsInBlock(block)) {
+          saveTransaction(transaction, height)
+          transactionCounter +=1
+        }
+        val blockHash = Hash(block.getHash.getBytes)
+        finishBlock(blockHash, block.getTransactions.size,getTxValue(block),block.getTimeSeconds,height)
       }
-      val blockHash = Hash(block.getHash.getBytes)
-      finishBlock(blockHash, block.getTransactions.size,getTxValue(block),block.getTimeSeconds,height)
-    }
   }
 
   def blockFilter(b: Block) = {
     val blockHash = Hash(b.getHash.getBytes)
-    !(savedBlockSet contains blockHash)
+    val exists = (savedBlockSet contains blockHash)
+    !exists 
   }
-
-  // def withoutDuplicates(b: Block, t: Transaction): Boolean =
-  //   !(Hash(b.getHash.getBytes) == Hash("00000000000a4d0a398161ffc163c503763b1f4360639393e0e4c8e300e0caec") &&
-  //     Hash(t.getHash.getBytes) == Hash("d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599")) && the other transaction
- //  this isn't necessary anymore, because we simply update the LMDB with the same tx. So technically, we are missing those two duplicate tx in our utxo DB
 
   lazy val filteredBlockSource =
     blockSource withFilter (p=>blockFilter(p._1))

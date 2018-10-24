@@ -11,7 +11,7 @@ import com.earldouglas.xwp.ContainerPlugin.autoImport._
 object BgeapiBuild extends Build {
   val Organization = "net.bitcoinprivacy"
   val Name = "bgeapi"
-  val Version = "3.3"
+  val Version = "3.3-SNAPSHOT"
   val ScalaVersion = "2.11.8"
   val ScalatraVersion = "2.4.0"
 
@@ -24,6 +24,7 @@ object BgeapiBuild extends Build {
       version := Version,
       scalaVersion := ScalaVersion,
       resolvers += Classpaths.typesafeReleases,
+      resolvers += "Local Maven Repository" at "file:///root/.m2/repository",
       resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases",
       libraryDependencies ++= Seq(
         "net.bitcoinprivacy" %% "bge" % Version,

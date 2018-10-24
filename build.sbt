@@ -2,25 +2,25 @@ organization := "net.bitcoinprivacy"
 
 name := "bge"
 
-version := "3.3"
+version := "3.3-SNAPSHOT"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.4"
 
 maintainer := "Bitcoinprivacy <info@bitcoinprivacy.net>"
 
 // additional libraries
 libraryDependencies ++= Seq(
-  "org.bitcoinj" % "bitcoinj-core" % "0.13.6",
+  "org.bitcoinj" % "bitcoinj-core" % "0.15-SNAPSHOT",
   "org.xerial.snappy"%"snappy-java"%"1.1.2.4",
   "org.iq80.leveldb"%"leveldb"%"0.7",
   "org.fusesource.leveldbjni"%"leveldbjni-all"%"1.8",
-  "org.postgresql" % "postgresql" % "9.4-1200-jdbc41",
+  "org.postgresql" % "postgresql" % "42.2.2",
   "com.typesafe.slick" %% "slick" % "2.1.0",
   "com.typesafe" % "config" % "1.2.1",
-  "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
-  "org.scalatest" %% "scalatest" % "2.1.5" % "test",
+  "org.scalacheck" %% "scalacheck" % "1.13.5" % "test",
+  "org.scalatest" %% "scalatest" % "3.2.0-SNAP10" % "test",
   "org.deephacks.lmdbjni" % "lmdbjni" % "0.4.6",
-  "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0",
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
   "ch.qos.logback" %  "logback-classic" % "1.1.7",
   ////////////////////////////////////////////////////////////////////
   // select one of the following depending on your architecture
@@ -31,10 +31,15 @@ libraryDependencies ++= Seq(
 )
 
 enablePlugins(JavaAppPackaging)
+enablePlugins(DockerPlugin)
+
+dockerEntrypoint := Seq("bin/bge", "-Dlogback.configurationFile=/conf/logback.xml", "-Dconfig.file=/conf/bge.conf", "--", "start")
+dockerUsername := Some("jorgemartinezpizarro")
+daemonUser in Docker := "root"
 
 libraryDependencies ~= { _.map(_.exclude("org.slf4j", "slf4j-simple")) }
 
-resolvers += "Local Maven Repository" at "file:///"+Path.userHome.absolutePath+"/.m2/repository"
+resolvers += "Local Maven Repository" at "file:///root/.m2/repository"
 
 resolvers += "Fakod Snapshots" at "https://raw.github.com/FaKod/fakod-mvn-repo/master/snapshots"
 
@@ -57,6 +62,7 @@ case x if Assembly.isConfigFile(x) =>
     MergeStrategy.rename
   case PathList("META-INF", xs @ _*) =>
     (xs map {_.toLowerCase}) match {
+
       case ("manifest.mf" :: Nil) | ("index.list" :: Nil) | ("dependencies" :: Nil) =>
         MergeStrategy.discard
       case ps @ (x :: xs) if ps.last.endsWith(".sf") || ps.last.endsWith(".dsa") =>
@@ -91,3 +97,5 @@ javaOptions in run += "-Xmx16G"
 javaOptions in run += "-Xms1G"
 
 fork := true
+
+testOptions in Test += Tests.Argument("-oD")

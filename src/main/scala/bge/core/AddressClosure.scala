@@ -15,33 +15,47 @@ import java.lang.System
 abstract class AddressClosure(blockHeights: Vector[Int]) extends db.BitcoinDB
 {
   lazy val unionFindTable: Map[Hash,(Int,Hash)] = Map.empty
-  var addedAds = 0
-  var addedReps = 0
 
-  def saveTree(tree: DisjointSets[Hash]): Int
+  // def unions(blocks: Vector[Int]): Iterable[Seq[Hash]] = {
+  //   val txAndAddressList = txListQuery(blocks)
+  //   val addressesPerTxMap = txAndAddressList.groupBy(p=>Hash(p._1))
+  //   val hashList = addressesPerTxMap.values map (_ map (p=>Hash(p._2)))
+  //   hashList // filter (_.length > 1)
+  // }
 
-  def generateTree: DisjointSets[Hash] =
+  // lazy val streamOfUnionLists: Stream[Iterable[Seq[Hash]]] = (0 until blockHeights.length by closureReadSize).toStream map startIndexToUnions
+
+  // def startIndexToUnions(startIndex: Int): Iterable[Seq[Hash]] = {
+  //   val blocks = blockHeights.slice(startIndex,startIndex+closureReadSize)
+  //   val blockNo = blocks.head
+  //   log.info("Closure working on " + blocks.length + " blocks from " + blockNo)
+  //   unions(blocks)
+  // }
+
+  lazy val generatedTree: DisjointSets[Hash] =
   {
-    // TODO: Same problem as with BlockReader, there we used a function "pre" to initialize the values. 
-    addedAds = 0;
-    addedReps = 0;
-    def addBlocks(startIndex: Int, tree: DisjointSets[Hash]): DisjointSets[Hash] = {
+    def addBlocks(tree: DisjointSets[Hash], startIndex: Int): DisjointSets[Hash] = {
       val blocks = blockHeights.slice(startIndex,startIndex+closureReadSize)
-      for (blockNo <- blocks.headOption)
-      log.info("reading " + blocks.length + " blocks from " + blockNo)
+      val blockNo = blocks.head
       val txAndAddressList = txListQuery(blocks)
       val addressesPerTxMap = txAndAddressList.groupBy(p=>Hash(p._1))
       val hashList = addressesPerTxMap.values map (_ map (p=>Hash(p._2)))
-      val nontrivials = hashList filter (_.length > 1)
-
-      log.info("folding and merging " + nontrivials.size)
-      nontrivials.foldLeft (tree) ((t,l) => insertInputsIntoTree(l,t))
+      // val nonTrivials = hashList filter (_.length > 1) // premature optimization?
+      val result = hashList.foldLeft (tree) ((t,l) => insertInputsIntoTree(l,t))
+      log.info("Closured " + blocks.length + " blocks from " + blockNo)
+      result
     }
 
-    val result = (0 until blockHeights.length by closureReadSize).foldRight(new DisjointSets[Hash](unionFindTable))(addBlocks)
-    log.info("finished generation")
-    result
+    (0 until blockHeights.length by closureReadSize).foldLeft(new DisjointSets[Hash](unionFindTable))(addBlocks)
   }
+
+  def saveTree: Int
+
+  // lazy val generatedTree: DisjointSets[Hash] =
+  //   streamOfUnionLists.foldRight(new DisjointSets[Hash](unionFindTable)){
+  //     case (unions,tree) =>
+  //       unions.foldRight(tree)(insertInputsIntoTree)
+  //   }
 
   def insertInputsIntoTree(addresses: Iterable[Hash], tree: DisjointSets[Hash]): DisjointSets[Hash] =
   {
@@ -49,11 +63,9 @@ abstract class AddressClosure(blockHeights: Vector[Int]) extends db.BitcoinDB
     addedTree.union(addresses)
   }
 
-  log.info("applying closure ")
   val timeStart = System.currentTimeMillis
   val startTableSize = unionFindTable.size
-  val countSave = saveTree(generateTree)
-
+  val countSave = saveTree
   val totalTime = System.currentTimeMillis - timeStart
 
   log.info("Total of %s addresses added to closures in %s s, %s µs per address" format

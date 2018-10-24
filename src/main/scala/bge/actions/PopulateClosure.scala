@@ -11,19 +11,16 @@ class PopulateClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHei
   lazy val table = LmdbMap.create("closures")
   override lazy val unionFindTable = new ClosureMap(table)
 
-  def saveTree(tree: DisjointSets[Hash]): Int =
+  def saveTree: Int =
   {
+    val tree = generatedTree
     val timeStart = System.currentTimeMillis
     var queries: Vector[(Array[Byte], Array[Byte])] = Vector()
     val totalElements = tree.elements.size
     var counter = 0
     var counterTotal = 0
-
-    log.info("Saving tree to database...")
     var counterFinal = 0
-    // tree.elements.keys.foldLeft(tree){(t,value) =>
-    //   val (parentOption, newTree) = tree.find(value)
-    //   for (parent <- parentOption )
+
     table.commit
 
     for (key <- tree.elements.keys)
@@ -42,12 +39,12 @@ class PopulateClosure(blockHeights: Vector[Int]) extends AddressClosure(blockHei
       }
       if (counterFinal % 1000000 == 0) {
         counterFinal = 0
-        log.info("Saved until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/(counterTotal+1)))
+        log.info("Saved to DB until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/(counterTotal+1)))
       }
       // newTree
     }
 
-    log.info("Saved until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/(counterTotal+1)))
+    log.info("Saved to DB until element %s in %s s, %s µs per element" format (counterTotal, (System.currentTimeMillis - timeStart)/1000, (System.currentTimeMillis - timeStart)*1000/(counterTotal+1)))
 
     saveElementsToDatabase(queries, counter)
 

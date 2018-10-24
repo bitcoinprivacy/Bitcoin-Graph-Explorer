@@ -13,12 +13,12 @@ object DSSpecification extends Properties("DisjointSets") {
 
   def setOfPairsGen = for {
     s <- arbitrary[Set[Int]]
-    part <- Gen.choose(1,s.size)
+    part <- Gen.choose(0,s.size)
     e <- s
   } yield (part, e)
 
   def setOfPairsToDisjointSet(pairs: Set[(Int, Int)]) : Set[Set[Int]] =
-    pairs.groupBy(_._1).values.toSet map ((p:Set[(Int, Int)]) => (p map (q => q._2)))
+    pairs.groupBy(_._1).values.toSet map ((p:Set[(Int, Int)]) => (p map (_._2)))
 
   property("Sets of nonempty disjoint Sets can be transformed into union/find structures and back") =
     forAll(setOfPairsGen) { (pairs: Set[(Int,Int)]) =>

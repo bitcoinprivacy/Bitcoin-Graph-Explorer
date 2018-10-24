@@ -42,7 +42,7 @@ trait FastBlockReader extends BlockReader {
     for (output <- outputsInTransaction(trans)) {
       val addressOption: Option[Hash] = getAddressFromOutput(output: TransactionOutput) match {
          case Some(value) => Some(Hash(value))
-          case None => None
+         case None => None
         }
 
       val value = output.getValue.value
@@ -73,7 +73,7 @@ trait FastBlockReader extends BlockReader {
   def finishBlock(b: Hash, txs: Int, btcs: Long, tstamp: Long, height:Int) = {
     processedBlocks :+= height
     insertBlock(b, height, txs, btcs, tstamp)
-    log.info("Saved block " + height + " consisting of " + txs + " txs")
+    log.info(s"Saved block $height consisting of $txs txs")
   }
 
   def pre  = {
@@ -92,17 +92,18 @@ trait FastBlockReader extends BlockReader {
 
   def saveUnmatchedInputs: Unit =
   {
-    assert(outOfOrderInputMap.size == 0, "unmatched Inputs: " + outOfOrderInputMap.toList)
-    //for (((outpointTransactionHash, outpointIndex), transactionHash) <- outOfOrderInputMap)
-    //  insertInsertIntoList(Some(transactionHash), Some(outpointTransactionHash), None, Some(outpointIndex), None, None)
+    val unmatchedCount = outOfOrderInputMap.size
+    for (input <- outOfOrderInputMap){
+    	log.error(input.toString)
+    }
+    assert(unmatchedCount == 0, unmatchedCount + " unmatched Inputs found")
   }
 
   def saveDataToDB: Unit =
   {
     val amount = vectorBlocks.length + vectorMovements.length
-    log.info("Saving blocks/movements (" + amount + ")  into database ...")
-
     val convertedVectorBlocks = vectorBlocks map { case (a,b,c,d,e) => (a.array.toArray,b,c,d,e) }
+
     DB.withSession(blockDB.insertAll(convertedVectorBlocks:_*)(_))
 
     def ohc(e:Option[Hash]):Array[Byte] = e.getOrElse(Hash.zero(0)).array.toArray
@@ -118,11 +119,8 @@ trait FastBlockReader extends BlockReader {
         throw e.getNextException
     }
 
-
     vectorMovements = Vector()
     vectorBlocks = Vector()
-
-    //log.info("Data inserted")
   }
 
   // block
@@ -177,6 +175,4 @@ trait FastBlockReader extends BlockReader {
   def removeUTXO(outpointTransactionHash: util.Hash, outpointIndex: Int): UTXOs = {
     outputMap -= (outpointTransactionHash -> outpointIndex)
   }
-
-
 }

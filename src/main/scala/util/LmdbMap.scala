@@ -1,6 +1,6 @@
 package util
 
-import scala.collection.convert.WrapAsScala._
+import scala.collection.JavaConverters.asScalaIterator
 import org.fusesource.lmdbjni._
 import org.fusesource.lmdbjni.Constants._
 import scala.collection.mutable.Map
@@ -128,7 +128,6 @@ class LmdbMap(val name: String = java.util.UUID.randomUUID.toString)
     for (kv <- cache)
       db.put(tx, kv._1, kv._2)
     tx.commit
-    log.info("commit took " + (System.currentTimeMillis - t) + " ms")
     cache.clear
   }
 
